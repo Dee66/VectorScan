@@ -48,7 +48,7 @@ Configure VectorScan:
 ```bash
 LEAD_CAPTURE_ENABLED=1 \
 LEAD_CAPTURE_ENDPOINT="http://localhost:8080/capture" \
-python3 VectorGuard/tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json --json --lead-capture-email you@company.com
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json --json --lead-capture --email you@company.com
 ```
 
 ## 2. Serverless (AWS Lambda + API Gateway) Outline
@@ -100,7 +100,7 @@ Invoke VectorScan using the output endpoint:
 ```bash
 LEAD_CAPTURE_ENABLED=1 \
 LEAD_CAPTURE_ENDPOINT="https://YOUR_ID.execute-api.REGION.amazonaws.com/capture" \
-python3 VectorGuard/tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json --json --lead-capture-email you@company.com
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json --json --lead-capture --email you@company.com
 ```
 
 ## Security Considerations

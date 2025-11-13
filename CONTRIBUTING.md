@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in improving PaC MLOps Shield! This repo is designed to be public and auditable. Please follow the guidelines below to keep contributions consistent and high quality.
+Thanks for your interest in improving VectorScan! This repo is designed to be public and auditable. Please follow the guidelines below to keep contributions consistent and high quality.
 
 ## Prerequisites
 - Git, Bash, and a recent Linux/macOS environment
@@ -9,15 +9,15 @@ Thanks for your interest in improving PaC MLOps Shield! This repo is designed to
 - Optional: Terraform (for plan generation)
 
 ## Quick Start (Dev)
-- Sync the checklist progress after editing tasks:
-  - `python3 VectorGuard/scripts/update_checklist_progress.py`
-- Run policy/unit tests (if OPA is installed):
-  - `tests/run_tests.sh`
-- Gate Terraform plans (if Conftest is installed):
-  - `scripts/run_conftest.sh`
- - Run pre-commit hooks after installing:
-   - `pip install pre-commit && pre-commit install`
-   - Hooks enforce `opa fmt`, `terraform fmt`, and a sample conftest run.
+- Create a virtualenv and install dev tooling:
+  - `python3 -m venv .venv && source .venv/bin/activate`
+  - `pip install -r requirements-dev.txt`
+- Run Python tests: `pytest`
+- Run Rego tests (if OPA is installed): `opa test tests/rego-tests`
+- Optional: run Terraform tests with the CLI auto-download enabled: `VSCAN_TERRAFORM_TESTS=1 pytest tests/integration/test_policy_cli_integration.py`
+- Run pre-commit hooks after installing:
+  - `pip install pre-commit && pre-commit install`
+  - Hooks enforce `opa fmt`, `terraform fmt`, and `pytest` on staged files.
 
 ## Branching & Commit Style
 - Use feature branches: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`
@@ -36,23 +36,22 @@ Thanks for your interest in improving PaC MLOps Shield! This repo is designed to
 - Keep helper functions in shared include files when useful
 
 ### Policy Test Conventions
-- Location: add unit tests under `VectorGuard/tests/rego-tests/`.
+- Location: add unit tests under `tests/rego-tests/`.
 - Package: tests must use the SAME `package` as the policy to access `deny` results.
 - Naming: test functions must start with `test_` and be self-contained.
 - Coverage: include at least one PASS and one FAIL per policy rule.
 - Run locally:
-  - `opa test VectorGuard/tests/rego-tests -v`
+  - `opa test tests/rego-tests -v`
 
 ### Generate a real tfplan.json (from the example)
 Use this to validate policies against an actual Terraform plan JSON.
 
 ```bash
-cd VectorGuard/examples/aws-pgvector-rag
+cd examples/aws-pgvector-rag
 terraform init
 terraform plan -out tfplan.bin
 terraform show -json tfplan.bin > tfplan.json
-# Evaluate with Conftest (policies in VectorGuard/policies)
-conftest test tfplan.json -p ../../policies
+conftest test tfplan.json --policy ../../tools/vectorscan/free_policies.rego
 ```
 
 ### Markdown lint rules

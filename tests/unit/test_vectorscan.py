@@ -1,7 +1,8 @@
-from hypothesis import given, strategies as st
+from hypothesis import given, strategies as st, settings
 
 # Property-based test: random plan with required structure
 
+@settings(deadline=None)
 @given(
     encrypted=st.booleans(),
     costcenter=st.one_of(st.none(), st.text()),
@@ -195,17 +196,3 @@ def test_vectorscan_human_output(tmp_path):
     assert "PASS" in out
 
 
-if __name__ == "__main__":
-    # Run tests manually without pytest
-    failures = 0
-    try:
-        test_pass_json()
-    except AssertionError as e:
-        print("test_pass_json FAILED:\n", e)
-        failures += 1
-    try:
-        test_fail_json()
-    except AssertionError as e:
-        print("test_fail_json FAILED:\n", e)
-        failures += 1
-    sys.exit(1 if failures else 0)

@@ -57,7 +57,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_vectorscan_module():
-    spec = importlib.util.spec_from_file_location("vectorguard_vectorscan", SRC / "vectorscan.py")
+    target = SRC / "vectorscan.py"
+    if not target.exists():
+        return None
+    spec = importlib.util.spec_from_file_location("vectorscan_packaging", target)
     if spec is None or spec.loader is None:
         raise RuntimeError("Unable to load vectorscan module for packaging")
     module = importlib.util.module_from_spec(spec)
@@ -93,13 +96,20 @@ def main() -> int:
     bundle_name = args.bundle_name
 
     module = load_vectorscan_module()
-    terraform_path = ensure_terraform_binary(module, bundle_name)
+    terraform_path: Path | None = None
+    if module is not None:
+        try:
+            terraform_path = ensure_terraform_binary(module, bundle_name)
+        except Exception as exc:
+            print(f"Warning: skipping Terraform bundling ({exc})")
 
     DIST.mkdir(parents=True, exist_ok=True)
     out = DIST / f"{bundle_name}.zip"
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as z:
         # normalize permissions and timestamps for reproducibility
-        bundled_files: List[Path] = FILES + [terraform_path]
+        bundled_files: List[Path] = list(FILES)
+        if terraform_path is not None:
+            bundled_files.append(terraform_path)
         for f in bundled_files:
             if not f.exists():
                 print(f"Warning: missing file {f}")

@@ -13,36 +13,36 @@ This is an MVP to validate interest. For the full 6+ policy Zero-Trust kit, see 
 
 ```bash
 # From repository root
-python3 VectorGuard/tools/vectorscan/vectorscan.py VectorGuard/examples/aws-pgvector-rag/tfplan-pass.json
-python3 VectorGuard/tools/vectorscan/vectorscan.py VectorGuard/examples/aws-pgvector-rag/tfplan-fail.json
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json
 
 # JSON output
-python3 VectorGuard/tools/vectorscan/vectorscan.py VectorGuard/examples/aws-pgvector-rag/tfplan-fail.json --json
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --json
 
 # Optional: adjustable IAM drift penalty (default 20; range 0–100)
-python3 VectorGuard/tools/vectorscan/vectorscan.py VectorGuard/examples/aws-pgvector-rag/violations/P-AUD-002-iam-drift.fail.tfplan.json \
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json \
   --json --iam-drift-penalty 35
 # Or via env var
-VSCAN_IAM_DRIFT_PENALTY=35 python3 VectorGuard/tools/vectorscan/vectorscan.py VectorGuard/examples/aws-pgvector-rag/violations/P-AUD-002-iam-drift.fail.tfplan.json --json
+VSCAN_IAM_DRIFT_PENALTY=35 python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --json
 
 # Run Terraform module tests first (auto-downloads CLI >= 1.13.5 if needed)
-python3 VectorGuard/tools/vectorscan/vectorscan.py VectorGuard/examples/aws-pgvector-rag/tfplan-pass.json --terraform-tests
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json --terraform-tests
 # Or via env vars
-VSCAN_TERRAFORM_TESTS=1 python3 VectorGuard/tools/vectorscan/vectorscan.py VectorGuard/examples/aws-pgvector-rag/tfplan-pass.json
+VSCAN_TERRAFORM_TESTS=1 python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json
 
 # Generate an Audit Ledger YAML (includes iam_drift and evidence)
-./run_scan.sh -i VectorGuard/examples/aws-pgvector-rag/violations/P-AUD-002-iam-drift.fail.tfplan.json -e dev -o audit_logs/ledger.yaml
+./run_scan.sh -i examples/aws-pgvector-rag/tfplan-fail.json -e dev -o audit_logs/ledger.yaml
 
 # Optional lead capture (local file) with optional HTTP POST
 # By default, a JSON capture will be written to tools/vectorscan/captures/
 # To also POST, set VSCAN_LEAD_ENDPOINT or pass --endpoint
 VSCAN_LEAD_ENDPOINT="https://example.com/lead" \
-python3 VectorGuard/tools/vectorscan/vectorscan.py VectorGuard/examples/aws-pgvector-rag/tfplan-fail.json \
-	--email you@example.com --lead-capture
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json \
+  --email you@example.com --lead-capture
 
 # Or explicitly specifying endpoint flag
-python3 VectorGuard/tools/vectorscan/vectorscan.py VectorGuard/examples/aws-pgvector-rag/tfplan-fail.json \
-	--email you@example.com --lead-capture --endpoint https://example.com/lead
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json \
+  --email you@example.com --lead-capture --endpoint https://example.com/lead
 ```
 
 Exit codes:
@@ -137,6 +137,6 @@ Example:
 
 ```bash
 conftest test \
-	--policy VectorGuard/tools/vectorscan/free_policies.rego \
-	VectorGuard/examples/aws-pgvector-rag/tfplan-fail.json
+  --policy tools/vectorscan/free_policies.rego \
+  examples/aws-pgvector-rag/tfplan-fail.json
 ```

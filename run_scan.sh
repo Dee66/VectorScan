@@ -3,11 +3,11 @@ set -euo pipefail
 
 # run_scan.sh: Run VectorScan on a tfplan.json and generate an Audit Ledger YAML.
 # Usage:
-#   ./run_scan.sh -i examples/aws-pgvector-rag/tfplan-pass.json -e dev-eu-west-1 -o audit_logs/vectorguard_ledger.yaml
+#   ./run_scan.sh -i examples/aws-pgvector-rag/tfplan-pass.json -e dev-eu-west-1 -o audit_logs/vectorscan_ledger.yaml
 
 PLAN="examples/aws-pgvector-rag/tfplan-pass.json"
 ENVIRONMENT="dev"
-OUT="audit_logs/vectorguard_ledger.yaml"
+OUT="audit_logs/vectorscan_ledger.yaml"
 
 while getopts ":i:e:o:" opt; do
   case $opt in
@@ -88,7 +88,7 @@ PY
 )
 
 cat > "$OUT" <<YAML
-VectorGuard_Audit_Ledger:
+VectorScan_Audit_Ledger:
   timestamp: $STAMP
   environment: $ENVIRONMENT
   encryption: $ENCRYPTION

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Automate local release tasks for VectorGuard.
+Automate local release tasks for VectorScan.
 
 What this script can do:
 - Prompt for version and run the packaging script to produce the zip + .sha256
@@ -20,7 +20,7 @@ Usage (non-interactive example):
     --version 1.0.1 --gpg-sign --strict --sbom --install-syft \
     --verify-sha --verify-cosign \
     --cosign-issuer https://token.actions.githubusercontent.com \
-    --cosign-identity "https://github.com/Dee66/VectorGuard/.github/workflows/release-bundle.yml@refs/tags/v1.0.1"
+    --cosign-identity "https://github.com/Dee66/VectorScan/.github/workflows/release-bundle.yml@refs/tags/v1.0.1"
 """
 from __future__ import annotations
 
@@ -113,7 +113,7 @@ def generate_sbom(version: str) -> Path | None:
             return None
 
     DIST_DIR.mkdir(parents=True, exist_ok=True)
-    out = DIST_DIR / f"vectorguard-v{version}.sbom.spdx.json"
+    out = DIST_DIR / f"vectorscan-v{version}.sbom.spdx.json"
     # Use modern syft syntax ("scan" replaces deprecated "packages").
     # Add --quiet to suppress non-critical warnings like 'no explicit name/version provided'.
     cmd = ["syft", "--quiet", "scan", f"dir:{REPO_ROOT.name}", "-o", f"spdx-json={out}"]
@@ -143,7 +143,7 @@ def patch_sbom_metadata(sbom_path: Path, app_name: str, app_version: str) -> Non
     if not isinstance(data.get("name"), str) or not data["name"].strip():
         data["name"] = desired_name
     # Construct a stable document namespace using repo slug when available
-    slug = get_repo_slug() or "local/VectorGuard"
+    slug = get_repo_slug() or "local/VectorScan"
     ns = f"https://github.com/{slug}/sbom/v{app_version}"
     if not isinstance(data.get("documentNamespace"), str) or not data["documentNamespace"].startswith("http"):
         data["documentNamespace"] = ns
@@ -569,7 +569,7 @@ def main(argv: list[str] | None = None) -> int:
         sbom_sig = sbom_path.with_suffix(sbom_path.suffix + ".sig")
         if sbom_sig.exists():
             issuer = opts.cosign_issuer or "https://token.actions.githubusercontent.com"
-            repo_slug = get_repo_slug() or "Dee66/VectorGuard"
+            repo_slug = get_repo_slug() or "Dee66/VectorScan"
             identity_default = f"https://github.com/{repo_slug}/.github/workflows/release-bundle.yml@refs/tags/v{opts.version}"
             identity = opts.cosign_identity or identity_default
             if not which("cosign"):

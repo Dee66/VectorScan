@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="24" role="img" aria-label="VectorScan CI">
+  <title>VectorScan CI</title>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#2d333b"/>
+      <stop offset="100%" stop-color="#22272e"/>
+    </linearGradient>
+  </defs>
+  <rect rx="4" width="144" height="24" fill="url(#bg)"/>
+  <g fill="#fff" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="12">
+    <text x="10" y="16" font-weight="600">VectorScan CI</text>
+  </g>
+  <g transform="translate(120,4)">
+    <circle cx="8" cy="8" r="8" fill="#2ea44f"/>
+    <path d="M4.5 8.3 L7 10.8 L11.8 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

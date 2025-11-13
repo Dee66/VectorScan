@@ -1,0 +1,78 @@
+name: VectorScan CI
+
+on:
+  pull_request:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  run-vectorscan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run VectorScan on PASS plan
+        run: |
+          python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json --json > vectorscan-pass.json || true
+
+      - name: Run VectorScan on FAIL plan
+        run: |
+          python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --json > vectorscan-fail.json || true
+
+      - name: Package VectorScan free bundle
+        run: |
+          python3 tools/vectorscan/build_vectorscan_package.py
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.2.4'
+
+      - name: Verify VectorScan free bundle and sign (keyless)
+        run: |
+          # Future enhancement: sign vectorscan-free.zip with cosign
+          test -f dist/vectorscan-free.zip || (echo 'vectorscan-free.zip missing' && exit 1)
+          (cd dist && sha256sum -c vectorscan-free.zip.sha256)
+          cosign sign-blob --yes \
+            --output-signature dist/vectorscan-free.zip.sig \
+            --output-certificate dist/vectorscan-free.zip.crt \
+            dist/vectorscan-free.zip
+
+      - name: Verify signature (keyless)
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          cosign verify-blob \
+            --certificate dist/vectorscan-free.zip.crt \
+            --signature dist/vectorscan-free.zip.sig \
+            --certificate-identity-regexp ".*" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            dist/vectorscan-free.zip
+
+      - name: Aggregate VectorScan metrics
+        run: |
+          python3 tools/vectorscan/aggregate_metrics.py --out vectorscan-metrics.json || true
+
+      - name: Upload VectorScan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: vectorscan-results
+          path: |
+            vectorscan-pass.json
+            vectorscan-fail.json
+            dist/vectorscan-free.zip
+            dist/vectorscan-free.zip.sha256
+            dist/vectorscan-free.zip.sig
+            dist/vectorscan-free.zip.crt
+            vectorscan-metrics.json

@@ -1,0 +1,72 @@
+VectorGuard - Commercial Single-User Subscription License Agreement
+
+Copyright (c) 2025 PaC MLOps Shield. All rights reserved.
+
+1. Grant of License
+
+Subject to the terms and conditions of this License, Licensor grants to you (the “Subscriber”) a personal, non-exclusive, non-transferable, revocable license to use the Software during the active Subscription Term solely for your internal business purposes within a single legal entity.
+
+- Scope: Unlimited internal environments within your organization during the Subscription Term
+- Users: Single-user subscription unless otherwise agreed in writing
+- Modifications: You may modify configuration files, policies, and Terraform modules for internal use
+
+2. Subscription Term and Renewal
+
+The Subscription Term is one (1) year from the Effective Date, unless otherwise specified. The license automatically expires at the end of the Subscription Term unless renewed. Continued use of the Software after expiration requires an active subscription.
+
+3. Updates and Maintenance
+
+During the active Subscription Term, Licensor will provide access to updates, improvements, and maintenance releases, if any. Access to updates ceases upon expiration or termination of the Subscription.
+
+4. Restrictions
+
+You may NOT:
+
+- Redistribute, sell, sublicense, loan, or transfer the Software or any portion thereof to any third party
+- Share access credentials, download links, or copies of the Software outside your organization
+- Use the Software to create a directly competing product or service
+- Remove or alter copyright notices, license terms, or attribution statements
+- Reverse engineer, decompile, or disassemble any portion of the Software (except as permitted by applicable law)
+
+5. Ownership
+
+The Software is licensed, not sold. Licensor retains all right, title, and interest in and to the Software, including all intellectual property rights. No rights are granted by implication or estoppel.
+
+6. Compliance and Third-Party Services
+
+The Software integrates with third-party tools and services (e.g., Terraform, OPA, cloud providers). Your use of such services is subject to their respective terms. Licensor is not responsible for third-party services.
+
+7. Warranty Disclaimer
+
+THE SOFTWARE IS PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND. LICENSOR DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. LICENSOR DOES NOT WARRANT THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS OR THAT OPERATION WILL BE UNINTERRUPTED OR ERROR-FREE.
+
+8. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, OR FOR LOSS OF PROFITS, REVENUE, DATA, OR BUSINESS INTERRUPTION, ARISING OUT OF OR RELATED TO THIS LICENSE OR USE OF THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. LICENSOR’S TOTAL LIABILITY FOR DIRECT DAMAGES SHALL NOT EXCEED THE AMOUNTS PAID BY SUBSCRIBER FOR THE SUBSCRIPTION DURING THE TWELVE (12) MONTHS PRECEDING THE CLAIM.
+
+9. Termination
+
+This License terminates automatically upon expiration of the Subscription Term or if you materially breach any term of this License. Upon termination or expiration, you must cease all use of the Software and destroy all copies in your possession, except as required to retain audit artifacts created during the Subscription Term.
+
+10. Confidentiality
+
+Any licensing keys, non-public documentation, or materials provided by Licensor are Confidential Information. You agree to protect such information with reasonable care and not disclose it to third parties.
+
+11. Export Compliance
+
+You represent that you are not prohibited from receiving the Software under applicable export control laws and will not export or re-export the Software in violation of such laws.
+
+12. Governing Law; Venue
+
+This License is governed by the laws of the State of Delaware, USA, without regard to its conflict of law principles. The parties consent to the exclusive jurisdiction and venue of the state and federal courts located in Delaware for any dispute arising under this License.
+
+13. Entire Agreement; Amendments
+
+This License constitutes the entire agreement between the parties regarding its subject matter and supersedes all prior or contemporaneous agreements. Any amendment must be in writing and signed by both parties.
+
+14. Contact
+
+For licensing questions, contact: licensing@vectorguard.dev
+
+License Version: 2.0 (Subscription)
+Effective Date: November 2025

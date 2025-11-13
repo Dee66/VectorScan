@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>VectorScan – Instant Terraform Plan Guardrail Scan</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;padding:0;background:#0f1217;color:#e4e7ec;}
+    header{padding:36px 22px;text-align:center;background:linear-gradient(90deg,#1e293b,#0f172a);}
+    h1{margin:0;font-size:2.4rem;letter-spacing:.5px;}
+    .tagline{margin-top:12px;font-size:1.05rem;color:#9ca3af;}
+    section{max-width:960px;margin:36px auto;padding:0 24px;}
+    table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.95rem;}
+    th,td{padding:10px 12px;border-bottom:1px solid #1f2937;text-align:left;}
+    th{background:#1e293b;font-weight:600;}
+    code,pre{background:#1e1f26;padding:4px 6px;border-radius:4px;font-size:.85rem;}
+    pre{overflow-x:auto;}
+    .cta-bar{display:flex;flex-wrap:wrap;gap:16px;margin:28px 0;}
+    .cta{flex:1 1 220px;background:#1e293b;padding:16px 18px;border-radius:10px;text-decoration:none;color:#e4e7ec;box-shadow:0 2px 4px rgba(0,0,0,.4);transition:.18s;}
+    .cta:hover{background:#334155;}
+    footer{margin-top:48px;padding:32px 22px;text-align:center;font-size:.8rem;color:#64748b;border-top:1px solid #1e293b;}
+    .placeholder-img{width:100%;height:180px;background:#1e293b;border:1px dashed #334155;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#64748b;margin:22px 0;font-size:.9rem;}
+    .pill{display:inline-block;background:#334155;padding:4px 10px;border-radius:20px;font-size:.7rem;margin-right:6px;letter-spacing:.5px;color:#d1d5db;}
+    @media (max-width:740px){h1{font-size:1.9rem;} .cta-bar{flex-direction:column;} }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>VectorScan</h1>
+    <div class="tagline">Catch the two highest-impact Terraform plan gaps in seconds: Encryption & Mandatory Tags.</div>
+  </header>
+  <section>
+    <div class="placeholder-img">Hero image / animated diff goes here</div>
+    <h2>Why These Two Checks?</h2>
+    <table>
+      <thead><tr><th>Check</th><th>Why It Matters</th><th>Failure Impact</th></tr></thead>
+      <tbody>
+        <tr><td>Encryption Mandate (P-SEC-001)</td><td>Protects data-at-rest for regulated workloads</td><td>Breach blast radius; compliance penalties</td></tr>
+        <tr><td>Mandatory Tagging (P-FIN-001)</td><td>Enables cost attribution & anomaly detection</td><td>Unallocated spend; budget blind spots</td></tr>
+      </tbody>
+    </table>
+    <h2>Try It</h2>
+    <pre><code>python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --json
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --email you@example.com --lead-capture</code></pre>
+    <p class="pill">NO NETWORK</p><p style="margin-top:4px;font-size:.85rem;">Unless you set <code>VSCAN_LEAD_ENDPOINT</code> or use <code>--endpoint</code>.</p>
+    <div class="placeholder-img">Screenshot of FAIL vs PASS output</div>
+    <h2>Upgrade Path</h2>
+    <table>
+      <thead><tr><th>Tier</th><th>What You Get</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>Free (VectorScan)</td><td>2 Critical Checks</td><td>Immediate risk signal</td></tr>
+        <tr><td>$79 Blueprint</td><td>6 Zero-Trust + FinOps Policies, Audit Templates</td><td>Shift-left governance</td></tr>
+        <tr><td>$449 Enterprise</td><td>Extended policies, evidence packs, support</td><td>Faster audits & onboarding</td></tr>
+      </tbody>
+    </table>
+    <div class="cta-bar">
+      <a class="cta" href="./vectorscan_landing.md?utm_source=html&utm_medium=cta&utm_campaign=vectorscan&utm_content=scan">Scan Now (Markdown)</a>
+      <a class="cta" href="../README.md?utm_source=html&utm_medium=cta&utm_campaign=vectorscan&utm_content=blueprint">Get the Blueprint</a>
+      <a class="cta" href="../README.md?utm_source=html&utm_medium=cta&utm_campaign=vectorscan&utm_content=enterprise">Enterprise Inquiry</a>
+    </div>
+    <h2>Next Steps</h2>
+    <ol>
+      <li>Run VectorScan</li>
+      <li>Patch failures (encryption + tags)</li>
+      <li>Adopt full Zero-Trust policy gate</li>
+      <li>Generate audit evidence automatically</li>
+    </ol>
+    <div class="placeholder-img">Diagram: Free checks vs Full Shield layers</div>
+  </section>
+  <footer>
+    &copy; 2025 VectorGuard | Free utility under commercial Blueprint umbrella.
+  </footer>
+</body>
+</html>

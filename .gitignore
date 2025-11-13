@@ -1,0 +1,27 @@
+# VectorScan repo ignores
+__pycache__/
+*.py[cod]
+*.swp
+*.DS_Store
+.venv/
+.env
+.idea/
+.vscode/
+
+# Build and distribution artifacts
+dist/
+htmlcov/
+.coverage
+pip-wheel-metadata/
+
+# Terraform caches
+.terraform/
+.terraform-bin/
+terraform.tfstate*
+
+# Local captures or telemetry
+captures/
+
+# Logs and reports
+*.log
+coverage/

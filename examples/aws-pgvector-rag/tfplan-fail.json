@@ -1,0 +1,21 @@
+{
+  "format_version": "1.0",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_rds_cluster.vector_db",
+          "mode": "managed",
+          "type": "aws_rds_cluster",
+          "name": "vector_db",
+          "values": {
+            "storage_encrypted": false,
+            "tags": {
+              "Project": "vectorguard"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

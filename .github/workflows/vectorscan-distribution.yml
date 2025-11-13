@@ -1,0 +1,227 @@
+name: VectorScan Distribution Packages
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (without leading v, e.g., 0.2.0)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            shell: bash
+            terraform_bin: terraform
+          - os: macos-latest
+            platform: macos
+            shell: bash
+            terraform_bin: terraform
+          - os: windows-latest
+            platform: windows
+            shell: bash
+            terraform_bin: terraform.exe
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Determine Terraform version
+        id: tf-version
+        run: |
+          TF_VERSION=$(python -c 'from tools.vectorscan import vectorscan; print(vectorscan.REQUIRED_TERRAFORM_VERSION)')
+          echo "version=$TF_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build VectorScan bundle
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          python tools/vectorscan/build_vectorscan_package.py --bundle-name "vectorscan-free-${PLATFORM}"
+
+      - name: Extract bundle
+        id: extract
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          BUNDLE_NAME="vectorscan-free-${PLATFORM}"
+          DEST="dist/${BUNDLE_NAME}_extract"
+          mkdir -p "$DEST"
+          python -c "import zipfile, os; from pathlib import Path; platform=os.environ['PLATFORM']; bundle=Path('dist')/f'vectorscan-free-{platform}.zip'; dest=Path('dist')/f'vectorscan-free-{platform}_extract'; zipfile.ZipFile(bundle).extractall(dest)"
+          echo "bundle=${BUNDLE_NAME}" >> "$GITHUB_OUTPUT"
+          echo "dest=$DEST" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test (PASS plan)
+        env:
+          BUNDLE_NAME: ${{ steps.extract.outputs.bundle }}
+          DEST: ${{ steps.extract.outputs.dest }}
+          TF_VERSION: ${{ steps.tf-version.outputs.version }}
+          TF_BIN: ${{ matrix.terraform_bin }}
+        run: |
+          export VSCAN_TERRAFORM_BIN="$GITHUB_WORKSPACE/$DEST/tools/vectorscan/.terraform-bin/${TF_VERSION}/${TF_BIN}"
+          export VSCAN_TERRAFORM_AUTO_DOWNLOAD=0
+          python "$GITHUB_WORKSPACE/$DEST/tools/vectorscan/vectorscan.py" "$GITHUB_WORKSPACE/examples/aws-pgvector-rag/tfplan-pass.json" --json | tee "dist/${BUNDLE_NAME}-pass.json"
+          grep '"status": "PASS"' "dist/${BUNDLE_NAME}-pass.json"
+
+      - name: Smoke test (FAIL plan)
+        env:
+          BUNDLE_NAME: ${{ steps.extract.outputs.bundle }}
+          DEST: ${{ steps.extract.outputs.dest }}
+          TF_VERSION: ${{ steps.tf-version.outputs.version }}
+          TF_BIN: ${{ matrix.terraform_bin }}
+        run: |
+          export VSCAN_TERRAFORM_BIN="$GITHUB_WORKSPACE/$DEST/tools/vectorscan/.terraform-bin/${TF_VERSION}/${TF_BIN}"
+          export VSCAN_TERRAFORM_AUTO_DOWNLOAD=0
+          if python "$GITHUB_WORKSPACE/$DEST/tools/vectorscan/vectorscan.py" "$GITHUB_WORKSPACE/examples/aws-pgvector-rag/tfplan-fail.json" --json > "dist/${BUNDLE_NAME}-fail.json"; then
+            echo "Expected non-zero exit for FAIL plan" >&2
+            exit 1
+          fi
+          grep '"status": "FAIL"' "dist/${BUNDLE_NAME}-fail.json"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.2.4'
+
+      - name: Sign bundle
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+          BUNDLE_NAME: ${{ steps.extract.outputs.bundle }}
+        run: |
+          cosign sign-blob --yes \
+            --output-signature "dist/${BUNDLE_NAME}.zip.sig" \
+            --output-certificate "dist/${BUNDLE_NAME}.zip.crt" \
+            "dist/${BUNDLE_NAME}.zip"
+
+      - name: Verify signature
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+          BUNDLE_NAME: ${{ steps.extract.outputs.bundle }}
+        run: |
+          cosign verify-blob \
+            --certificate "dist/${BUNDLE_NAME}.zip.crt" \
+            --signature "dist/${BUNDLE_NAME}.zip.sig" \
+            --certificate-identity-regexp ".*" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            "dist/${BUNDLE_NAME}.zip"
+
+      - name: Upload bundle artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vectorscan-${{ matrix.platform }}
+          path: |
+            dist/${{ steps.extract.outputs.bundle }}.zip
+            dist/${{ steps.extract.outputs.bundle }}.zip.sha256
+            dist/${{ steps.extract.outputs.bundle }}.zip.sig
+            dist/${{ steps.extract.outputs.bundle }}.zip.crt
+            dist/${{ steps.extract.outputs.bundle }}-pass.json
+            dist/${{ steps.extract.outputs.bundle }}-fail.json
+
+  publish-release:
+    needs: build-and-test
+    if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: List collected files
+        run: ls -R dist
+      - name: Publish release draft
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: VectorScan Free ${{ inputs.version }}
+          tag_name: vectorscan-free-${{ inputs.version }}
+          files: |
+            dist/**/*.zip
+            dist/**/*.zip.sha256
+            dist/**/*.zip.sig
+            dist/**/*.zip.crt
+            dist/**/*-pass.json
+            dist/**/*-fail.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  verify-release-artifacts:
+    needs: publish-release
+    if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.2.4'
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "vectorscan-free-${{ inputs.version }}" --dir dist --repo "${{ github.repository }}"
+
+      - name: Verify checksums and signatures
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          for sha in dist/*.sha256; do
+            (cd dist && sha256sum -c "$(basename "$sha")")
+          done
+          for zip in dist/*.zip; do
+            cosign verify-blob \
+              --certificate "${zip}.crt" \
+              --signature "${zip}.sig" \
+              --certificate-identity-regexp ".*" \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+              "$zip"
+          done
+
+      - name: Smoke test downloaded bundles
+        run: |
+          tf_version=$(python -c 'from tools.vectorscan import vectorscan; print(vectorscan.REQUIRED_TERRAFORM_VERSION)')
+          for zip_path in dist/*.zip; do
+            base=$(basename "$zip_path" .zip)
+            platform=${base#vectorscan-free-}
+            dest="dist/${platform}_verify"
+            mkdir -p "$dest"
+            python -c "import zipfile; zipfile.ZipFile('$zip_path').extractall('$dest')"
+            if [ "$platform" = "windows" ]; then
+              tf_bin="terraform.exe"
+            else
+              tf_bin="terraform"
+            fi
+            export VSCAN_TERRAFORM_BIN="$GITHUB_WORKSPACE/$dest/tools/vectorscan/.terraform-bin/${tf_version}/${tf_bin}"
+            export VSCAN_TERRAFORM_AUTO_DOWNLOAD=0
+            python "$GITHUB_WORKSPACE/$dest/tools/vectorscan/vectorscan.py" "$GITHUB_WORKSPACE/examples/aws-pgvector-rag/tfplan-pass.json" --json | grep '"status": "PASS"'
+            if python "$GITHUB_WORKSPACE/$dest/tools/vectorscan/vectorscan.py" "$GITHUB_WORKSPACE/examples/aws-pgvector-rag/tfplan-fail.json" --json > "$dest/fail.json"; then
+              echo "Expected non-zero exit on fail plan" >&2
+              exit 1
+            fi
+            grep '"status": "FAIL"' "$dest/fail.json"
+          done

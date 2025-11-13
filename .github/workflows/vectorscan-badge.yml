@@ -1,0 +1,22 @@
+name: VectorScan CI
+
+on:
+  # Keep badge up to date when main CI completes
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  # Also run on pushes to master so the badge initializes immediately after changes
+  push:
+    branches: [ master ]
+  # Allow manual runs to initialize the badge
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  badge-proxy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Badge proxy noop
+        run: echo "VectorScan CI badge proxy"

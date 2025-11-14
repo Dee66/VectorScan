@@ -47,3 +47,12 @@ Walk through `scripts/check_github_release.py` to automate the validation of you
 ## Next steps / outstanding items
 - Document this workflow in `README.md` or the release checklist so future contributors know to use `.github/workflows/vectorscan-distribution.yml` for automated bundles and `scripts/automate_release.py` for local overrides.
 - The checklist still lists "Ensure release tooling (...) works relative to the VectorScan repository root" and "Plan distribution of VectorScan bundles..."; references above show the scripts already resolve `REPO_ROOT`, but keep an eye on cross-platform differences (especially tooling that shell‑executes `bash`) when migrating release gates.
+
+## Release checklist cross-check
+
+- Confirm the README and any marketing docs reference the canonical Gumroad CTA with the vectorguard UTM string: `https://gumroad.com/l/vectorguard-blueprint?utm_source=vectorscan&utm_medium=cta&utm_campaign=vectorscan&utm_content=blueprint`.
+- Verify the `docs/vectorscan_landing.*` assets still mention the signed bundle and the Gumroad CTA with the same UTM parameters so downstream analytics can tie VectorScan clicks back to the VectorGuard funnel.
+- Confirm `metrics/vector_scan_metrics.log` is generated alongside each audit ledger run (e.g., `./run_scan.sh`). The log is produced by `scripts/collect_metrics.py` and can be archived with the release evidence when you need historical compliance trends.
+- Confirm `metrics/vector_scan_metrics_summary.json` is also produced (via `scripts/metrics_summary.py`) and bundle it with release artifacts so downstream monitoring teams can immediately consume aggregated scores without parsing the raw log.
+- After the metrics summary exists, run `scripts/telemetry_consumer.py --csv metrics/vector_scan_metrics_summary.csv --statsd-host=${STATSD_HOST}` (with StatsD disabled by default) so downstream dashboards and alerting systems receive CSV rows plus optional StatsD gauges for `vectorscan.telemetry.*`.
+- When preparing a release, rerun `scripts/check_github_release.py` (see `.github/workflows/validate-release.yml`) to ensure the workflow artifacts, checksums, and cosign signatures exist for each platform bundle.

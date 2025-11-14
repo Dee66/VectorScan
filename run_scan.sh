@@ -31,6 +31,12 @@ JSON_FILE=$(mktemp)
 VS_JSON=$(python3 tools/vectorscan/vectorscan.py "$PLAN" --json || true)
 printf "%s" "$VS_JSON" > "$JSON_FILE"
 
+# Record telemetry for downstream monitoring (non-fatal)
+python3 scripts/collect_metrics.py "$JSON_FILE" || true
+python3 scripts/metrics_summary.py \
+  --log-file metrics/vector_scan_metrics.log \
+  --summary-file metrics/vector_scan_metrics_summary.json || true
+
 # Use embedded Python to parse JSON (avoid jq dependency)
 PY_PARSE=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
 import sys, json

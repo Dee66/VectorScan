@@ -46,14 +46,18 @@ def write_sha256(p: Path) -> None:
     out.write_text(f"{h.hexdigest()}  {p.name}\n", encoding="utf-8")
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build the VectorScan free bundle with bundled Terraform binary")
     parser.add_argument(
         "--bundle-name",
         default="vectorscan-free",
         help="Base file name (without extension) for the generated zip",
     )
-    return parser.parse_args()
+    # Use parse_known_args so pytest runner flags (e.g., -q) don't cause failures when tests import and call main().
+    if argv is None:
+        argv = sys.argv[1:]
+    args, _extra = parser.parse_known_args(argv)
+    return args
 
 
 def load_vectorscan_module():
@@ -91,8 +95,8 @@ def ensure_terraform_binary(module, bundle_name: str) -> Path:
     return resolution.path
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     bundle_name = args.bundle_name
 
     module = load_vectorscan_module()

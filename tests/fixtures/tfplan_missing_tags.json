@@ -1,0 +1,23 @@
+{
+  "format_version": "1.0",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_rds_cluster.vector_db",
+          "mode": "managed",
+          "type": "aws_rds_cluster",
+          "name": "vector_db",
+          "values": {
+            "storage_encrypted": true,
+            "kms_key_id": "arn:aws:kms:us-east-1:111122223333:key/abcd-efgh",
+            "tags": {
+              "CostCenter": "",
+              "Project": ""
+            }
+          }
+        }
+      ]
+    }
+  }
+}

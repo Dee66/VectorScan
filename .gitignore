@@ -25,3 +25,4 @@ captures/
 # Logs and reports
 *.log
 coverage/
+metrics/

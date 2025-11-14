@@ -49,6 +49,12 @@ jobs:
           name: vectorscan-audit-logs
           path: audit_logs/
 
+      - name: Upload telemetry artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vectorscan-metrics
+          path: metrics/
+
       - name: Run GitHub release validator
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -111,6 +111,12 @@ VectorScan can be used within VectorGuard's pipeline in two ways:
 1. **Local validation** – engineers run VectorScan before pushing to Git, catching regressions early.
 2. **CI guardrails** – integrate VectorScan into lightweight CI jobs for fast feedback before full VectorGuard policy suites execute.
 
+## Observability & telemetry
+
+VectorScan emits structured telemetry that makes the Compliance Score, Network Exposure Score, and IAM Drift Report actionable. Run `tools/vectorscan/vectorscan.py --json` (or `scripts/run_scan.sh`, which records the same fields inside `VectorGuard_Audit_Ledger`) and capture `metrics`, `violations`, and `iam_drift_report` for dashboards and alerting. `metrics.compliance_score` already applies the configurable IAM drift penalty so the score in your observability stack mirrors what auditors read in the ledger.
+
+Refer to `docs/observability.md` for instrumentation patterns, field definitions, and template scripts that push the telemetry into your favorite metrics backend. The document also explains how to persist the audit ledger alongside the signed bundle so downstream teams have an auditable pipeline entry to cite during incident reviews or governance meetings. The repository now emits `metrics/vector_scan_metrics.json` and `metrics/vector_scan_metrics_summary.json` automatically so compliance and monitoring teams can grab both a detailed log and an aggregated snapshot without extra glue.
+
 ## Gumroad Distribution & Entitlement Flow
 
 The VectorScan project keeps a free Gumroad listing that delivers `vectorscan-free.zip` with SHA256 and cosign metadata. Each release bundle is signed by the `.github/workflows/vectorscan-distribution.yml` matrix, so the Gumroad download matches the CI-signed artifact. The listing description also reminds buyers to verify the checksum/signature and follow the Audit Ledger instructions in `docs/run_scan.md` (see below).

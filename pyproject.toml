@@ -1,0 +1,29 @@
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+exclude = [
+  "/__pycache__/",
+  "/.terraform-bin/",
+  "/dist/",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+  "__pycache__",
+  ".terraform-bin",
+  "dist",
+]
+# Enable basic rule sets (pyflakes, pycodestyle)
+select = ["E", "F", "W"]
+ignore = [
+  "E501",  # line length handled by formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

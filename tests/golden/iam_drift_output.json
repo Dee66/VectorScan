@@ -1,0 +1,59 @@
+{
+  "status": "PASS",
+  "file": "tests/fixtures/tfplan_iam_drift.json",
+  "violations": [],
+  "counts": {
+    "violations": 0
+  },
+  "checks": [
+    "P-SEC-001",
+    "P-FIN-001"
+  ],
+  "vectorscan_version": "0.1.0",
+  "iam_drift_report": {
+    "status": "FAIL",
+    "counts": {
+      "risky_changes": 1
+    },
+    "items": [
+      {
+        "resource_type": "aws_iam_policy",
+        "resource_name": "app_policy",
+        "change": [
+          "create"
+        ],
+        "risky_additions": [
+          "iam:PassRole",
+          "s3:DeleteObject"
+        ],
+        "severity_by_action": {
+          "iam:PassRole": "high",
+          "s3:DeleteObject": "high"
+        },
+        "notaction_broad_allow": false
+      }
+    ],
+    "notes": {
+      "limitations": [
+        "NotAction not evaluated",
+        "Resource scoping not evaluated for drift risk"
+      ]
+    }
+  },
+  "metrics": {
+    "eligible_checks": 2,
+    "passed_checks": 2,
+    "compliance_score": 80,
+    "network_exposure_score": 100,
+    "open_sg_count": 0,
+    "iam_risky_actions": 0,
+    "notes": {
+      "open_security_groups": [],
+      "iam_risky_details": []
+    },
+    "iam_drift": {
+      "status": "FAIL",
+      "risky_change_count": 1
+    }
+  }
+}

@@ -1,0 +1,15 @@
+VectorScan_Audit_Ledger:
+  timestamp: 2025-11-14T09:10Z
+  environment: tests
+  encryption: PASS
+  iam: PASS
+  iam_drift: FAIL
+  network: PASS
+  tagging: PASS
+  audit_status: NON_COMPLIANT
+  overall_score: 80/100
+  iam_drift_evidence:
+  - resource: aws_iam_policy.app_policy
+    risky_additions:
+      - iam:PassRole
+      - s3:DeleteObject

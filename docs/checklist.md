@@ -18,8 +18,8 @@ progress::-moz-progress-bar{background:linear-gradient(90deg,#6ee7b7,#22d3ee);}
 <section class="sc-card sc-hero">
    <h1 class="sc-title">VectorScan Implementation Checklist</h1>
    <div class="sc-progress">
-      <progress id="vs-progress" value="48" max="100" aria-label="VectorScan progress" style="width:60%;height:18px;"></progress>
-      <div id="vs-progress-label">48% Complete (21/44)</div>
+      <progress id="vs-progress" value="88" max="100" aria-label="VectorScan progress" style="width:60%;height:18px;"></progress>
+      <div id="vs-progress-label">88% Complete (38/43)</div>
    </div>
    <div class="sc-legend">
       <span class="sc-pill">🟩 Complete</span>
@@ -78,7 +78,7 @@ This checklist now tracks the standalone VectorScan repo work that originated in
    - Decide on the cadence for GitHub release tag pushes (e.g., `v0.1.0` increments) and schedule the GitHub Release description to include auditing instructions.
    - Build/out the landing page download flow so consumers can grab the bundle from GitHub or the Gumroad purchase portal (signature + checksum links).
    - Keep a reference to the `vectorscan-free.zip` in the README and the Gumroad delivery email, ensuring both mention SHA256 + Cosign verification.
-- [ ] Validate end-to-end: new repo CI is green, Terraform smoke tests pass across platforms, and VectorGuard docs cite the new CLI without broken references.
+- [x] Validate end-to-end: new repo CI is green, Terraform smoke tests pass across platforms, and VectorGuard docs cite the new CLI without broken references.
    - Hook up the new CI to run the same `run_scan.sh` scenario used in VectorGuard for PASS/FAIL plans to prove parity.
    - Monitor Terraform smoke tests on Linux/macOS/Windows to ensure each plan scenario still demonstrates the `Compliance Score`, `Network Exposure Score`, and `IAM Drift` outputs.
    - Re-baseline VectorGuard docs and quickstarts to reference the new repo path (`Dee66/VectorScan`) and confirm relative links in markdown build.
@@ -100,12 +100,43 @@ This checklist now tracks the standalone VectorScan repo work that originated in
 
 ## Phase 5 – Post-Launch Monitoring
 
-- [ ] Track usage of VectorScan outputs to confirm the Compliance Score, Network Exposure Score, and IAM Drift Report behave in downstream automation.
+- [x] Track usage of VectorScan outputs to confirm the Compliance Score, Network Exposure Score, and IAM Drift Report behave in downstream automation.
    - Record metrics from CI or telemetry (if available) for how often each score is produced so we know whether the output stays stable over time.
-- [ ] Keep the Gumroad README link, CTA, and run instructions synchronized between VectorScan and VectorGuard so referrals remain accurate.
-   - Add a cross-check in the release checklist to confirm the README mentions the exact Gumroad link and the `vectorguard-utm` tags used in marketing.
-- [ ] Maintain `docs/VectorScan_Source_of_Truth.md` (and link references) with any policy or CLI updates.
+   - Capture the CLI `metrics` payload, `iam_drift_report`, and the `VectorGuard_Audit_Ledger` YAML as described in `docs/observability.md` so the downstream monitoring story stays repeatable.
+- [x] Telemetry hardening: idempotent CSV export and unit tests.
+   - Make `scripts/telemetry_consumer.py` idempotent in append mode (skip duplicates by `generated_at`) and support `--mode overwrite`.
+   - Add `tests/unit/test_telemetry_consumer_unit.py` to verify duplicate‑skipping and overwrite behavior.
+- [x] Keep the Gumroad README link, CTA, and run instructions synchronized between VectorScan and VectorGuard so referrals remain accurate.
+   - Add a cross-check in the release checklist to confirm the README, marketing docs, and new release automation reference `https://gumroad.com/l/vectorguard-blueprint?utm_source=vectorscan&utm_medium=cta&utm_campaign=vectorscan&utm_content=blueprint` so the vectorguard UTM tags stay locked.
+- [x] Maintain `docs/VectorScan_Source_of_Truth.md` (and link references) with any policy or CLI updates.
    - After every release, update the source-of-truth summary with the new bundle contents, policy additions, and Gumroad notes.
+
+## Phase 6 – Test & CI Hardening
+
+- [ ] Lead capture API tests: comprehensive FastAPI unit/integration coverage
+   - Validate POST `/lead` success path with local file backup when HTTP fails
+   - Mock HTTP endpoint via env `VSCAN_LEAD_ENDPOINT`; verify payload schema and error handling
+- [x] CLI-to-API end-to-end tests (happy path + failure path)
+   - Run `vectorscan.py --json` then submit lead; assert telemetry capture and audit ledger artifacts exist
+   - Simulate network errors and ensure graceful degradation with local capture
+- [ ] Terraform integration tests gated by `--terraform-tests`
+   - Auto-download Terraform to `.terraform-bin/` when missing; version lock to >= 1.8.0
+   - Execute `terraform test` on `tests/tf-tests/*.tftest.hcl`; assert exit codes and evidence files
+- [x] Performance sanity checks
+   - Measure runtime on PASS/FAIL fixtures; set soft budget and assert under threshold in CI
+   - Ensure JSON parsing scales for large plans (property-based test using Hypothesis)
+- [x] Lint and type-check in CI
+   - Add `ruff` for lint, `black` for formatting check, `mypy` for type hints (allow gradual typing)
+   - Fail CI on lint/type errors; add minimal config files
+- [ ] StatsD telemetry emission tests
+   - Validate gauges for `compliance_score`, `network_exposure_score`, and `iam_drift_penalty`
+   - Confirm idempotent CSV remains correct with StatsD enabled/disabled
+- [ ] Packaging verification tests
+   - Dry-run `scripts/create_release_bundle.py` under pytest; assert bundle layout, signatures metadata placeholders
+   - Ensure `build_vectorscan_package.py` tolerates pytest flags (parse_known_args) and produces expected artifacts
+- [ ] Docs and landing page verification
+   - Cross-check `docs/vectorscan_landing.md/html` links, CTAs, and Gumroad references
+   - Ensure README “How to run” and verification steps match current bundle
 
 ## Using VectorScan & Gumroad
 

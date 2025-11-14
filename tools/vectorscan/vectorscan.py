@@ -764,7 +764,19 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Skip automatic Terraform downloads when running tests",
     )
-    ns = parser.parse_args(argv or sys.argv[1:])
+    # Preprocess argv to be resilient to values that start with '-' for options like --email
+    raw_argv = list(argv or sys.argv[1:])
+    try:
+        idx = raw_argv.index("--email")
+        # If the next token looks like an option (starts with '-') but is intended as the email value,
+        # convert to '--email=<value>' form so argparse treats it as the value.
+        if idx + 1 < len(raw_argv) and isinstance(raw_argv[idx + 1], str) and raw_argv[idx + 1].startswith("-"):
+            val = raw_argv.pop(idx + 1)
+            raw_argv[idx] = f"--email={val}"
+    except ValueError:
+        pass
+
+    ns = parser.parse_args(raw_argv)
 
     path = Path(ns.plan)
     plan = load_json(path)

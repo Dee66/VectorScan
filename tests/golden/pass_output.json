@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "file": "tests/fixtures/tfplan_pass.json",
+  "violations": [],
+  "counts": {
+    "violations": 0
+  },
+  "checks": [
+    "P-SEC-001",
+    "P-FIN-001"
+  ],
+  "vectorscan_version": "0.1.0",
+  "iam_drift_report": {
+    "status": "PASS",
+    "counts": {
+      "risky_changes": 0
+    },
+    "items": [],
+    "notes": {
+      "limitations": [
+        "NotAction not evaluated",
+        "Resource scoping not evaluated for drift risk"
+      ]
+    }
+  },
+  "metrics": {
+    "eligible_checks": 2,
+    "passed_checks": 2,
+    "compliance_score": 100,
+    "network_exposure_score": 100,
+    "open_sg_count": 0,
+    "iam_risky_actions": 0,
+    "notes": {
+      "open_security_groups": [],
+      "iam_risky_details": []
+    },
+    "iam_drift": {
+      "status": "PASS",
+      "risky_change_count": 0
+    }
+  }
+}

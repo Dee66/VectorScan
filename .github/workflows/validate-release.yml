@@ -1,0 +1,56 @@
+name: Validate Release Workflow
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  run_scan_and_check_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run VectorScan with Terraform smoke tests
+        run: |
+          python3 tools/vectorscan/vectorscan.py \
+            examples/aws-pgvector-rag/tfplan-pass.json \
+            --json \
+            --terraform-tests
+
+      - name: Run VectorScan PASS audit ledger
+        run: |
+          ./run_scan.sh \
+            -i examples/aws-pgvector-rag/tfplan-pass.json \
+            -e ci-pass \
+            -o audit_logs/pass_ledger.yaml
+
+      - name: Run VectorScan FAIL audit ledger
+        run: |
+          ./run_scan.sh \
+            -i examples/aws-pgvector-rag/tfplan-fail.json \
+            -e ci-fail \
+            -o audit_logs/fail_ledger.yaml
+
+      - name: Upload audit logs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vectorscan-audit-logs
+          path: audit_logs/
+
+      - name: Run GitHub release validator
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/check_github_release.py

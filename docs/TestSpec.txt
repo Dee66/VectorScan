@@ -1,0 +1,330 @@
+VectorScan – Full Test Strategy & Coverage Specification (For Copilot)
+
+Purpose:
+This document defines the complete test plan for the VectorScan CLI, including test categories, expected behaviors, fixtures, golden outputs, error handling, Terraform integration tests, IAM drift scoring validation, and end-to-end flows.
+Copilot should treat this as authoritative.
+
+1. Test Philosophy
+
+VectorScan enforces Zero-Trust and FinOps guardrails on Terraform plans.
+Testing must ensure:
+
+Deterministic behavior
+
+Correct exit codes
+
+Correct validation logic
+
+Safe error handling
+
+Accurate JSON/YAML output
+
+No network calls unless explicitly enabled
+
+Repeatable results across environments
+
+Compatibility with Python 3.9–3.12
+
+Every failure must be reproducible via a fixture.
+
+2. Test Folder Structure
+
+Copilot must generate and maintain this structure:
+
+tests/
+  fixtures/
+    tfplan_pass.json
+    tfplan_fail.json
+    tfplan_invalid.json
+    tfplan_iam_drift.json
+    tfplan_missing_tags.json
+    tfplan_no_encryption.json
+  golden/
+    pass_output.json
+    fail_output.json
+    iam_drift_output.json
+    audit_ledger.yaml
+  test_cli.py
+  test_end_to_end.py
+  test_json_output.py
+  test_iam_drift.py
+  test_audit_ledger.py
+  test_error_handling.py
+  test_lead_capture.py
+  test_terraform_integration.py
+
+
+Copilot should auto-generate any missing files with placeholders.
+
+3. Unit Test Areas
+3.1 CLI Entry Point
+
+Tests must confirm:
+
+correct parsing of arguments
+
+correct routing of flags
+
+correct exit codes
+
+correct detection of missing files
+
+correct detection of invalid JSON
+
+correct default behavior (no flags)
+
+Required assertions:
+exit_code == 0 for valid pass plan
+exit_code == 3 for violations
+exit_code == 2 for missing/invalid JSON
+exit_code == 5 for Terraform automation errors
+
+4. Functional Tests
+4.1 Encryption Mandate (P-SEC-001)
+
+Fixture: fixtures/tfplan_no_encryption.json
+
+Assertions:
+
+violation list contains encryption policy
+
+compliance score deducted correctly
+
+human output includes explicit error message
+
+JSON output includes structured violation block
+
+4.2 Mandatory Tagging (P-FIN-001)
+
+Fixture: fixtures/tfplan_missing_tags.json
+
+Assertions:
+
+missing CostCenter triggers FAIL
+
+missing Project triggers FAIL
+
+violation metadata includes resource address
+
+JSON output shows affected resource count
+
+5. IAM Drift Tests
+
+Fixture: fixtures/tfplan_iam_drift.json
+
+Tests should validate:
+
+drift report generated
+
+risky actions detected
+
+severity map included
+
+penalty deduction applied only when flag set
+
+JSON output contains:
+
+{
+  "iam_drift_report": {...},
+  "metrics": {
+    "iam_drift": <float>,
+    "compliance_score": <float>
+  }
+}
+
+6. Audit Ledger Tests
+
+Fixture: fixtures/tfplan_iam_drift.json
+Golden: golden/audit_ledger.yaml
+
+Tests must:
+
+generate deterministic ledger
+
+verify required keys:
+
+environment
+scan_timestamp
+input_file
+violations[]
+iam_drift
+evidence[]
+terraform_test_results (optional)
+
+
+validate YAML structure
+
+ensure file output works
+
+ensure directory creation works
+
+7. JSON Output Tests
+
+Golden files required:
+
+pass_output.json
+
+fail_output.json
+
+iam_drift_output.json
+
+Assertions:
+
+The CLI emits valid JSON
+
+All keys exist (violations, metrics, timestamp, etc)
+
+Output matches golden files (stable schema)
+
+8. Error Handling Tests
+
+Fixtures:
+
+tfplan_invalid.json (broken JSON)
+
+nonexistent file path
+
+missing permissions (use monkeypatch)
+
+Assertions:
+
+graceful CLI messages
+
+correct exit code
+
+never throws unhandled exceptions
+
+9. Lead Capture Tests
+
+No network calls unless --endpoint explicitly provided.
+
+Tests must:
+
+9.1 Local Capture
+
+file is written to tools/vectorscan/captures/
+
+JSON contains email + result
+
+timestamp exists
+
+9.2 Remote Capture
+
+Use pytest monkeypatch + temporary mock server:
+
+mock HTTP endpoint returns 200
+
+verify POST payload
+
+verify correct behavior on server error (400/500)
+
+10. Terraform Integration Tests
+
+These tests run only if:
+
+Terraform CLI >= 1.13.5 is detected
+
+or VSCAN_TERRAFORM_AUTO_DOWNLOAD=1
+
+Tests must:
+
+verify auto-download logic
+
+verify detection of local Terraform
+
+test behavior in CI
+
+verify truncated stdout/stderr logs
+
+validate that results appear under:
+
+"terraform_tests": {
+  "status": "PASS/FAIL",
+  "version": "...",
+  "binary_source": "...",
+  "stdout": "...",
+  "stderr": "..."
+}
+
+
+Mocking may be used where needed.
+
+11. End-to-End Flow Tests
+
+These simulate the entire user workflow.
+
+Scenario A — PASS
+
+run CLI on pass fixture
+
+expect exit code 0
+
+verify human output matches expected template
+
+verify JSON matches golden file
+
+Scenario B — FAIL
+
+run CLI on failing fixture
+
+expect exit code 3
+
+verify violations listed clearly
+
+JSON matches golden
+
+Scenario C — IAM Drift With Penalty
+
+run CLI with --iam-drift-penalty 35
+
+compliance score reduces correctly
+
+Scenario D — Audit Ledger
+
+run CLI with -o audit.yaml
+
+file matches golden ledger
+
+12. Performance Tests
+
+Copilot should create simple tests verifying:
+
+processing time < 200ms for 100KB plan
+
+no memory leaks (use tracemalloc)
+
+large plan (2–5 MB) still succeeds
+
+13. Static Analysis
+
+Copilot should enforce:
+
+mypy type checks
+
+flake8 or ruff
+
+black formatting
+
+Include this in CI.
+
+14. CI/CD Requirements
+
+CI must run:
+
+all pytest suites
+
+Terraform tests (if enabled)
+
+linting
+
+type checks
+
+golden file comparison
+
+15. What Copilot Should Generate Next
+
+Tell Copilot:
+
+Generate all test files under tests/ matching this specification,
+including fixtures, golden outputs, pytest tests, and helper utilities.
+For any missing internal APIs, generate stubs that match expected behavior.

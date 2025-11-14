@@ -40,6 +40,29 @@ The release workflow creates verified bundles (`vectorscan-free.zip`) that inclu
 - README with usage instructions
 - Cosign signatures and SHA256 checksums
 
+## Distribution & Gumroad
+
+VectorScan bundles are built and signed by the matrix defined in `.github/workflows/vectorscan-distribution.yml`.  Each artifact lands in `dist/` (zip, `.sha256`, `.sig`, `.crt`) so downstream teams can verify the archive with `sha256sum -c` and `cosign verify-blob` (see `docs/release-distribution.md` for the exact commands).  The same automation also publishes draft releases with PASS/FAIL smoke test outputs so the `vectorscan-free.zip` on GitHub Releases always matches the `examples/aws-pgvector-rag` fixtures.
+
+### Download & verify the latest bundle
+
+- Grab `vectorscan-free.zip` from `https://github.com/Dee66/VectorScan/releases/latest` (or the VectorScan Gumroad listing) so you know you are installing the CI-signed artifact.
+- Each release ships with `<bundle>.zip.sha256`, `<bundle>.zip.sig`, and `<bundle>.zip.crt`; follow `docs/release-distribution.md` when you run `sha256sum -c` and `cosign verify-blob` before deploying.
+- Reference the release tag/URL in your audit ledger output so compliance teams can trace the signed bundle back to the repository and Google the GPG/Cosign evidence.
+
+The free CLI still operates as the VectorGuard funnel: download the signed bundle, verify the credentials, and follow the Audit Ledger wiring described in `docs/VectorScan.md`.  Every FAIL message still calls out the $79 VectorGuard Governance Blueprint as the upgrade option so teams that grow beyond the two policies can take the next step.
+
+### Automated GitHub release & workflow checks
+
+Use `scripts/check_github_release.py` to confirm the latest release exposes the signed `vectorscan-free.zip` bundle and that the `vectorscan-distribution.yml` workflow concluded successfully. It queries GitHub’s REST API (optionally authenticated via `GITHUB_TOKEN`) and exits with an error code if required assets or a successful workflow run are missing.
+
+## Continuous release validation
+
+`validate-release.yml` (in `.github/workflows/`) runs `./run_scan.sh` for the PASS and FAIL fixtures, stores the generated audit ledgers as workflow artifacts, and then executes `scripts/check_github_release.py` so each push keeps the signed bundle + workflow results verifiable. Any failure stops the workflow, calling attention to discrepancies before they reach releases.
+The workflow also runs `tools/vectorscan/vectorscan.py` against the PASS fixture with `--terraform-tests` so the Terraform smoke tests that ship with the bundle are exercised on every push, matching the release matrix’s intent.
+
+For automated audit delivery, `docs/run_scan.md` explains how `run_scan.sh` emits the `VectorGuard_Audit_Ledger` YAML with the compliance score, IAM drift evidence, and `CISO_Mandate` messaging.
+
 ## License
 
 VectorScan inherits the VectorGuard license. See `LICENSE` for details.

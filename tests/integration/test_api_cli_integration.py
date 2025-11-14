@@ -71,6 +71,6 @@ def test_api_rate_limiting(monkeypatch):
     assert _allow_request(ip) is False
 
 
-@pytest.mark.xfail(reason="CORS headers require running the real HTTP server; skipped in integration test")
+@pytest.mark.skip(reason="CORS headers require running the real HTTP server; skipped in integration test")
 def test_api_cors():
     assert True

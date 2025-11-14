@@ -31,8 +31,14 @@ Tip: add <code>--email you@example.com --lead-capture</code> to generate a local
 
 Upgrade with UTM-tracked links:
 
-- Free → Blueprint: [Get the Blueprint](../README.md?utm_source=landing&utm_medium=cta&utm_campaign=vectorscan&utm_content=free_to_blueprint)
-- Free → Enterprise: [Talk to us](../README.md?utm_source=landing&utm_medium=cta&utm_campaign=vectorscan&utm_content=free_to_enterprise)
+- Free → Download: [Download Signed Bundle](https://github.com/Dee66/VectorScan/releases/latest?utm_source=landing&utm_medium=cta&utm_campaign=vectorscan&utm_content=download)
+- Free → Blueprint: [Get the Blueprint](https://gumroad.com/l/vectorguard-blueprint?utm_source=landing&utm_medium=cta&utm_campaign=vectorscan&utm_content=blueprint)
+- Free → Enterprise: [Talk to us](https://github.com/Dee66/VectorScan#distribution--gumroad?utm_source=landing&utm_medium=cta&utm_campaign=vectorscan&utm_content=enterprise)
+
+## Download & Verify
+- Download `vectorscan-free.zip` from `https://github.com/Dee66/VectorScan/releases/latest` or the VectorScan Gumroad listing so you can confirm the CI-signed artifact is installed.
+- Each release ships with `<bundle>.zip.sha256`, `<bundle>.zip.sig`, and `<bundle>.zip.crt`; use `docs/release-distribution.md` to run `sha256sum -c` and `cosign verify-blob` before deploying.
+- Reference the release tag/URL in your audit ledger so reviewers can trace the signed bundle back to the repository and the verification evidence.
 
 ## Lead Capture (Optional)
 Provide an email to generate a local capture JSON (no network unless you set an endpoint):
@@ -67,6 +73,6 @@ They represent the most common AND high-leverage early failures (security + cost
 ---
 
 Footer CTA:
-- [Download VectorScan (Free)](../README.md?utm_source=landing&utm_medium=footer&utm_campaign=vectorscan&utm_content=download)
-- [Blueprint ($79/year)](../README.md?utm_source=landing&utm_medium=footer&utm_campaign=vectorscan&utm_content=blueprint)
-- [Enterprise ($449/year)](../README.md?utm_source=landing&utm_medium=footer&utm_campaign=vectorscan&utm_content=enterprise)
+- [Download VectorScan (Free)](https://github.com/Dee66/VectorScan/releases/latest?utm_source=landing&utm_medium=footer&utm_campaign=vectorscan&utm_content=download)
+- [Blueprint ($79/year)](https://gumroad.com/l/vectorguard-blueprint?utm_source=landing&utm_medium=footer&utm_campaign=vectorscan&utm_content=blueprint)
+- [Enterprise ($449/year)](https://github.com/Dee66/VectorScan#distribution--gumroad?utm_source=landing&utm_medium=footer&utm_campaign=vectorscan&utm_content=enterprise)

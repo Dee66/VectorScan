@@ -21,6 +21,8 @@ Accurate JSON/YAML output
 
 No network calls unless explicitly enabled
 
+Offline mode (VSCAN_OFFLINE=1) disables telemetry, lead capture, Terraform auto-downloads, and StatsD without altering CLI output
+
 Repeatable results across environments
 
 Compatibility with Python 3.9–3.12
@@ -77,7 +79,9 @@ Required assertions:
 exit_code == 0 for valid pass plan
 exit_code == 3 for violations
 exit_code == 2 for missing/invalid JSON
-exit_code == 5 for Terraform automation errors
+exit_code == 4 for policy pack load errors (missing/corrupted bundled policies)
+exit_code == 5 for Terraform test failures (tests executed but reported FAIL)
+exit_code == 6 for Terraform automation errors (download/version/exec issues)
 
 4. Functional Tests
 4.1 Encryption Mandate (P-SEC-001)
@@ -175,6 +179,10 @@ The CLI emits valid JSON
 All keys exist (violations, metrics, timestamp, etc)
 
 Output matches golden files (stable schema)
+
+Schema documentation automation:
+- Run `python3 scripts/generate_schema_docs.py` whenever the JSON structure changes to regenerate `docs/output_schema.md` from live CLI output.
+- `tests/unit/test_generate_schema_docs_unit.py` ensures the generator keeps producing markdown with the key fields (`status`, `metrics.*`, IAM drift) so CI fails if the schema doc falls out of sync.
 
 8. Error Handling Tests
 
@@ -328,3 +336,166 @@ Tell Copilot:
 Generate all test files under tests/ matching this specification,
 including fixtures, golden outputs, pytest tests, and helper utilities.
 For any missing internal APIs, generate stubs that match expected behavior.
+
+
+Additional
+
+1. Add Detailed Schema Validation
+
+Right now, the golden comparison ensures output stability — but not structural correctness.
+
+Add jsonschema tests:
+
+tests/schema/test_json_schema_validation.py
+
+
+Define schema.json and enforce:
+
+required keys
+
+allowed types
+
+no unknown fields
+
+stable order
+
+This makes it impossible for regressions to silently ship.
+
+⭐ 2. Expand Terraform Chaos Tests
+
+Add:
+
+corrupted .terraform folders
+
+plans missing provider blocks
+
+huge IAM policies (>30 KB)
+
+invalid JSON in the IAM policy document
+
+These are extremely common real-world Terraform bugs.
+
+⭐ 3. Add Log Redaction Tests
+
+You added Secrets Redaction — now add tests that ensure:
+
+no email appears in logs
+
+no API keys
+
+no partial secrets
+
+no dotenv contents
+
+no AWS creds
+
+This is CRITICALLY important for trust.
+
+⭐ 4. Add “Replay Attack” Test for Deterministic Output
+
+Ensure running:
+
+vectorscan --json tfplan.json > output1.json
+vectorscan --json tfplan.json > output2.json
+diff output1.json output2.json
+
+
+produces no drift under deterministic mode.
+
+You already do this — but add a STRICT golden test for double verification.
+
+⭐ 5. Negative Test: corrupted .zip bundle WITH partial extraction
+
+Test that:
+
+partial extraction
+
+truncated files
+
+missing policy pack
+
+missing manifest
+
+invalid sbom
+
+missing README
+
+ALL produce graceful errors.
+
+⭐ 6. Test for “CLI invoked from a different directory”
+
+Many users run:
+
+~/Downloads/vectorscan/vectorscan.py xxx.json
+
+
+Ensure relative paths inside the repo don’t break.
+
+
+
+
+
+Additional:
+Add Tests For:
+
+Remediation block correctness
+
+examples included
+
+stable fields
+
+Policy Preview Mode
+
+ensure the preview doesn’t run illegal paid logic
+
+generate synthetic violations/templates only
+
+Plan Diff Tests
+
+pass plan with changes
+
+golden diff output
+
+deterministic ordering
+
+Explain Mode Tests
+
+stable textual output
+
+deterministic ordering
+
+golden file
+
+Resource Drilldown Tests
+
+correct resource path extraction
+
+HCL mapping accuracy
+
+fails gracefully on unknown resources
+
+Plan Summary Tests
+
+resource_count, module_count, provider list
+
+large plan stability
+
+Interactive Mode (if added)
+
+snapshot-based text UI tests
+
+run headless in CI
+
+GitHub Action Mode
+
+stable non-color JSON output
+
+correct exit codes
+
+Terraform Context Extraction
+
+region detection
+
+provider detection
+
+resource category breakdown

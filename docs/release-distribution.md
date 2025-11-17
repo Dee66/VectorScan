@@ -44,6 +44,11 @@ Walk through `scripts/check_github_release.py` to automate the validation of you
 2. Use `cosign verify-blob --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp ".*" --certificate <bundle>.zip.crt --signature <bundle>.zip.sig <bundle>.zip` to confirm the artifact came from the CI signal.
 3. (Optional) Extract the bundle and rerun the PASS/FAIL `vectorscan.py` commands to double-check the smoke tests yourself.
 
+### Gumroad download guard telemetry
+
+- Run `python scripts/gumroad_download_guard.py --download-url <gumroad link> --metrics-file metrics/gumroad_download_guard.json --output dist/gumroad-download.bin --retries 3 --delay 5 [--sha256 <expected>]` whenever you validate the Gumroad mirror. The script retries transient failures, captures per-attempt errors, and writes the summary JSON you can attach to release evidence.
+- The `verify-release-artifacts` job in `.github/workflows/vectorscan-distribution.yml` automatically invokes this guard when the `GUMROAD_VALIDATION_URL` secret is configured and uploads the metrics artifact so CI logs show the Gumroad mirror was reachable during release.
+
 ## Next steps / outstanding items
 - Document this workflow in `README.md` or the release checklist so future contributors know to use `.github/workflows/vectorscan-distribution.yml` for automated bundles and `scripts/automate_release.py` for local overrides.
 - The checklist still lists "Ensure release tooling (...) works relative to the VectorScan repository root" and "Plan distribution of VectorScan bundles..."; references above show the scripts already resolve `REPO_ROOT`, but keep an eye on cross-platform differences (especially tooling that shell‑executes `bash`) when migrating release gates.
@@ -54,5 +59,5 @@ Walk through `scripts/check_github_release.py` to automate the validation of you
 - Verify the `docs/vectorscan_landing.*` assets still mention the signed bundle and the Gumroad CTA with the same UTM parameters so downstream analytics can tie VectorScan clicks back to the VectorGuard funnel.
 - Confirm `metrics/vector_scan_metrics.log` is generated alongside each audit ledger run (e.g., `./run_scan.sh`). The log is produced by `scripts/collect_metrics.py` and can be archived with the release evidence when you need historical compliance trends.
 - Confirm `metrics/vector_scan_metrics_summary.json` is also produced (via `scripts/metrics_summary.py`) and bundle it with release artifacts so downstream monitoring teams can immediately consume aggregated scores without parsing the raw log.
-- After the metrics summary exists, run `scripts/telemetry_consumer.py --csv metrics/vector_scan_metrics_summary.csv --statsd-host=${STATSD_HOST}` (with StatsD disabled by default) so downstream dashboards and alerting systems receive CSV rows plus optional StatsD gauges for `vectorscan.telemetry.*`.
+- After the metrics summary exists, run `scripts/telemetry_consumer.py --csv metrics/vector_scan_metrics_summary.csv --statsd-host=${STATSD_HOST}` (append `--disable-statsd` or export `VSCAN_DISABLE_STATSD=1` when you need to silence emission). This now streams full-fidelity StatsD series (compliance/network gauges, PASS/FAIL counters, scan-duration timers, violation histograms) alongside the CSV rows so downstream dashboards ingest the richer signal set under the `vectorscan.telemetry.*` prefix.
 - When preparing a release, rerun `scripts/check_github_release.py` (see `.github/workflows/validate-release.yml`) to ensure the workflow artifacts, checksums, and cosign signatures exist for each platform bundle.

@@ -14,7 +14,8 @@ import json
 import os
 import subprocess
 from pathlib import Path
-from datetime import datetime, timezone
+
+from tools.vectorscan.time_utils import deterministic_isoformat
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC = ROOT / "docs" / "test_coverage_metrics.md"
@@ -45,7 +46,7 @@ def summarize(results: dict) -> tuple[int, int]:
 
 
 def main() -> int:
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+    ts = deterministic_isoformat()
     unit_json = opa_test_json([str(ROOT / "policies"), str(ROOT / "tools" / "vectorscan"), str(ROOT / "tests" / "rego-tests")])
     unit_total, unit_fail = summarize(unit_json)
 

@@ -45,6 +45,10 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Validate Gumroad delivery email copy
+        run: |
+          python scripts/check_gumroad_email.py --email-file docs/gumroad_delivery_email.md
+
       - name: Determine Terraform version
         id: tf-version
         run: |
@@ -225,3 +229,32 @@ jobs:
             fi
             grep '"status": "FAIL"' "$dest/fail.json"
           done
+
+      - name: Gumroad download guard (optional)
+        run: |
+          GUMROAD_VALIDATION_URL="${{ secrets.GUMROAD_VALIDATION_URL }}"
+          GUMROAD_VALIDATION_SHA256="${{ secrets.GUMROAD_VALIDATION_SHA256 }}"
+          if [ -z "$GUMROAD_VALIDATION_URL" ]; then
+            echo "Skipping Gumroad download guard (no secret provided)"
+            exit 0
+          fi
+          SHA_FLAG=""
+          if [ -n "$GUMROAD_VALIDATION_SHA256" ]; then
+            SHA_FLAG="--sha256 $GUMROAD_VALIDATION_SHA256"
+          fi
+          python scripts/gumroad_download_guard.py \
+            --download-url "$GUMROAD_VALIDATION_URL" \
+            --output dist/gumroad-download.bin \
+            --metrics-file gumroad_download_metrics.json \
+            --retries 3 \
+            --delay 5 $SHA_FLAG
+          ls -lh dist/gumroad-download.bin
+
+      - name: Upload Gumroad download metrics
+        if: ${{ hashFiles('gumroad_download_metrics.json') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gumroad-download-metrics
+          path: |
+            gumroad_download_metrics.json
+            dist/gumroad-download.bin

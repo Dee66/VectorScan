@@ -19,6 +19,14 @@ python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.jso
 # JSON output
 python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --json
 
+# Structured remediation metadata (`violations_struct`)
+# surfaces docs, HCL snippets, data_taint, and confidence scores for each violation.
+# Ideal for ticket templating or downstream automation that needs turnkey fix instructions.
+
+# Narrative explain mode (adds "VectorScan Explain Report" + `explanation` JSON block)
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --explain
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --json --explain
+
 # Optional: adjustable IAM drift penalty (default 20; range 0–100)
 python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json \
   --json --iam-drift-penalty 35
@@ -32,6 +40,7 @@ VSCAN_TERRAFORM_TESTS=1 python3 tools/vectorscan/vectorscan.py examples/aws-pgve
 
 # Generate an Audit Ledger YAML (includes iam_drift and evidence)
 ./run_scan.sh -i examples/aws-pgvector-rag/tfplan-fail.json -e dev -o audit_logs/ledger.yaml
+# `run_scan.sh` enforces that `-o` paths stay under `audit_logs/` inside the repo root to prevent overwriting arbitrary system files.
 
 # Optional lead capture (local file) with optional HTTP POST
 # By default, a JSON capture will be written to tools/vectorscan/captures/
@@ -47,14 +56,16 @@ python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.jso
 
 Exit codes:
 - 0: PASS (no violations)
-- 3: FAIL (one or more violations)
 - 2: Input file not found or invalid JSON
-- 4: Terraform module tests failed (when `--terraform-tests` is enabled)
-- 5: Terraform automation error (unable to resolve required Terraform CLI)
+- 3: FAIL (one or more violations)
+- 4: Policy pack load error (missing/corrupted bundled policies)
+- 5: Terraform module tests failed (when `--terraform-tests` is enabled)
+- 6: Terraform automation error (auto-download or CLI execution failure)
 
 ## Notes
 - This CLI inspects the Terraform plan JSON directly without OPA. It focuses on the two free checks for speed and simplicity.
 - For comprehensive checks (network isolation, scaling caps, IAM drift lock enforcement, etc.), run the full PaC Shield (OPA/Rego).
+- Air-gapped workflows can export `VSCAN_OFFLINE=1` to disable lead capture, telemetry helpers, Terraform auto-downloads, and StatsD/HTTP touches without changing the CLI output. You can also leave telemetry enabled but silence StatsD specifically via `scripts/telemetry_consumer.py --disable-statsd`, `VSCAN_DISABLE_STATSD=1`, or force-enable emission with `VSCAN_ENABLE_STATSD=1` in shared CI environments.
 
 ### Terraform Version Automation
 - Passing `--terraform-tests` (or setting `VSCAN_TERRAFORM_TESTS=1`) makes VectorScan detect the local Terraform CLI, download v1.13.5 into `tools/vectorscan/.terraform-bin/` when necessary, and run `terraform test` using the modern harness.
@@ -70,15 +81,60 @@ Exit codes:
 - Audit Ledger (`run_scan.sh`) includes `iam_drift` and an `iam_drift_evidence` array for traceability.
 See: `docs/iam_drift.md` for details.
 
+### Policy Pack Integrity Hash
+- Every JSON output, audit ledger, and bundle manifest now publishes a `policy_pack_hash` (SHA-256) derived from the bundled Rego policies (`free_policies.rego`).
+- Override the list of hashed files via `VSCAN_POLICY_PACK_FILES="path/to/policies"` or the computed value via `VSCAN_POLICY_PACK_HASH` when testing custom builds.
+- Auditors can recompute the hash to confirm no policies were tampered with between packaging and runtime.
+
+### Policy Error Reporting
+- When any policy check throws an exception, the CLI continues running the remaining policies and records the failure under `policy_errors` in the JSON output.
+- `run_scan.sh` mirrors the same block inside the audit ledger and telemetry collectors persist the data (counts plus latest entries) so dashboards can surface degraded coverage.
+- The lead capture API and tests accept the richer payloads, making it safe to forward scan results without losing visibility into partial coverage.
+
+### Machine-Readable Severity Index
+- `violation_severity_summary` buckets every violation into deterministic `critical`, `high`, `medium`, and `low` counts by policy ID.
+- The YAML audit ledger, telemetry logs, summaries, CSV exports, and lead-capture payloads preserve the same map so CI dashboards, StatsD, and analytics tools can rank findings without scraping strings.
+- Aggregate helpers (for example `tools/vectorscan/aggregate_metrics.py`) roll these counts up automatically, powering weekly scorecards or executive summaries with zero extra parsing.
+
+### Runtime Telemetry (`scan_duration_ms`)
+- Each CLI run records its elapsed time in milliseconds and exposes it under `metrics.scan_duration_ms`.
+- `run_scan.sh`, telemetry collectors, CSV/summary exports, and the lead capture API all persist the same value so dashboards can detect performance regressions.
+- Set `VSCAN_FORCE_DURATION_MS` when regenerating fixtures to keep goldens stable or to simulate SLA breaches in tests.
+
 ### Lead Capture Privacy
 - No network calls are made unless you provide an endpoint via `--endpoint` or `VSCAN_LEAD_ENDPOINT`.
 - A local JSON file is always written when lead capture is enabled so you can inspect exactly what would be sent.
+
+### Offline Verification (SHA256 + cosign)
+
+Every bundle includes `dist/*.sha256`, `dist/*.sig`, and our public key. To verify the archive without network dependencies:
+
+1. Check the checksum:
+  ```bash
+  sha256sum vectorscan-free.zip
+  cat vectorscan-free.zip.sha256
+  ```
+  or run the helper:
+  ```bash
+  scripts/verify.sh -f vectorscan-free.zip -d vectorscan-free.zip.sha256
+  ```
+2. Verify the signature (optional but recommended):
+  ```bash
+  cosign verify-blob \
+    --key dist/cosign.pub \
+    --signature vectorscan-free.zip.sig \
+    vectorscan-free.zip
+  ```
+
+For mirrors (Gumroad, self-hosted, etc.), use `scripts/gumroad_upload_validator.py` to confirm the mirrored artifact matches the signed release, and `scripts/release_artifact_verifier.py` to download draft GitHub artifacts directly and enforce SHA256 + cosign before publishing.
 
 # 📧 Lead Capture Integration
 
 VectorScan supports optional lead capture for users who want to submit their email and scan results for follow-up, support, or product updates.
 
 ## API Quick Start
+
+Requirements: The dev lead-capture API uses FastAPI with Pydantic v2. Ensure your environment has `fastapi>=0.104` and `pydantic>=2` (see `requirements.txt`).
 
 1. Start the local API server:
    ```bash

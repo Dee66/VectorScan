@@ -11,7 +11,15 @@ from hypothesis import HealthCheck, given, settings, strategies as st
 from tools.vectorscan import vectorscan
 
 
-CLI_PATH = Path(__file__).resolve().parents[2] / "tools" / "vectorscan" / "vectorscan.py"
+ROOT = Path(__file__).resolve().parents[2]
+CLI_PATH = ROOT / "tools" / "vectorscan" / "vectorscan.py"
+
+
+def run_vectorscan_cli(args):
+    env = os.environ.copy()
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(ROOT), existing]))
+    return subprocess.run([sys.executable, str(CLI_PATH), *args], capture_output=True, env=env)
 
 
 class DummyResp:
@@ -380,7 +388,7 @@ def test_lead_capture_disabled(tmp_path):
 
 def test_lead_capture_missing_plan(tmp_path):
     missing_path = tmp_path / "no-such-plan.json"
-    result = subprocess.run([sys.executable, str(CLI_PATH), str(missing_path)], capture_output=True)
+    result = run_vectorscan_cli([str(missing_path)])
     assert result.returncode == 2
     assert b"file not found" in result.stderr
 
@@ -388,9 +396,40 @@ def test_lead_capture_missing_plan(tmp_path):
 def test_lead_capture_invalid_json(tmp_path):
     bad_path = tmp_path / "bad.json"
     bad_path.write_text("not json")
-    result = subprocess.run([sys.executable, str(CLI_PATH), str(bad_path)], capture_output=True)
+    result = run_vectorscan_cli([str(bad_path)])
     assert result.returncode == 2
     assert b"invalid JSON" in result.stderr
+
+
+def test_lead_capture_skipped_in_offline_mode(tmp_path, monkeypatch):
+    plan_path = run_test_pass_plan(tmp_path)
+    monkeypatch.setenv("VSCAN_OFFLINE", "1")
+    called = {"write": 0, "post": 0}
+
+    def fail_write(payload):
+        called["write"] += 1
+        raise AssertionError("Lead capture should be disabled in offline mode")
+
+    def fail_post(endpoint, payload, timeout=5):
+        called["post"] += 1
+        raise AssertionError("Lead POST should be disabled in offline mode")
+
+    monkeypatch.setattr(vectorscan, "_write_local_capture", fail_write)
+    monkeypatch.setattr(vectorscan, "_maybe_post", fail_post)
+
+    code = vectorscan.main([
+        str(plan_path),
+        "--lead-capture",
+        "--email",
+        "offline@example.com",
+        "--endpoint",
+        "https://example.com/capture",
+    ])
+
+    assert code in (0, 3)
+    assert called["write"] == 0
+    assert called["post"] == 0
+    monkeypatch.delenv("VSCAN_OFFLINE", raising=False)
 
 
 def test_lead_capture_fail_plan(tmp_path):
@@ -424,7 +463,7 @@ def test_lead_capture_fail_plan(tmp_path):
     }
     plan_path = tmp_path / "fail-plan.json"
     plan_path.write_text(json.dumps(plan))
-    result = subprocess.run([sys.executable, str(CLI_PATH), str(plan_path)], capture_output=True)
+    result = run_vectorscan_cli([str(plan_path)])
     assert result.returncode == 3
     assert b"FAIL" in result.stdout
 
@@ -449,3 +488,22 @@ def test_lead_capture_with_lead_capture_flag(tmp_path):
 
     assert code == 0
     assert fake_urlopen.last is not None  # type: ignore[attr-defined]
+
+
+def test_write_local_capture_fallback_on_permission_error(monkeypatch, tmp_path):
+    primary = Path(vectorscan.__file__).parent / "captures"
+    original_mkdir = Path.mkdir
+
+    def fake_mkdir(self, *args, **kwargs):  # pragma: no cover - monkeypatched helper
+        if self == primary:
+            raise PermissionError("denied")
+        return original_mkdir(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", fake_mkdir)
+    monkeypatch.setattr(vectorscan.tempfile, "gettempdir", lambda: str(tmp_path))
+
+    payload = {"email": "fallback@example.com", "result": {}}
+    target = vectorscan._write_local_capture(payload)
+    assert target.parent == Path(tmp_path) / "vectorscan-captures"
+    data = json.loads(target.read_text(encoding="utf-8"))
+    assert data["email"] == "fallback@example.com"

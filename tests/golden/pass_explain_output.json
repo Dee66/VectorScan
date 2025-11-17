@@ -1,0 +1,169 @@
+{
+  "status": "PASS",
+  "file": "tests/fixtures/tfplan_pass.json",
+  "violations": [],
+  "violations_struct": [],
+  "counts": {
+    "violations": 0
+  },
+  "checks": [
+    "P-SEC-001",
+    "P-FIN-001"
+  ],
+  "vectorscan_version": "0.1.0",
+  "policy_version": "1.0.0",
+  "schema_version": "1.2.0",
+  "policy_pack_hash": "126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c",
+  "policy_errors": [],
+  "violation_severity_summary": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "violation_count_by_severity": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "environment": {
+    "platform": "linux",
+    "platform_release": "unit-kernel",
+    "python_version": "3.11.test",
+    "python_implementation": "CPython",
+    "terraform_version": "not-run",
+    "terraform_source": "not-run",
+    "vectorscan_version": "0.1.0",
+    "strict_mode": false,
+    "offline_mode": false
+  },
+  "plan_metadata": {
+    "resource_count": 1,
+    "resource_types": {
+      "aws_rds_cluster": 1
+    },
+    "providers": [
+      "aws"
+    ],
+    "module_count": 1,
+    "modules": {
+      "root": "root",
+      "with_resources": 1,
+      "child_module_count": 0,
+      "has_child_modules": false
+    },
+    "exceeds_threshold": false,
+    "change_summary": {
+      "adds": 0,
+      "changes": 0,
+      "destroys": 0
+    },
+    "resources_by_type": {
+      "aws_rds_cluster": {
+        "planned": 1,
+        "adds": 0,
+        "changes": 0,
+        "destroys": 0
+      }
+    },
+    "file_size_mb": 0.000549,
+    "file_size_bytes": 549,
+    "parse_duration_ms": 123,
+    "plan_slo": {
+      "observed": {
+        "resource_count": 1,
+        "parse_duration_ms": 123,
+        "file_size_bytes": 549
+      },
+      "thresholds": {
+        "fast_path": {
+          "max_resources": 1000,
+          "max_parse_ms": 200
+        },
+        "large_plan": {
+          "max_resources": 10000,
+          "max_parse_ms": 2000
+        },
+        "file_size_limit_bytes": 1500000000
+      },
+      "active_window": "fast_path",
+      "breach_reason": null
+    }
+  },
+  "iam_drift_report": {
+    "status": "PASS",
+    "counts": {
+      "risky_changes": 0
+    },
+    "items": [],
+    "notes": {
+      "limitations": [
+        "NotAction not evaluated",
+        "Resource scoping not evaluated for drift risk"
+      ]
+    }
+  },
+  "metrics": {
+    "eligible_checks": 2,
+    "passed_checks": 2,
+    "compliance_score": 100,
+    "network_exposure_score": 100,
+    "open_sg_count": 0,
+    "iam_risky_actions": 0,
+    "notes": {
+      "open_security_groups": [],
+      "iam_risky_details": []
+    },
+    "iam_drift": {
+      "status": "PASS",
+      "risky_change_count": 0
+    },
+    "scan_duration_ms": 123
+  },
+  "security_grade": "A",
+  "explanation": {
+    "summary": "PASS scan – compliance score 100/100, severity counts [critical=0, high=0, medium=0, low=0], IAM drift PASS (0 risky changes)",
+    "plan_overview": {
+      "narrative": "Plan defines 1 resource across 1 module (providers: aws; modules with resources: 1; no child modules).",
+      "resource_count": 1,
+      "module_count": 1,
+      "providers": [
+        "aws"
+      ],
+      "modules_with_resources": 1,
+      "child_module_count": 0,
+      "has_child_modules": false
+    },
+    "scores": {
+      "compliance_score": 100,
+      "network_exposure_score": 100,
+      "iam_risky_actions": 0,
+      "eligible_checks": 2,
+      "passed_checks": 2
+    },
+    "risk_highlights": [],
+    "iam_drift": {
+      "summary": "IAM drift PASS (0 risky changes).",
+      "status": "PASS",
+      "risky_change_count": 0
+    },
+    "recommendations": [
+      "Plan currently satisfies P-FIN-001 Mandatory Tagging, P-SEC-001 Encryption Mandate; maintain encryption and tagging coverage as modules evolve."
+    ],
+    "policy_context": [
+      {
+        "policy_id": "P-FIN-001",
+        "name": "Mandatory Tagging",
+        "severity": "high",
+        "description": "Taggable AWS resources must include CostCenter and Project tags."
+      },
+      {
+        "policy_id": "P-SEC-001",
+        "name": "Encryption Mandate",
+        "severity": "critical",
+        "description": "RDS resources must enable storage encryption and reference a kms_key_id."
+      }
+    ]
+  }
+}

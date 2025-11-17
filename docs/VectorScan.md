@@ -83,6 +83,8 @@ VectorScan downloads a compatible Terraform binary on demand. Use `VSCAN_TERRAFO
 - Emits PASS/FAIL status for each policy along with accompanying compliance metadata.
 - Produces the same Audit Ledger-style output that VectorGuard uses for governance reporting.
 
+Passing `--diff` switches the CLI into change-only mode: JSON payloads add a `plan_diff` block containing `{adds, changes, destroys}` counts and per-resource attribute deltas, while the human output prints a deterministic “Plan Diff Summary.” The flag stacks with `--json` and `--explain`, so stakeholders can read the narrative focused on only the changed attributes.
+
 ### Interpreting Policy Output
 
 - A `PASS` for `P-SEC-001` indicates encryption is enforced on every RDS or vector database resource.
@@ -113,7 +115,9 @@ VectorScan can be used within VectorGuard's pipeline in two ways:
 
 ## Observability & telemetry
 
-VectorScan emits structured telemetry that makes the Compliance Score, Network Exposure Score, and IAM Drift Report actionable. Run `tools/vectorscan/vectorscan.py --json` (or `scripts/run_scan.sh`, which records the same fields inside `VectorGuard_Audit_Ledger`) and capture `metrics`, `violations`, and `iam_drift_report` for dashboards and alerting. `metrics.compliance_score` already applies the configurable IAM drift penalty so the score in your observability stack mirrors what auditors read in the ledger.
+VectorScan emits structured telemetry that makes the Compliance Score, Network Exposure Score, and IAM Drift Report actionable. Run `tools/vectorscan/vectorscan.py --json` (or `scripts/run_scan.sh`, which records the same fields inside `VectorGuard_Audit_Ledger`) and capture `metrics`, `violations`, `environment`, and `iam_drift_report` for dashboards and alerting. `metrics.compliance_score` already applies the configurable IAM drift penalty so the score in your observability stack mirrors what auditors read in the ledger.
+
+Every payload now includes an `environment` block (`platform`, `platform_release`, Python + Terraform version/source, `vectorscan_version`, and strict/offline flags) plus the same data inside the ledger’s `environment_metadata` block. Override any field with `VSCAN_ENV_PLATFORM`, `VSCAN_ENV_PLATFORM_RELEASE`, `VSCAN_ENV_PYTHON_VERSION`, `VSCAN_ENV_PYTHON_IMPL`, `VSCAN_ENV_TERRAFORM_VERSION`, `VSCAN_ENV_TERRAFORM_SOURCE`, or `VSCAN_ENV_VECTORSCAN_VERSION` to pin deterministic metadata for goldens and regulated audit trails.
 
 Refer to `docs/observability.md` for instrumentation patterns, field definitions, and template scripts that push the telemetry into your favorite metrics backend. The document also explains how to persist the audit ledger alongside the signed bundle so downstream teams have an auditable pipeline entry to cite during incident reviews or governance meetings. The repository now emits `metrics/vector_scan_metrics.json` and `metrics/vector_scan_metrics_summary.json` automatically so compliance and monitoring teams can grab both a detailed log and an aggregated snapshot without extra glue.
 

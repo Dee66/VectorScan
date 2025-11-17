@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/env_flags.py
+# hypothesis_version: 6.147.0
+
+['0', '1', 'VSCAN_OFFLINE', 'VSCAN_STRICT', 'false', 'no', 'off', 'on', 'true', 'yes']

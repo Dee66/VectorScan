@@ -1,0 +1,103 @@
+name: Weekly Release Verification
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify-latest-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.2.4'
+
+      - name: Determine latest release tag
+        id: latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name' 2>/dev/null || echo "")
+          if [ -z "$TAG" ]; then
+            echo "No published releases detected; skipping verification run."
+            echo "has_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Latest release tag: $TAG"
+            echo "has_release=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download latest release assets
+        if: steps.latest.outputs.has_release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p dist
+          gh release download "${{ steps.latest.outputs.tag }}" --dir dist --repo "${{ github.repository }}"
+          ls -lh dist
+
+      - name: Verify SHA256 checksums
+        if: steps.latest.outputs.has_release == 'true'
+        run: |
+          set -euo pipefail
+          cd dist
+          for sha in *.sha256; do
+            echo "Verifying ${sha}"
+            sha256sum -c "$sha"
+          done
+
+      - name: Verify cosign signatures
+        if: steps.latest.outputs.has_release == 'true'
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          set -euo pipefail
+          for zip in dist/*.zip; do
+            echo "Verifying cosign signature for ${zip}"
+            cosign verify-blob \
+              --certificate "${zip}.crt" \
+              --signature "${zip}.sig" \
+              --certificate-identity-regexp ".*" \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+              "$zip"
+          done
+
+      - name: Smoke test downloaded bundles
+        if: steps.latest.outputs.has_release == 'true'
+        run: |
+          set -euo pipefail
+          tf_version=$(python -c 'from tools.vectorscan import vectorscan; print(vectorscan.REQUIRED_TERRAFORM_VERSION)')
+          for zip_path in dist/*.zip; do
+            base=$(basename "$zip_path" .zip)
+            dest="dist/${base}_extract"
+            mkdir -p "$dest"
+            python -c "import zipfile; zipfile.ZipFile('$zip_path').extractall('$dest')"
+            platform=${base#vectorscan-free-}
+            if [[ "$platform" == windows* ]]; then
+              tf_bin="terraform.exe"
+            else
+              tf_bin="terraform"
+            fi
+            export VSCAN_TERRAFORM_BIN="$GITHUB_WORKSPACE/$dest/tools/vectorscan/.terraform-bin/${tf_version}/${tf_bin}"
+            export VSCAN_TERRAFORM_AUTO_DOWNLOAD=0
+            python "$GITHUB_WORKSPACE/$dest/tools/vectorscan/vectorscan.py" "$GITHUB_WORKSPACE/examples/aws-pgvector-rag/tfplan-pass.json" --json | grep '"status": "PASS"'
+            if python "$GITHUB_WORKSPACE/$dest/tools/vectorscan/vectorscan.py" "$GITHUB_WORKSPACE/examples/aws-pgvector-rag/tfplan-fail.json" --json > "$dest/fail.json"; then
+              echo "Expected non-zero exit for FAIL plan" >&2
+              exit 1
+            fi
+            grep '"status": "FAIL"' "$dest/fail.json"
+          done

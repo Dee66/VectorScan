@@ -1,5 +1,27 @@
+import asyncio
+import json
+import os
+import sys
+import time
+from pathlib import Path
 
 import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.vectorscan.lead_api import (  # type: ignore[attr-defined]
+    LeadModel,
+    ResultModel,
+    ViolationModel,
+    _HITS,
+    _WINDOW_SECONDS,
+    _allow_request,
+    save_payload,
+    token_auth_middleware,
+)
+
 
 # Combinatorial test: _allow_request with randomized IPs and time windows
 @pytest.mark.parametrize("ip,window_offset", [
@@ -8,8 +30,6 @@ import pytest
     ("10.0.0.3", 100),
 ])
 def test__allow_request_randomized_window(ip, window_offset, monkeypatch):
-    from lead_api import _HITS, _WINDOW_SECONDS, _allow_request
-    import time
     now = int(time.time())
     _HITS[ip] = [now + window_offset for _ in range(10)]
     if window_offset < 0:
@@ -18,18 +38,9 @@ def test__allow_request_randomized_window(ip, window_offset, monkeypatch):
     else:
         # All hits are inside window, should not allow
         assert not _allow_request(ip)
-import pytest
-import json
-from pathlib import Path
-from lead_api import save_payload, _allow_request, ViolationModel, ResultModel, LeadModel
 
 
 # Parameterized and edge case tests for save_payload
-import json
-from pathlib import Path
-from lead_api import save_payload, _allow_request, ViolationModel, ResultModel, LeadModel
-
-
 
 @pytest.mark.parametrize("policy_id,message,resource", [
     ("P-SEC-001", "fail", "r1"),
@@ -45,7 +56,7 @@ def test_violation_model_param(policy_id, message, resource):
 
 
 @pytest.mark.parametrize("kwargs", [
-    {"status": "PASS", "file": "f.json", "violations": ["v1"], "violations_struct": [ViolationModel(policy_id="P", message="m")], "counts": {"violations": 1}, "checks": ["P-SEC-001"], "vectorscan_version": "0.1.0"},
+    {"status": "PASS", "file": "f.json", "violations": ["v1"], "violations_struct": [ViolationModel(policy_id="P", message="m")], "policy_errors": [{"policy": "P-SEC-001", "error": "RuntimeError"}], "violation_severity_summary": {"critical": 1}, "counts": {"violations": 1}, "checks": ["P-SEC-001"], "vectorscan_version": "0.1.0", "policy_version": "1.0.0", "schema_version": "1.1.0", "policy_pack_hash": "abc123", "scan_duration_ms": 123},
     {"status": "FAIL"},
     {"status": "PASS", "violations": []},
     {"status": "FAIL", "file": "fail2.json", "violations": ["err2"], "counts": {"violations": 3}, "checks": ["P-SEC-003"]},
@@ -59,13 +70,26 @@ def test_result_model_param(kwargs):
     if "violations" in kwargs:
         assert r.violations == kwargs["violations"]
     if "violations_struct" in kwargs and kwargs["violations_struct"]:
+        assert r.violations_struct is not None
         assert isinstance(r.violations_struct[0], ViolationModel)
     if "counts" in kwargs:
         assert r.counts == kwargs["counts"]
     if "checks" in kwargs:
         assert r.checks == kwargs["checks"]
+    if "policy_errors" in kwargs:
+        assert r.policy_errors and r.policy_errors[0].policy == kwargs["policy_errors"][0]["policy"]
+    if "violation_severity_summary" in kwargs:
+        assert r.violation_severity_summary == kwargs["violation_severity_summary"]
+    if "scan_duration_ms" in kwargs:
+        assert r.scan_duration_ms == kwargs["scan_duration_ms"]
     if "vectorscan_version" in kwargs:
         assert r.vectorscan_version == kwargs["vectorscan_version"]
+    if "policy_version" in kwargs:
+        assert r.policy_version == kwargs["policy_version"]
+    if "schema_version" in kwargs:
+        assert r.schema_version == kwargs["schema_version"]
+    if "policy_pack_hash" in kwargs:
+        assert r.policy_pack_hash == kwargs["policy_pack_hash"]
 
 
 @pytest.mark.parametrize("email,result,timestamp,source", [
@@ -105,7 +129,6 @@ def test_save_payload_various(tmp_path, monkeypatch, payload):
 ])
 def test__allow_request_limits(ip):
     # Use the default _MAX_PER_WINDOW = 10
-    from lead_api import _HITS
     _HITS[ip] = []
     for _ in range(10):
         assert _allow_request(ip)
@@ -141,25 +164,19 @@ def test_save_payload_nonserializable(tmp_path, monkeypatch):
 
 # Edge: test _allow_request with rapid calls (simulate time window expiry)
 def test__allow_request_time_window(monkeypatch):
-    from lead_api import _HITS, _WINDOW_SECONDS
-    import time
     ip = "9.8.7.6"
     _HITS[ip] = [int(time.time()) - _WINDOW_SECONDS - 1] * 10
     assert _allow_request(ip)
 
 # Edge: test token auth middleware logic (unit, not integration)
 def test_token_auth_env(monkeypatch):
-    import os
     monkeypatch.setenv("LEAD_API_TOKEN", "secret")
-    from fastapi import Request
     class DummyRequest:
         headers = {"x-api-key": "secret"}
         client = type("C", (), {"host": "1.2.3.4"})()
     # Should not raise
-    from lead_api import token_auth_middleware
-    import asyncio
     async def dummy_call_next(req):
         return "ok"
     req = DummyRequest()
-    out = asyncio.run(token_auth_middleware(req, dummy_call_next))
+    out = asyncio.run(token_auth_middleware(req, dummy_call_next))  # type: ignore[arg-type]
     assert out == "ok"

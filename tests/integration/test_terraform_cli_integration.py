@@ -50,7 +50,7 @@ def test_terraform_tests_error_no_download(capsys, monkeypatch):
     data = json.loads(captured.out)
     assert data["terraform_tests"]["status"] == "ERROR"
     assert data["status"] == "FAIL"
-    assert code == 5
+    assert code == 6
 
 
 def test_terraform_tests_fail_integration(capsys, monkeypatch):
@@ -78,7 +78,7 @@ def test_terraform_tests_fail_integration(capsys, monkeypatch):
     data = json.loads(captured.out)
     assert data["terraform_tests"]["status"] == "FAIL"
     assert data["status"] == "FAIL"  # FAIL bubbles up when tests fail
-    assert code == 4
+    assert code == 5
 
 
 def test_terraform_tests_skip_legacy(capsys, monkeypatch):
@@ -102,5 +102,23 @@ def test_terraform_tests_skip_legacy(capsys, monkeypatch):
     captured = capsys.readouterr()
     data = json.loads(captured.out)
     assert data["terraform_tests"]["status"] == "SKIP"
+    assert data["status"] == "PASS"
+    assert code == 0
+
+
+def test_terraform_tests_skip_when_missing_binary(capsys, monkeypatch):
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    import tools.vectorscan.vectorscan as vs
+
+    def fake_ensure(self, override_bin):  # pragma: no cover - monkeypatched helper
+        raise vs.TerraformNotFoundError("Terraform CLI not found and auto-download disabled. Set VSCAN_TERRAFORM_BIN or enable downloads.")
+
+    monkeypatch.setattr(vs.TerraformManager, "ensure", fake_ensure)
+    code = vs.main([str(PASS_PLAN), "--terraform-tests", "--no-terraform-download", "--json"])  # type: ignore
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["terraform_tests"]["status"] == "SKIP"
+    assert "Terraform CLI not found" in data["terraform_tests"].get("message", "")
     assert data["status"] == "PASS"
     assert code == 0

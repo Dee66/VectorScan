@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/secret_scrubber.py
+# hypothesis_version: 6.147.0
+
+['ACCESS_KEY', 'API_KEY', 'CREDENTIAL', 'PASSWORD', 'PRIVATE_KEY', 'SECRET', 'SESSION', 'TOKEN', 'contains_secret', 'scrub_structure', 'scrub_text']

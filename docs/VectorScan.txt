@@ -1,0 +1,439 @@
+VectorScan — Source of Truth & Final Specification (v1.0.0)
+
+Document Type: Canonical Product + Architecture Specification
+Status: FINAL
+Owner: ShieldCraft AI — GuardSuite
+Scope: Full CLI contract, schema, remediation, data integrity, I/O guarantees, policy update rules, test strategy, enterprise behaviors
+
+I. Overview
+
+VectorScan is the standalone, MIT-licensed Terraform plan auditor that enables any infrastructure, RAG, MLOps, or DevSecOps team to validate their tfplan.json with zero setup, deterministic output, and offline reproducibility.
+
+VectorScan is the entry point into the GuardSuite ecosystem.
+Its purpose is to provide a high-signal, high-trust, developer-friendly scanning experience that naturally funnels users into VectorGuard.
+
+Core Philosophy
+
+Governance must be codified, not documented.
+
+II. Free Policy Bundle
+
+VectorScan ships with two high-value, universal policies:
+
+P-SEC-001 — Encryption Mandate
+
+Enforces encryption + KMS key for data services.
+
+P-FIN-001 — Mandatory Tagging
+
+Requires CostCenter, Project, and other org-specific cost attribution tags.
+
+III. Developer Experience (DX) Enhancements
+
+VectorScan is not a simple policy scanner. It is a:
+
+remediation engine
+
+diff engine
+
+contextual plan inspector
+
+preview funnel to VectorGuard
+
+1. Remediation Engine
+
+All violations generate a structured remediation block:
+
+"remediation": {
+  "summary": "Enable storage_encrypted for aws_db_instance.db_prod.",
+  "hcl_examples": [
+    "resource \"aws_db_instance\" \"db_prod\" {\n  storage_encrypted = true\n  kms_key_id = \"arn:aws:kms:...\"\n}"
+  ],
+  "docs": [
+    "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html",
+    "https://shieldcraft-ai.com/docs/policies/encryption"
+  ],
+  "hcl_completeness": 0.85
+}
+
+Clarification: hcl_completeness
+
+Confidence in the remediation depends on whether all required fields exist within the plan:
+
+1.0 → pure HCL fix with no external variables needed.
+
+<1.0 → remediation requires info from variables/modules.
+
+0.0 → insufficient data to produce a patch.
+
+New: data_taint + taint_explanation
+
+Added to resource_details:
+
+"data_taint": "variable_source",
+"taint_explanation": "KMS Key ID inherited from variable 'kms_key_id' in module 'data_lake/main'"
+
+
+This tells the engineer where the fix belongs (module vs direct resource).
+
+IV. Contextual CLI Modes
+A. Diff Mode
+
+vectorscan --diff tfplan.json
+
+Shows only changed attributes.
+Adds a `plan_diff` block to JSON output (summary counts + per-resource attribute deltas) and appends a deterministic “Plan Diff Summary” after the CLI banner. Compatible with `--json --explain` so narratives reference the same diff-scoped data.
+
+B. Explain Mode
+
+vectorscan --explain tfplan.json
+
+Explains:
+
+what the plan is doing
+
+high-risk resources
+
+policy rationale
+
+recommended guard conditions
+
+C. Resource-Level Drilldown
+
+vectorscan --resource aws_db_instance.prod tfplan.json
+
+Filters violations & metadata to a single resource.
+
+D. Interactive TUI (Future)
+
+vectorscan --tui tfplan.json
+
+Terminal UI explorer (v1.1+).
+
+V. Plan Metadata & Streaming I/O Strategy
+1. Plan Metadata Contract
+
+VectorScan extracts a stable metadata block:
+
+"plan_metadata": {
+  "resource_count": 148,
+  "module_count": 4,
+  "providers": ["aws"],
+  "adds": 12,
+  "changes": 35,
+  "destroys": 2,
+  "resources_by_type": {
+    "aws_s3_bucket": 4,
+    "aws_db_instance": 2
+  },
+  "exceeds_threshold": false,
+  "file_size_mb": 28.3
+}
+
+2. Large-File Performance Requirements
+
+Terraform plans for >10k resources can exceed 50MB and sometimes hundreds of MB.
+
+Streaming I/O Contract
+
+VectorScan MUST:
+
+use iterative/streaming JSON parsing
+(e.g., ijson or equivalent iterators)
+
+never load the full plan into memory at once
+
+process resource_changes[] chunk-by-chunk
+
+support multi-GB plan files without failure
+
+Performance SLO
+
+<1k resources → ≤200ms
+
+<10k resources → ≤2s
+
+≤1.5GB memory usage for multi-GB plan
+If limits exceeded:
+
+"exceeds_threshold": true
+
+VI. Strategic Funnel Features
+1. VectorGuard Preview Mode
+
+vectorscan --preview-vectorguard tfplan.json
+
+"preview_generated": true,
+"preview_policies": [
+  {"id": "P-SEC-002", "summary": "IAM roles would fail due to excessive permissions"},
+  {"id": "P-AUD-001", "summary": "CloudTrail encryption enforcement would fail"}
+]
+
+Preview Mode Contract
+
+NEVER executes paid policy logic.
+
+Uses the preview manifest bundled with VectorScan.
+
+Includes "preview_generated": true.
+
+Exit code 10.
+
+Preview manifest is signed.
+
+VII. Enterprise & CI/CD Controls
+GitHub Action Mode
+
+vectorscan --gha tfplan.json
+
+Outputs:
+
+JSON only
+
+deterministic formatting
+
+no color
+
+stable keys
+
+Offline Mode
+
+VSCAN_OFFLINE=1 vectorscan tfplan.json
+
+Guarantees:
+
+no internet
+
+no DNS
+
+no telemetry
+
+no remote downloads
+
+Any network attempt → exit code 6 (CONFIG_ERROR).
+
+Severity Control
+vectorscan --severity medium
+vectorscan --fail-on-critical
+
+Security Grade (Expanded)
+
+Letter grade + exact severity counts:
+
+"security_grade": "B",
+"violation_count_by_severity": {
+  "CRITICAL": 1,
+  "HIGH": 0,
+  "MEDIUM": 3,
+  "LOW": 7
+}
+
+VIII. Policy Packs & Update/Sync Contract
+CLI Flags
+vectorscan --policies free
+vectorscan --policies finops
+vectorscan --policy P-SEC-001
+
+Policy Distribution & Sync Contract
+
+Each release must include:
+
+policy_pack_hash
+
+policy_source_url
+
+policy_version
+
+New CLI Flag
+
+vectorscan --policy-manifest
+
+Prints:
+
+{
+  "policy_version": "1.0.0",
+  "policy_pack_hash": "sha256-abc123…",
+  "policy_source_url": "https://github.com/shieldcraft-ai/policies",
+  "signed": true,
+  "signature": "base64..."
+}
+
+
+This provides an enterprise-grade audit trail.
+
+IX. Output Schema (Canonical Contract)
+
+VectorScan MUST emit:
+
+version
+schema_version
+policy_version
+policy_pack_hash
+policy_source_url
+plan_metadata
+resource_details
+data_taint
+taint_explanation
+violation_severity_summary
+violation_count_by_severity
+remediation
+hcl_completeness
+metrics
+environment
+exit_code
+compliance_score
+security_grade
+preview_generated (optional)
+preview_policies (optional)
+
+X. Exit Codes
+Code	Meaning
+0	PASS
+1	CLI Error
+2	Plan Parse Error
+3	Violations Found
+4	POLICY_LOAD_ERROR
+5	TERRAFORM_ERROR
+6	CONFIG_ERROR (incl. offline violation)
+10	PREVIEW_MODE_ONLY
+XI. Determinism Guarantees
+
+VectorScan MUST guarantee:
+
+deterministic field output
+
+deterministic array ordering
+
+deterministic key ordering
+
+deterministic severity scoring
+
+no randomness
+
+stable diff formatting
+
+timestamps only in non-strict mode
+
+Golden tests MUST enforce 1:1 snapshot stability.
+
+XII. Security Guarantees
+Manifest Requirements
+
+manifest.json MUST include:
+
+schema_version
+policy_version
+policy_pack_hash
+policy_source_url
+signature
+released_by
+release_time
+sha256_checksums
+
+
+SBOM must be included for every platform binary.
+
+XIII. Formal Test Specification
+✔ Remediation Engine Tests
+
+HCL validity
+
+completeness scores
+
+doc reference correctness
+
+golden snapshot matching
+
+✔ Preview Mode Safety Tests
+
+preview_generated = true
+
+exit 10
+
+no paid policy logic executed
+
+preview manifest verified
+
+✔ Resource Drilldown Tests
+
+Only the target resource appears in the output.
+
+✔ Offline Mode Tests
+
+Network calls → fail with exit code 6.
+
+✔ Diff Mode Tests
+
+Stable diff formatting (snapshot tests).
+
+✔ Explain Mode Tests
+
+Detects:
+
+changes
+
+high-risk resources
+
+applied policies
+
+rationale
+
+✔ Large-Plan Tests
+
+12k+ resources, streaming parser, memory <1.5GB.
+
+✔ GHA Mode Tests
+
+JSON-only, strict ordering.
+
+✔ Schema Validation
+
+All output validated against schema.json.
+
+XIV. Packaging Contract
+
+Packaging must:
+
+build all platform binaries
+
+generate SBOM
+
+generate manifest.json
+
+sign manifest
+
+compute checksums
+
+bundle preview manifest
+
+bundle LICENSE, README, policy docs
+
+XV. Roadmap (v1.1+)
+
+Interactive TUI
+
+Auto-patch generation
+
+HCL reverse module mapping
+
+AI-enhanced remediation
+
+Policy Pack Marketplace
+
+Final Statement
+
+VectorScan is the public face of GuardSuite and MUST demonstrate:
+
+instantly actionable remediation
+
+enterprise determinism
+
+credible policy governance
+
+frictionless developer usability
+
+world-class CI/CD integration
+
+strong funnel conversion
+
+This document defines the final, canonical implementation.

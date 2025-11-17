@@ -1,6 +1,71 @@
 VectorScan_Audit_Ledger:
-  timestamp: 2025-11-14T09:10Z
+  timestamp: 2024-01-02T00:00:00Z
   environment: tests
+  environment_metadata:
+    platform: linux
+    platform_release: unit-kernel
+    python_version: 3.11.test
+    python_implementation: CPython
+    terraform_version: not-run
+    terraform_source: not-run
+    strict_mode: false
+    offline_mode: false
+  plan_metadata:
+    resource_count: 1
+    module_count: 1
+    resource_types:
+      aws_rds_cluster: 1
+    providers:
+      - aws
+    modules:
+      root: root
+      with_resources: 1
+      child_module_count: 0
+      has_child_modules: false
+    change_summary:
+      adds: 1
+      changes: 0
+      destroys: 0
+    resources_by_type:
+      aws_iam_policy:
+        planned: 0
+        adds: 1
+        changes: 0
+        destroys: 0
+      aws_rds_cluster:
+        planned: 1
+        adds: 0
+        changes: 0
+        destroys: 0
+    file_size_mb: 0.000957
+    file_size_bytes: 957
+    parse_duration_ms: 123
+    exceeds_threshold: false
+    plan_slo:
+      observed:
+        resource_count: 1
+        parse_duration_ms: 123
+        file_size_bytes: 957
+      thresholds:
+        fast_path:
+          max_resources: 1000
+          max_parse_ms: 200
+        large_plan:
+          max_resources: 10000
+          max_parse_ms: 2000
+        file_size_limit_bytes: 1500000000
+      active_window: fast_path
+      breach_reason: null
+  vectorscan_version: 0.1.0
+  policy_version: 1.0.0
+  schema_version: 1.2.0
+  policy_pack_hash: 126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c
+   policy_errors: []
+   violation_severity_summary:
+    critical: 0
+    high: 0
+    medium: 0
+    low: 0
   encryption: PASS
   iam: PASS
   iam_drift: FAIL
@@ -8,6 +73,7 @@ VectorScan_Audit_Ledger:
   tagging: PASS
   audit_status: NON_COMPLIANT
   overall_score: 80/100
+  scan_duration_ms: 123
   iam_drift_evidence:
   - resource: aws_iam_policy.app_policy
     risky_additions:

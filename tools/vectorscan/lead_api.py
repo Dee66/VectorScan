@@ -16,17 +16,42 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
-from typing import Any, Optional
+from typing import Dict, Optional
 from pathlib import Path
 import time, json, hashlib, os
 
 app = FastAPI(title="VectorScan Lead API", version="0.1.0")
 
 
+class ResourceDetailsModel(BaseModel):
+    address: Optional[str] = None
+    type: Optional[str] = None
+    name: Optional[str] = None
+    module_path: Optional[str] = None
+    data_taint: Optional[str] = None
+    taint_explanation: Optional[str] = None
+
+
+class RemediationModel(BaseModel):
+    summary: Optional[str] = None
+    hcl_examples: list[str] = Field(default_factory=list)
+    docs: list[str] = Field(default_factory=list)
+    hcl_completeness: Optional[float] = None
+
+
 class ViolationModel(BaseModel):
     policy_id: str
     message: str
-    resource: str | None = None
+    resource: Optional[str] = None
+    policy_name: Optional[str] = None
+    severity: Optional[str] = None
+    resource_details: Optional[ResourceDetailsModel] = None
+    remediation: Optional[RemediationModel] = None
+
+
+class PolicyErrorModel(BaseModel):
+    policy: str
+    error: str
 
 
 class ResultModel(BaseModel):
@@ -35,10 +60,16 @@ class ResultModel(BaseModel):
     # Original CLI output (list of strings)
     violations: list[str] = Field(default_factory=list)
     # Optional structured violations
-    violations_struct: list[ViolationModel] | None = None
+    violations_struct: Optional[list[ViolationModel]] = None
+    policy_errors: list[PolicyErrorModel] = Field(default_factory=list)
+    violation_severity_summary: Dict[str, int] = Field(default_factory=dict)
     counts: dict[str, int] = Field(default_factory=dict)
     checks: list[str] = Field(default_factory=list)
     vectorscan_version: Optional[str] = None
+    policy_version: Optional[str] = None
+    schema_version: Optional[str] = None
+    policy_pack_hash: Optional[str] = None
+    scan_duration_ms: Optional[int] = None
 
 
 class LeadModel(BaseModel):
@@ -60,7 +91,8 @@ def save_payload(payload: dict) -> Path:
 
 @app.post("/lead")
 async def post_lead(lead: LeadModel):
-    payload = lead.dict()
+    # Use Pydantic v2 API to avoid deprecation warnings
+    payload = lead.model_dump()
     try:
         out = save_payload(payload)
         return {"ok": True, "stored": str(out)}

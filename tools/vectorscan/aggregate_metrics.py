@@ -22,6 +22,7 @@ DEFAULT_GLOBS = [
     "vectorscan-*.json",
     str(Path("tools")/"vectorscan"/"captures"/"*.json"),
 ]
+SEVERITY_LEVELS = ("critical", "high", "medium", "low")
 
 
 def load_json(path: Path) -> Any:
@@ -57,6 +58,8 @@ def main(argv: List[str] | None = None) -> int:
     total_pass = 0
     total_fail = 0
     counts_by_policy: Dict[str, int] = {}
+    severity_totals: Dict[str, int] = {level: 0 for level in SEVERITY_LEVELS}
+    duration_values: List[int] = []
 
     for f in files:
         obj = load_json(f)
@@ -74,6 +77,18 @@ def main(argv: List[str] | None = None) -> int:
             if isinstance(v, str) and len(v) >= 10 and v[0] == "P" and ":" in v:
                 policy = v.split(":", 1)[0].strip()
                 counts_by_policy[policy] = counts_by_policy.get(policy, 0) + 1
+        severity_summary = res.get("violation_severity_summary") or {}
+        for level in SEVERITY_LEVELS:
+            try:
+                severity_totals[level] += int(severity_summary.get(level, 0) or 0)
+            except (TypeError, ValueError):
+                continue
+        try:
+            duration = int(res.get("metrics", {}).get("scan_duration_ms", 0))
+            if duration >= 0:
+                duration_values.append(duration)
+        except (TypeError, ValueError):
+            pass
 
     # Print summary
     print("VectorScan Metrics Summary")
@@ -83,6 +98,12 @@ def main(argv: List[str] | None = None) -> int:
     print("Violations by Policy:")
     for k in sorted(counts_by_policy.keys()):
         print(f" - {k}: {counts_by_policy[k]}")
+    print("Severity Totals:")
+    for level in SEVERITY_LEVELS:
+        print(f" - {level}: {severity_totals[level]}")
+    if duration_values:
+        avg_duration = sum(duration_values) / len(duration_values)
+        print(f"Average Scan Duration: {avg_duration:.1f} ms")
 
     if ns.out:
         outp = {
@@ -90,6 +111,13 @@ def main(argv: List[str] | None = None) -> int:
             "pass": total_pass,
             "fail": total_fail,
             "violations_by_policy": counts_by_policy,
+            "violation_severity_totals": severity_totals,
+            "scan_duration_ms": {
+                "count": len(duration_values),
+                "avg": (sum(duration_values) / len(duration_values)) if duration_values else None,
+                "min": min(duration_values) if duration_values else None,
+                "max": max(duration_values) if duration_values else None,
+            },
         }
         Path(ns.out).write_text(json.dumps(outp, indent=2), encoding="utf-8")
         print(f"\nWrote metrics JSON to {ns.out}")

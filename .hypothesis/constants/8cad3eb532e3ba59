@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/policies/fin/tagging.py
+# hypothesis_version: 6.147.0
+
+['<unnamed>', 'Mandatory Tagging', 'P-FIN-001', 'finops', 'high', 'name', 'tags', 'type', 'values']

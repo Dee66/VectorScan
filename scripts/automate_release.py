@@ -45,6 +45,17 @@ def which(cmd: str) -> str | None:
     return shutil.which(cmd)
 
 
+def default_user_bin() -> Path:
+    override = os.environ.get("VSCAN_USER_BIN")
+    if override:
+        return Path(override).expanduser()
+    home_env = os.environ.get("HOME")
+    if home_env:
+        return Path(home_env).expanduser() / ".local" / "bin"
+    # Fallback to a repo-local bin directory when HOME is unavailable
+    return (REPO_ROOT / ".vectorscan-user-bin").resolve()
+
+
 def run(cmd: list[str], cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess:
     print(f"$ {' '.join(cmd)}")
     return subprocess.run(cmd, cwd=str(cwd) if cwd else None, check=check)
@@ -82,7 +93,7 @@ def ensure_syft(bin_dir: Path | None = None, auto_install: bool = False) -> tupl
         return False, None
 
     # Attempt user-space install
-    target = bin_dir or Path.home() / ".local" / "bin"
+    target = bin_dir or default_user_bin()
     target.mkdir(parents=True, exist_ok=True)
     install_cmd = [
         "bash", "-lc",
@@ -205,7 +216,7 @@ def ensure_cosign(bin_dir: Path | None = None, auto_install: bool = False) -> tu
         return True, Path(existing)
     if not auto_install:
         return False, None
-    target = bin_dir or Path.home() / ".local" / "bin"
+    target = bin_dir or default_user_bin()
     target.mkdir(parents=True, exist_ok=True)
     url = "https://github.com/sigstore/cosign/releases/download/v2.2.4/cosign-linux-amd64"
     dest = target / "cosign"

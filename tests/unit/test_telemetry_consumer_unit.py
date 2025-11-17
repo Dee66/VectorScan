@@ -56,7 +56,8 @@ def test_telemetry_consumer_idempotent_append():
         updated_metrics = tc._extract_metrics(updated_summary)
         tc.write_csv(csv_path, updated_summary, updated_metrics, mode="append")
         rows3 = list(csv.reader(csv_path.open("r", encoding="utf-8")))
-        assert len(rows3) == 3  # header + 2 data rows
+    assert len(rows3) == 3  # header + 2 data rows
+    assert rows3[1][-2:] == [tc.schema_header("summary")["schema_version"], tc.schema_header("summary")["schema_kind"]]
 
 
 def test_telemetry_consumer_overwrite_mode():
@@ -90,5 +91,6 @@ def test_telemetry_consumer_overwrite_mode():
         # Overwrite should replace with a single row (latest snapshot only)
         tc.write_csv(csv_path, summary_b, metrics_b, mode="overwrite")
         rows2 = list(csv.reader(csv_path.open("r", encoding="utf-8")))
-        assert len(rows2) == 2  # header + 1 data row
-        assert rows2[1][0] == summary_b["generated_at"]
+    assert len(rows2) == 2  # header + 1 data row
+    assert rows2[1][0] == summary_b["generated_at"]
+    assert rows2[1][-2:] == [tc.schema_header("summary")["schema_version"], tc.schema_header("summary")["schema_kind"]]

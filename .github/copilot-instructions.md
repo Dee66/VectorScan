@@ -56,9 +56,10 @@ uvicorn tools.vectorscan.lead_api:app --host 0.0.0.0 --port 8080
 ## Codebase Conventions
 
 ### Policy Implementation Pattern
-Each policy check follows this structure in `vectorscan.py`:
+Each policy check now lives in the pluggable registry under `tools/vectorscan/policies/`:
 - Resource iterator: `iter_resources()` traverses nested Terraform modules
-- Policy function: `check_encryption()`, `check_tags()` return violation lists
+- Policy plugin: classes like `sec.encryption.EncryptionPolicy` and `fin.tagging.TaggingPolicy` subclass `BasePolicy`, register via `@register_policy`, and expose `evaluate()`.
+- Legacy helpers (`check_encryption`, `check_tags`) remain as thin wrappers for backwards compatibility.
 - IAM drift analysis: Separate analysis for risky IAM policy additions
 
 ### Test Data Structure
@@ -71,9 +72,10 @@ Critical configuration through env vars (see `vectorscan.py`):
 - `VSCAN_TERRAFORM_BIN`: Override Terraform binary path
 - `VSCAN_LEAD_ENDPOINT`: HTTP endpoint for lead capture POST
 - `VSCAN_IAM_DRIFT_PENALTY`: Score penalty for IAM drift (0-100)
+- `VSCAN_OFFLINE`: When truthy (1/true/yes/on) disables telemetry scripts, lead capture, Terraform auto-downloads, and StatsD so air-gapped runs stay deterministic.
 
 ### Output Format Conventions
-- CLI exit codes: 0=PASS, 2=invalid input, 3=FAIL, 4=terraform test fail, 5=terraform error
+- CLI exit codes: 0=PASS, 2=invalid input, 3=FAIL, 4=policy pack load error, 5=terraform test fail, 6=terraform error
 - JSON output includes: `status`, `violations`, `metrics`, `iam_drift_report`, optional `terraform_tests`
 - Audit ledger (YAML): Structured compliance report with evidence arrays
 

@@ -4,10 +4,23 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+from tools.vectorscan.time_utils import deterministic_isoformat
+from tools.vectorscan.telemetry_schema import schema_header
+from tools.vectorscan.env_flags import is_offline
+
+try:
+    from tools.vectorscan.secret_scrubber import scrub_structure
+except ModuleNotFoundError:  # pragma: no cover
+    import sys
+
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from tools.vectorscan.secret_scrubber import scrub_structure
 
 
 def parse_args() -> argparse.Namespace:
@@ -74,22 +87,69 @@ def status_counts(entries: List[Dict[str, Any]]) -> Dict[str, int]:
     return counts
 
 
+def _aggregate_policy_errors(entries: List[Dict[str, Any]]) -> Tuple[Dict[str, int], int]:
+    counts: Dict[str, int] = {}
+    total = 0
+    for entry in entries:
+        for err in entry.get("policy_errors") or []:
+            policy = (err.get("policy") or "unknown").strip() or "unknown"
+            counts[policy] = counts.get(policy, 0) + 1
+            total += 1
+    return counts, total
+
+
+SEVERITY_LEVELS = ("critical", "high", "medium", "low")
+
+
+def _aggregate_severity(entries: List[Dict[str, Any]]) -> Tuple[Dict[str, int], Dict[str, int]]:
+    totals: Dict[str, int] = {level: 0 for level in SEVERITY_LEVELS}
+    last: Dict[str, int] = {level: 0 for level in SEVERITY_LEVELS}
+    for entry in entries:
+        summary = entry.get("violation_severity_summary") or {}
+        for level in SEVERITY_LEVELS:
+            value = summary.get(level, 0) or 0
+            try:
+                ivalue = int(value)
+            except (TypeError, ValueError):
+                ivalue = 0
+            totals[level] += ivalue
+        last = {level: int((summary.get(level, 0) or 0)) for level in SEVERITY_LEVELS}
+    return totals, last
+
+
 def build_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
     if not entries:
-        return {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+        summary = {
+            "generated_at": deterministic_isoformat(),
             "entries": 0,
             "note": "No metrics entries collected yet.",
+            "source_schema_versions": [],
+            "source_policy_versions": [],
+            "source_policy_pack_hashes": [],
+            "policy_error_counts": {},
+            "policy_error_events": 0,
+            "policy_errors_latest": [],
+            "violation_severity_totals": {level: 0 for level in SEVERITY_LEVELS},
+            "violation_severity_last": {level: 0 for level in SEVERITY_LEVELS},
+            "scan_duration_ms": summarize([]),
         }
+        header = schema_header("summary")
+        summary["telemetry_schema_version"] = header["schema_version"]
+        summary["telemetry_schema_kind"] = header["schema_kind"]
+        return summary
     compliance_scores = [safe_float(entry.get("compliance_score")) for entry in entries]
     network_scores = [safe_float(entry.get("network_exposure_score")) for entry in entries]
     open_sgs = [safe_float(entry.get("open_sg_count")) for entry in entries]
     iam_risky = [safe_float(entry.get("iam_risky_actions")) for entry in entries]
     drift_counts = [safe_float(entry.get("iam_drift_risky_change_count")) for entry in entries]
+    scan_durations = [safe_float(entry.get("scan_duration_ms")) for entry in entries]
+    policy_error_counts, total_policy_errors = _aggregate_policy_errors(entries)
 
     last_entry = entries[-1]
+    latest_policy_errors = last_entry.get("policy_errors") or []
+    severity_totals, severity_last = _aggregate_severity(entries)
     summary = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": deterministic_isoformat(),
         "entries": len(entries),
         "status_counts": status_counts(entries),
         "compliance_score": summarize(compliance_scores),
@@ -97,31 +157,52 @@ def build_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
         "open_sg_count": summarize(open_sgs),
         "iam_risky_actions": summarize(iam_risky),
         "iam_drift_risky_change_count": summarize(drift_counts),
+        "scan_duration_ms": summarize(scan_durations),
         "last_entry": {
             "timestamp": last_entry.get("timestamp"),
             "plan": last_entry.get("plan"),
             "status": last_entry.get("status"),
             "compliance_score": safe_float(last_entry.get("compliance_score")),
             "network_exposure_score": safe_float(last_entry.get("network_exposure_score")),
+            "policy_version": last_entry.get("policy_version"),
+            "schema_version": last_entry.get("schema_version"),
+            "policy_pack_hash": last_entry.get("policy_pack_hash"),
+            "policy_errors": latest_policy_errors,
+            "policy_error_count": len(latest_policy_errors),
+            "violation_severity_summary": severity_last,
+            "scan_duration_ms": safe_float(last_entry.get("scan_duration_ms")),
         },
+        "policy_error_counts": policy_error_counts,
+        "policy_error_events": total_policy_errors,
+        "policy_errors_latest": latest_policy_errors,
+        "violation_severity_totals": severity_totals,
+        "violation_severity_last": severity_last,
     }
+    summary["policy_version"] = last_entry.get("policy_version")
+    summary["schema_version"] = last_entry.get("schema_version")
+    summary["policy_pack_hash"] = last_entry.get("policy_pack_hash")
     drift_failures = status_counts(entries).get("FAIL", 0)
     summary["drift_failure_rate"] = round(drift_failures / len(entries), 2)
+    summary["source_schema_versions"] = sorted({entry.get("schema_version", "unknown") for entry in entries})
+    summary["source_policy_versions"] = sorted({entry.get("policy_version", "unknown") for entry in entries})
+    summary["source_policy_pack_hashes"] = sorted({entry.get("policy_pack_hash", "unknown") for entry in entries})
+    header = schema_header("summary")
+    summary["telemetry_schema_version"] = header["schema_version"]
+    summary["telemetry_schema_kind"] = header["schema_kind"]
     return summary
-
-
 def persist_summary(summary: Dict[str, Any], target: Path) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("w", encoding="utf-8") as fh:
         json.dump(summary, fh, indent=2)
         fh.write("\n")
     return target
-
-
 def main() -> int:
+    if is_offline():
+        print("Offline mode enabled; skipping metrics summary generation.")
+        return 0
     args = parse_args()
     entries = load_log_entries(args.log_file)
-    summary = build_summary(entries)
+    summary = scrub_structure(build_summary(entries))
     if entries:
         target = persist_summary(summary, args.summary_file)
         print(f"Summary written to {target}")

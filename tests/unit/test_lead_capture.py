@@ -270,7 +270,6 @@ def test_lead_capture_with_both_flags(tmp_path):
 def test_lead_capture_empty_plan(tmp_path):
     empty = tmp_path / "empty.json"
     empty.write_text("")
-    import subprocess
     import sys
 
     result = subprocess.run(
@@ -285,7 +284,6 @@ def test_lead_capture_missing_planned_values(tmp_path):
     plan: Dict[str, Any] = {"foo": "bar"}
     p = tmp_path / "missing-planned-values.json"
     p.write_text(json.dumps(plan))
-    import subprocess
     import sys
 
     result = subprocess.run(
@@ -436,7 +434,6 @@ def test_lead_capture_disabled(tmp_path: Path):
 # Edge/unhappy path: missing plan file
 def test_lead_capture_missing_plan(tmp_path: Path):
     missing_path = tmp_path / "no-such-plan.json"
-    import subprocess
     import sys
 
     result = subprocess.run(
@@ -450,7 +447,6 @@ def test_lead_capture_missing_plan(tmp_path: Path):
 def test_lead_capture_invalid_json(tmp_path: Path):
     bad = tmp_path / "bad.json"
     bad.write_text("not json")
-    import subprocess
     import sys
 
     result = subprocess.run(
@@ -488,7 +484,6 @@ def test_lead_capture_fail_plan(tmp_path: Path):
     }
     p = tmp_path / "fail-plan.json"
     p.write_text(json.dumps(plan))
-    import subprocess
     import sys
 
     result = subprocess.run(

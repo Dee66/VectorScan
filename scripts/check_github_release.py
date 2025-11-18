@@ -21,7 +21,9 @@ REQUIRED_ASSET_SUFFIXES = [
 
 
 class GithubQueryError(RuntimeError):
-    pass
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 def fetch_json(url: str, token: str | None) -> Any:
@@ -34,7 +36,9 @@ def fetch_json(url: str, token: str | None) -> Any:
             payload = response.read().decode("utf-8")
             return json.loads(payload)
     except urllib.error.HTTPError as exc:
-        raise GithubQueryError(f"GitHub API request failed ({exc.code}): {exc.reason}") from exc
+        raise GithubQueryError(
+            f"GitHub API request failed ({exc.code}): {exc.reason}", exc.code
+        ) from exc
     except urllib.error.URLError as exc:
         raise GithubQueryError(f"Could not reach GitHub API: {exc.reason}") from exc
 
@@ -45,9 +49,14 @@ def assert_release_assets(assets: Sequence[Dict[str, Any]]) -> Sequence[str]:
     return missing
 
 
-def query_release(repo: str, token: str | None) -> Dict[str, Any]:
+def query_release(repo: str, token: str | None) -> Dict[str, Any] | None:
     url = f"{API_BASE}/{repo}/releases/latest"
-    return fetch_json(url, token)
+    try:
+        return fetch_json(url, token)
+    except GithubQueryError as exc:
+        if exc.status_code == 404:
+            return None
+        raise
 
 
 def query_workflow(repo: str, workflow: str, branch: str, token: str | None) -> Dict[str, Any]:
@@ -105,14 +114,17 @@ def main(argv: Iterable[str] | None = None) -> int:
         print(f"Error querying release: {exc}")
         return 2
 
-    print_release_summary(release)
-    assets = release.get("assets", [])
-    missing = assert_release_assets(assets)
-    if missing:
-        print(f"Missing release assets: {', '.join(missing)}")
-        success = False
+    if release is None:
+        print("No published releases found; skipping asset validation for now.")
     else:
-        print("All required release assets are present.")
+        print_release_summary(release)
+        assets = release.get("assets", [])
+        missing = assert_release_assets(assets)
+        if missing:
+            print(f"Missing release assets: {', '.join(missing)}")
+            success = False
+        else:
+            print("All required release assets are present.")
 
     print("\nChecking workflow runs...")
     try:

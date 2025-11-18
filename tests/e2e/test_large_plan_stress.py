@@ -45,14 +45,14 @@ def test_large_plan_over_five_mb(tmp_path, capsys):
     assert plan.stat().st_size >= 5 * 1024 * 1024
 
     capsys.readouterr()
-    code_json = vectorscan.main([str(plan), "--json"])  # type: ignore[arg-type]
+    code_json = vectorscan.main([str(plan), "--json"])
     out_json = capsys.readouterr().out
     data = json.loads(out_json)
     assert code_json == 0
     assert data["status"] == "PASS"
 
     capsys.readouterr()
-    code_text = vectorscan.main([str(plan)])  # type: ignore[arg-type]
+    code_text = vectorscan.main([str(plan)])
     human = _strip_ansi(capsys.readouterr().out)
     assert code_text == 0
     assert "PASS - tfplan.json - VectorScan checks" in human

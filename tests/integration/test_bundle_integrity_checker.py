@@ -29,7 +29,7 @@ def _build_bundle(tmp_path, monkeypatch, bundle_name="vectorscan-free-int-test")
     spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(PKG_BUILDER))
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    spec.loader.exec_module(mod)
 
     monkeypatch.setattr(mod, "DIST", tmp_path)
     monkeypatch.setattr(mod, "load_vectorscan_module", lambda: None)

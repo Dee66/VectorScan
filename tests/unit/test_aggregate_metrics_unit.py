@@ -1,8 +1,12 @@
 import random
 import tempfile
+from typing import Callable, cast
 
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
+
+FakeGlob = Callable[[str], list[str]]
+FakePrint = Callable[..., None]
 
 
 # Property-based test: load_json with random valid/invalid JSON and encodings
@@ -70,12 +74,12 @@ def test_main_stress_mixed(tmp_path):
         )
         files.append(f)
     orig_glob = glob.glob
-    glob.glob = lambda g: [str(f) for f in files]
+    glob.glob = cast(FakeGlob, lambda g: [str(f) for f in files])
     import builtins
 
     out = []
     orig_print = builtins.print
-    builtins.print = lambda *a, **k: out.append(" ".join(map(str, a)))
+    builtins.print = cast(FakePrint, lambda *a, **k: out.append(" ".join(map(str, a))))
     code = main(["--glob", str(files[0])])
     builtins.print = orig_print
     glob.glob = orig_glob
@@ -97,12 +101,12 @@ def test_main_unreadable_files(tmp_path):
         f.chmod(0o000)
         files.append(f)
     orig_glob = glob.glob
-    glob.glob = lambda g: [str(f) for f in files]
+    glob.glob = cast(FakeGlob, lambda g: [str(f) for f in files])
     import builtins
 
     out = []
     orig_print = builtins.print
-    builtins.print = lambda *a, **k: out.append(" ".join(map(str, a)))
+    builtins.print = cast(FakePrint, lambda *a, **k: out.append(" ".join(map(str, a))))
     try:
         code = main(["--glob", str(files[0])])
     finally:
@@ -123,12 +127,12 @@ def test_main_deeply_nested(tmp_path):
     deep = {"result": {"status": "PASS", "violations": [], "extra": {"nested": {"level": 5}}}}
     f.write_text(json.dumps(deep), encoding="utf-8")
     orig_glob = glob.glob
-    glob.glob = lambda g: [str(f)]
+    glob.glob = cast(FakeGlob, lambda g: [str(f)])
     import builtins
 
     out = []
     orig_print = builtins.print
-    builtins.print = lambda *a, **k: out.append(" ".join(map(str, a)))
+    builtins.print = cast(FakePrint, lambda *a, **k: out.append(" ".join(map(str, a))))
     code = main(["--glob", str(f)])
     builtins.print = orig_print
     glob.glob = orig_glob
@@ -199,12 +203,12 @@ def test_main_mixed_files(tmp_path):
     import glob
 
     orig_glob = glob.glob
-    glob.glob = lambda g: [str(f1), str(f2), str(f3)]
+    glob.glob = cast(FakeGlob, lambda g: [str(f1), str(f2), str(f3)])
     import builtins
 
     out = []
     orig_print = builtins.print
-    builtins.print = lambda *a, **k: out.append(" ".join(map(str, a)))
+    builtins.print = cast(FakePrint, lambda *a, **k: out.append(" ".join(map(str, a))))
     code = main(["--glob", str(f1)])
     builtins.print = orig_print
     glob.glob = orig_glob
@@ -282,12 +286,12 @@ def test_main_summary(tmp_path):
     import glob
 
     orig_glob = glob.glob
-    glob.glob = lambda g: [str(f1), str(f2)]
+    glob.glob = cast(FakeGlob, lambda g: [str(f1), str(f2)])
     import builtins
 
     out = []
     orig_print = builtins.print
-    builtins.print = lambda *a, **k: out.append(" ".join(map(str, a)))
+    builtins.print = cast(FakePrint, lambda *a, **k: out.append(" ".join(map(str, a))))
     code = main(["--glob", str(f1)])
     builtins.print = orig_print
     glob.glob = orig_glob
@@ -301,12 +305,12 @@ def test_main_no_files(tmp_path):
     import glob
 
     orig_glob = glob.glob
-    glob.glob = lambda g: []
+    glob.glob = cast(FakeGlob, lambda g: [])
     import builtins
 
     out = []
     orig_print = builtins.print
-    builtins.print = lambda *a, **k: out.append(" ".join(map(str, a)))
+    builtins.print = cast(FakePrint, lambda *a, **k: out.append(" ".join(map(str, a))))
     code = main(["--glob", "nonexistent.json"])
     builtins.print = orig_print
     glob.glob = orig_glob
@@ -322,11 +326,11 @@ def test_main_out_file(tmp_path):
     import glob
 
     orig_glob = glob.glob
-    glob.glob = lambda g: [str(f1)]
+    glob.glob = cast(FakeGlob, lambda g: [str(f1)])
     import builtins
 
     orig_print = builtins.print
-    builtins.print = lambda *a, **k: None
+    builtins.print = cast(FakePrint, lambda *a, **k: None)
     result_code = main(["--glob", str(f1), "--out", str(out_file)])
     builtins.print = orig_print
     glob.glob = orig_glob

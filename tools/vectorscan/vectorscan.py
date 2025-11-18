@@ -77,8 +77,8 @@ from tools.vectorscan.policy_manifest import (
     load_policy_manifest,
 )
 from tools.vectorscan.policy_pack import PolicyPackError, policy_pack_hash
-from tools.vectorscan.python_compat import ensure_supported_python, UnsupportedPythonVersion
 from tools.vectorscan.preview import PreviewManifestError, load_preview_manifest
+from tools.vectorscan.python_compat import UnsupportedPythonVersion, ensure_supported_python
 from tools.vectorscan.reports import (
     build_explanation,
     build_violation_structs,

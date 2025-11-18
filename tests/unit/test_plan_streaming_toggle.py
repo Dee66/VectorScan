@@ -4,7 +4,6 @@ from pathlib import Path
 from tools.vectorscan import plan_utils
 from tools.vectorscan.plan_stream import ModuleStats, PlanStreamResult
 
-
 _DEF_PLAN = {
     "format_version": "1.0",
     "terraform_version": "1.6.0",

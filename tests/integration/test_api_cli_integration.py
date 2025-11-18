@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Any, Callable, Optional, cast
 
 # Ensure repository root is importable for direct module imports like `lead_api`
 _ROOT = Path(__file__).resolve().parents[2]
@@ -26,8 +27,13 @@ class DummyResp:
         return False
 
 
+UrlOpen = Callable[..., DummyResp]
+_fake_urlopen_payload: Optional[dict[str, Any]] = None
+
+
 def fake_urlopen(req, timeout=1.0):  # captures request body for assertions
-    fake_urlopen.last = json.loads(req.data.decode("utf-8"))  # type: ignore[attr-defined]
+    global _fake_urlopen_payload
+    _fake_urlopen_payload = json.loads(req.data.decode("utf-8"))
     return DummyResp(201)
 
 
@@ -46,21 +52,22 @@ def test_cli_to_api_lead_capture(tmp_path, monkeypatch):
     import urllib.request as ur
 
     original = ur.urlopen
-    ur.urlopen = fake_urlopen  # type: ignore
-    fake_urlopen.last = None
+    ur.urlopen = cast(UrlOpen, fake_urlopen)
+    global _fake_urlopen_payload
+    _fake_urlopen_payload = None
     try:
         import vectorscan
 
-        code = vectorscan.main([str(plan_path), "--lead-capture", "--email", "int@example.com"])  # type: ignore
+        code = vectorscan.main([str(plan_path), "--lead-capture", "--email", "int@example.com"])
     finally:
         ur.urlopen = original
         os.environ.pop("LEAD_CAPTURE_ENABLED", None)
         os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
 
     assert code == 0
-    assert fake_urlopen.last is not None
-    assert fake_urlopen.last["email"] == "int@example.com"
-    assert fake_urlopen.last["result"]["status"] in {"PASS", "FAIL"}
+    assert _fake_urlopen_payload is not None
+    assert _fake_urlopen_payload["email"] == "int@example.com"
+    assert _fake_urlopen_payload["result"]["status"] in {"PASS", "FAIL"}
 
 
 def test_api_rate_limiting(monkeypatch):

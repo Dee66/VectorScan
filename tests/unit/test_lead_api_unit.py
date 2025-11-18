@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.vectorscan.lead_api import (  # type: ignore[attr-defined]
+from tools.vectorscan.lead_api import (
     _HITS,
     _WINDOW_SECONDS,
     LeadModel,
@@ -232,5 +232,5 @@ def test_token_auth_env(monkeypatch):
         return "ok"
 
     req = DummyRequest()
-    out = asyncio.run(token_auth_middleware(req, dummy_call_next))  # type: ignore[arg-type]
+    out = asyncio.run(token_auth_middleware(req, dummy_call_next))
     assert out == "ok"

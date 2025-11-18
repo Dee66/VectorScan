@@ -8,9 +8,9 @@ from pathlib import Path
 from statistics import mean
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from tools.vectorscan.time_utils import deterministic_isoformat
-from tools.vectorscan.telemetry_schema import schema_header
 from tools.vectorscan.env_flags import is_offline
+from tools.vectorscan.telemetry_schema import schema_header
+from tools.vectorscan.time_utils import deterministic_isoformat
 
 try:
     from tools.vectorscan.secret_scrubber import scrub_structure
@@ -212,19 +212,29 @@ def build_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
     summary["policy_pack_hash"] = last_entry.get("policy_pack_hash")
     drift_failures = status_counts(entries).get("FAIL", 0)
     summary["drift_failure_rate"] = round(drift_failures / len(entries), 2)
-    summary["source_schema_versions"] = sorted({entry.get("schema_version", "unknown") for entry in entries})
-    summary["source_policy_versions"] = sorted({entry.get("policy_version", "unknown") for entry in entries})
-    summary["source_policy_pack_hashes"] = sorted({entry.get("policy_pack_hash", "unknown") for entry in entries})
+    summary["source_schema_versions"] = sorted(
+        {entry.get("schema_version", "unknown") for entry in entries}
+    )
+    summary["source_policy_versions"] = sorted(
+        {entry.get("policy_version", "unknown") for entry in entries}
+    )
+    summary["source_policy_pack_hashes"] = sorted(
+        {entry.get("policy_pack_hash", "unknown") for entry in entries}
+    )
     header = schema_header("summary")
     summary["telemetry_schema_version"] = header["schema_version"]
     summary["telemetry_schema_kind"] = header["schema_kind"]
     return summary
+
+
 def persist_summary(summary: Dict[str, Any], target: Path) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("w", encoding="utf-8") as fh:
         json.dump(summary, fh, indent=2)
         fh.write("\n")
     return target
+
+
 def main() -> int:
     if is_offline():
         print("Offline mode enabled; skipping metrics summary generation.")

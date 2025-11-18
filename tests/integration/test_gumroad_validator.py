@@ -90,16 +90,18 @@ def test_validator_accepts_matching_bundles(tmp_path):
     gumroad.write_bytes(b"vectorscan bundle")
     expected = hashlib.sha256(release.read_bytes()).hexdigest()
 
-    result = _run_validator([
-        "--release-bundle",
-        str(release),
-        "--gumroad-bundle",
-        str(gumroad),
-        "--release-sha256",
-        expected,
-        "--gumroad-sha256",
-        expected,
-    ])
+    result = _run_validator(
+        [
+            "--release-bundle",
+            str(release),
+            "--gumroad-bundle",
+            str(gumroad),
+            "--release-sha256",
+            expected,
+            "--gumroad-sha256",
+            expected,
+        ]
+    )
 
     assert result.returncode == 0
     assert "bundle digests match" in result.stdout
@@ -112,12 +114,14 @@ def test_validator_rejects_mismatch(tmp_path):
     release.write_bytes(b"vectorscan bundle")
     gumroad.write_bytes(b"altered bundle")
 
-    result = _run_validator([
-        "--release-bundle",
-        str(release),
-        "--gumroad-bundle",
-        str(gumroad),
-    ])
+    result = _run_validator(
+        [
+            "--release-bundle",
+            str(release),
+            "--gumroad-bundle",
+            str(gumroad),
+        ]
+    )
 
     assert result.returncode == 3
     assert "bundles differ" in result.stderr
@@ -141,16 +145,19 @@ def test_validator_cosign_success(tmp_path):
     env = os.environ.copy()
     env["PATH"] = f"{stub_dir}:{env.get('PATH', '')}"
 
-    result = _run_validator([
-        "--release-bundle",
-        str(release),
-        "--gumroad-bundle",
-        str(gumroad),
-        "--public-key",
-        str(key_path),
-        "--signature",
-        str(signature),
-    ], env=env)
+    result = _run_validator(
+        [
+            "--release-bundle",
+            str(release),
+            "--gumroad-bundle",
+            str(gumroad),
+            "--public-key",
+            str(key_path),
+            "--signature",
+            str(signature),
+        ],
+        env=env,
+    )
 
     assert result.returncode == 0
     assert "cosign signature OK" in result.stdout
@@ -174,16 +181,19 @@ def test_validator_cosign_failure(tmp_path):
     env = os.environ.copy()
     env["PATH"] = f"{stub_dir}:{env.get('PATH', '')}"
 
-    result = _run_validator([
-        "--release-bundle",
-        str(release),
-        "--gumroad-bundle",
-        str(gumroad),
-        "--public-key",
-        str(key_path),
-        "--signature",
-        str(signature),
-    ], env=env)
+    result = _run_validator(
+        [
+            "--release-bundle",
+            str(release),
+            "--gumroad-bundle",
+            str(gumroad),
+            "--public-key",
+            str(key_path),
+            "--signature",
+            str(signature),
+        ],
+        env=env,
+    )
 
     assert result.returncode == 4
     assert "cosign verification failed" in result.stderr

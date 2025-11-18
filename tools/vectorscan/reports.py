@@ -1,4 +1,5 @@
 """Reporting and explanation helpers for the VectorScan CLI."""
+
 from __future__ import annotations
 
 import re
@@ -7,7 +8,6 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 from tools.vectorscan.constants import REMEDIATION_DOCS, SEVERITY_LEVELS
 from tools.vectorscan.plan_utils import _format_diff_display
 from tools.vectorscan.policies.common import REQUIRED_TAGS, is_nonempty_string
-
 
 _VIOLATION_RESOURCE_PATTERN = re.compile(r"(?P<rtype>[A-Za-z0-9_\.]+)\s+'(?P<name>[^']+)'")
 
@@ -28,7 +28,7 @@ def _parse_violation_record(violation: str) -> Dict[str, Optional[str]]:
         resource_type = match.group("rtype")
         resource_name = match.group("name")
         resource = f"{resource_type}.{resource_name}"
-        tail = remainder[match.end():].strip()
+        tail = remainder[match.end() :].strip()
         if tail:
             detail = tail
     return {
@@ -49,7 +49,12 @@ def _looks_like_variable_reference(value: Any) -> bool:
     if token.startswith("${") and token.endswith("}"):
         token = token[2:-1]
     token = token.strip()
-    return token.startswith("var.") or token.startswith("module.") or token.startswith("local.") or token.startswith("data.")
+    return (
+        token.startswith("var.")
+        or token.startswith("module.")
+        or token.startswith("local.")
+        or token.startswith("data.")
+    )
 
 
 def _module_path_from_address(address: Optional[str]) -> str:
@@ -90,7 +95,7 @@ def _build_encryption_example(resource: Optional[Dict[str, Any]]) -> str:
     return (
         f'resource "{r_type}" "{r_name}" {{\n'
         "  storage_encrypted = true\n"
-        "  kms_key_id       = \"<kms-key-arn>\"\n"
+        '  kms_key_id       = "<kms-key-arn>"\n'
         "}}"
     )
 
@@ -108,17 +113,25 @@ def _build_tagging_example(resource: Optional[Dict[str, Any]]) -> str:
     )
 
 
-def _infer_data_taint(policy_id: str, resource: Optional[Dict[str, Any]], parsed: Dict[str, Optional[str]]) -> Tuple[str, str]:
+def _infer_data_taint(
+    policy_id: str, resource: Optional[Dict[str, Any]], parsed: Dict[str, Optional[str]]
+) -> Tuple[str, str]:
     address = (resource or {}).get("address") or parsed.get("resource") or "resource"
     module_path = _module_path_from_address((resource or {}).get("address"))
     values = (resource or {}).get("values", {}) or {}
     if policy_id == "P-SEC-001":
         kms_value = values.get("kms_key_id")
         if _looks_like_variable_reference(kms_value):
-            return "variable_source", f"kms_key_id for {address} references {kms_value}; update the variable or module wiring."
+            return (
+                "variable_source",
+                f"kms_key_id for {address} references {kms_value}; update the variable or module wiring.",
+            )
         if not is_nonempty_string(kms_value):
             if module_path != "root":
-                return "module_source", f"kms_key_id missing inside {module_path}; extend module outputs/variables."
+                return (
+                    "module_source",
+                    f"kms_key_id missing inside {module_path}; extend module outputs/variables.",
+                )
             return "resource_body", f"Set kms_key_id directly on {address}."
         if values.get("storage_encrypted") is False:
             return "resource_body", f"storage_encrypted is false on {address}."
@@ -128,14 +141,19 @@ def _infer_data_taint(policy_id: str, resource: Optional[Dict[str, Any]], parsed
         if missing:
             missing_list = ", ".join(missing)
             if module_path != "root":
-                return "module_source", f"Tags {missing_list} missing within {module_path}; update module locals or variables."
+                return (
+                    "module_source",
+                    f"Tags {missing_list} missing within {module_path}; update module locals or variables.",
+                )
             return "resource_body", f"Tags {missing_list} missing on {address}."
         if tags:
             return "resource_body", f"Verify tag inheritance for {address}."
     return "unknown", f"No taint inference available for {address}."
 
 
-def _build_remediation_block(policy_id: str, resource: Optional[Dict[str, Any]], parsed: Dict[str, Optional[str]]) -> Dict[str, Any]:
+def _build_remediation_block(
+    policy_id: str, resource: Optional[Dict[str, Any]], parsed: Dict[str, Optional[str]]
+) -> Dict[str, Any]:
     address = (resource or {}).get("address") or parsed.get("resource") or "resource"
     values = (resource or {}).get("values") or {}
     docs = list(
@@ -168,7 +186,9 @@ def _build_remediation_block(policy_id: str, resource: Optional[Dict[str, Any]],
     }
 
 
-def _build_resource_details(resource: Optional[Dict[str, Any]], parsed: Dict[str, Optional[str]]) -> Dict[str, Any]:
+def _build_resource_details(
+    resource: Optional[Dict[str, Any]], parsed: Dict[str, Optional[str]]
+) -> Dict[str, Any]:
     address = (resource or {}).get("address") or parsed.get("resource")
     details = {
         "address": address,
@@ -182,7 +202,9 @@ def _build_resource_details(resource: Optional[Dict[str, Any]], parsed: Dict[str
     return details
 
 
-def _build_resource_lookup(resources: Sequence[Dict[str, Any]]) -> Dict[Tuple[str, str], Dict[str, Any]]:
+def _build_resource_lookup(
+    resources: Sequence[Dict[str, Any]],
+) -> Dict[Tuple[str, str], Dict[str, Any]]:
     lookup: Dict[Tuple[str, str], Dict[str, Any]] = {}
     for res in resources:
         r_type = res.get("type")
@@ -202,8 +224,6 @@ def build_violation_structs(
     lookup = _build_resource_lookup(resources)
     structured: List[Dict[str, Any]] = []
     for violation in violations:
-        if not isinstance(violation, str):
-            continue
         parsed = _parse_violation_record(violation)
         resource = None
         r_type = parsed.get("resource_type")
@@ -248,7 +268,11 @@ def build_explanation(
     provider_label = ", ".join(sorted(providers)) if providers else "unspecified"
     resource_word = "resource" if resource_count == 1 else "resources"
     module_word = "module" if module_count == 1 else "modules"
-    child_phrase = "no child modules" if child_module_count == 0 else f"{child_module_count} child {'module' if child_module_count == 1 else 'modules'}"
+    child_phrase = (
+        "no child modules"
+        if child_module_count == 0
+        else f"{child_module_count} child {'module' if child_module_count == 1 else 'modules'}"
+    )
     plan_narrative = (
         f"Plan defines {resource_count} {resource_word} across {module_count} {module_word} "
         f"(providers: {provider_label}; modules with resources: {modules_with_resources}; {child_phrase})."
@@ -270,7 +294,9 @@ def build_explanation(
         "passed_checks": passed_checks,
     }
 
-    severity_line = ", ".join(f"{level}={severity_summary.get(level, 0)}" for level in SEVERITY_LEVELS)
+    severity_line = ", ".join(
+        f"{level}={severity_summary.get(level, 0)}" for level in SEVERITY_LEVELS
+    )
 
     drift_status = (iam_drift.get("status") or "PASS").upper()
     risky_changes = iam_drift.get("counts", {}).get("risky_changes", 0)
@@ -319,13 +345,17 @@ def build_explanation(
                 continue
             seen.add(key)
             meta = policy_meta_lookup.get(policy_id, {})
-            description = meta.get("description") or (item.get("summary") or "Resolve guardrail finding")
+            description = meta.get("description") or (
+                item.get("summary") or "Resolve guardrail finding"
+            )
             policy_name = meta.get("name") or "Unknown policy"
             recommendations.append(
                 f"Remediate {resource_label} to satisfy {policy_id} ({policy_name}): {description}"
             )
     else:
-        guardrail_titles = ", ".join(f"{entry['policy_id']} {entry['name']}" for entry in policy_context)
+        guardrail_titles = ", ".join(
+            f"{entry['policy_id']} {entry['name']}" for entry in policy_context
+        )
         if guardrail_titles:
             recommendations.append(
                 f"Plan currently satisfies {guardrail_titles}; maintain encryption and tagging coverage as modules evolve."

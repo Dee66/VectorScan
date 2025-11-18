@@ -25,16 +25,15 @@ Usage (non-interactive example):
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import re
 import shutil
 import subprocess
 import sys
+import webbrowser
 from dataclasses import dataclass
 from pathlib import Path
-import re
-import json
-import webbrowser
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
@@ -80,7 +79,9 @@ def prompt_yn(question: str, default: bool = True) -> bool:
         print("Please answer 'y' or 'n'.")
 
 
-def ensure_syft(bin_dir: Path | None = None, auto_install: bool = False) -> tuple[bool, Path | None]:
+def ensure_syft(
+    bin_dir: Path | None = None, auto_install: bool = False
+) -> tuple[bool, Path | None]:
     """Ensure syft is available. Optionally install it to bin_dir (default ~/.local/bin).
 
     Returns (available, path_to_syft_or_None)
@@ -96,8 +97,9 @@ def ensure_syft(bin_dir: Path | None = None, auto_install: bool = False) -> tupl
     target = bin_dir or default_user_bin()
     target.mkdir(parents=True, exist_ok=True)
     install_cmd = [
-        "bash", "-lc",
-        f"curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b {str(target)} v1.20.0"
+        "bash",
+        "-lc",
+        f"curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b {str(target)} v1.20.0",
     ]
     try:
         # Use a login shell to respect PATH expansions; also prepend target to PATH for this process
@@ -156,7 +158,9 @@ def patch_sbom_metadata(sbom_path: Path, app_name: str, app_version: str) -> Non
     # Construct a stable document namespace using repo slug when available
     slug = get_repo_slug() or "local/VectorScan"
     ns = f"https://github.com/{slug}/sbom/v{app_version}"
-    if not isinstance(data.get("documentNamespace"), str) or not data["documentNamespace"].startswith("http"):
+    if not isinstance(data.get("documentNamespace"), str) or not data[
+        "documentNamespace"
+    ].startswith("http"):
         data["documentNamespace"] = ns
     # Optionally add externalDocumentRefs or creationInfo tweaks (not required)
     sbom_path.write_text(json.dumps(data, indent=2, sort_keys=False), encoding="utf-8")
@@ -178,8 +182,12 @@ def verify_sha256(zip_path: Path) -> bool:
             return False
     else:
         import hashlib
+
         expected_line = manifest.read_text(encoding="utf-8").strip()
-        expected_hash, expected_name = expected_line.split(maxsplit=1)[0], expected_line.split(maxsplit=1)[1].strip()
+        expected_hash, expected_name = (
+            expected_line.split(maxsplit=1)[0],
+            expected_line.split(maxsplit=1)[1].strip(),
+        )
         if expected_name.endswith(zip_path.name):
             h = hashlib.sha256(zip_path.read_bytes()).hexdigest()
             ok = h == expected_hash
@@ -194,10 +202,14 @@ def verify_cosign_signature(blob: Path, sig: Path, issuer: str, identity: str) -
         print("cosign is not installed; skipping cosign verify.")
         return False
     cmd = [
-        "cosign", "verify-blob",
-        "--certificate-oidc-issuer", issuer,
-        "--certificate-identity", identity,
-        "--signature", str(sig),
+        "cosign",
+        "verify-blob",
+        "--certificate-oidc-issuer",
+        issuer,
+        "--certificate-identity",
+        identity,
+        "--signature",
+        str(sig),
         str(blob),
     ]
     try:
@@ -209,7 +221,9 @@ def verify_cosign_signature(blob: Path, sig: Path, issuer: str, identity: str) -
         return False
 
 
-def ensure_cosign(bin_dir: Path | None = None, auto_install: bool = False) -> tuple[bool, Path | None]:
+def ensure_cosign(
+    bin_dir: Path | None = None, auto_install: bool = False
+) -> tuple[bool, Path | None]:
     """Ensure cosign is available. Optionally install it to bin_dir (default ~/.local/bin)."""
     existing = which("cosign")
     if existing:
@@ -323,26 +337,64 @@ class Options:
 def parse_args(argv: list[str]) -> tuple[Options, bool]:
     p = argparse.ArgumentParser(description="Automate local release flow")
     p.add_argument("--version", help="Version (e.g., 1.0.1)")
-    p.add_argument("--no-git-check", action="store_true", help="Pass --no-git-check to packaging script")
-    p.add_argument("--gpg-sign", action="store_true", help="Attempt GPG signing via packaging script")
-    p.add_argument("--strict", action="store_true", help="Fail if signing requested but not produced")
+    p.add_argument(
+        "--no-git-check", action="store_true", help="Pass --no-git-check to packaging script"
+    )
+    p.add_argument(
+        "--gpg-sign", action="store_true", help="Attempt GPG signing via packaging script"
+    )
+    p.add_argument(
+        "--strict", action="store_true", help="Fail if signing requested but not produced"
+    )
     p.add_argument("--sbom", action="store_true", help="Generate SPDX SBOM with syft")
-    p.add_argument("--no-sbom", action="store_true", help="Disable SBOM generation even in quick mode")
-    p.add_argument("--install-syft", action="store_true", help="Auto-install syft to ~/.local/bin if missing")
+    p.add_argument(
+        "--no-sbom", action="store_true", help="Disable SBOM generation even in quick mode"
+    )
+    p.add_argument(
+        "--install-syft", action="store_true", help="Auto-install syft to ~/.local/bin if missing"
+    )
     p.add_argument("--verify-sha", action="store_true", help="Verify the generated SHA256 manifest")
-    p.add_argument("--verify-cosign", action="store_true", help="Verify cosign signature if .sig present")
+    p.add_argument(
+        "--verify-cosign", action="store_true", help="Verify cosign signature if .sig present"
+    )
     p.add_argument("--cosign-issuer", help="OIDC issuer for cosign verify-blob")
     p.add_argument("--cosign-identity", help="OIDC identity for cosign verify-blob")
-    p.add_argument("--skip-checklist", action="store_true", help="Skip docs/checklist.md progress update")
-    p.add_argument("--increment", choices=["major", "minor", "patch"], default="patch", help="Default bump when auto-deriving version from latest tag")
-    p.add_argument("--make-tag", action="store_true", help="Create a git tag vX.Y.Z after packaging")
-    p.add_argument("--sign-tag", action="store_true", help="Sign the tag with GPG (requires a secret key)")
+    p.add_argument(
+        "--skip-checklist", action="store_true", help="Skip docs/checklist.md progress update"
+    )
+    p.add_argument(
+        "--increment",
+        choices=["major", "minor", "patch"],
+        default="patch",
+        help="Default bump when auto-deriving version from latest tag",
+    )
+    p.add_argument(
+        "--make-tag", action="store_true", help="Create a git tag vX.Y.Z after packaging"
+    )
+    p.add_argument(
+        "--sign-tag", action="store_true", help="Sign the tag with GPG (requires a secret key)"
+    )
     p.add_argument("--push", action="store_true", help="Push the created tag to origin")
-    p.add_argument("--gh-release", action="store_true", help="Create a GitHub Release using 'gh' and attach artifacts (draft)")
-    p.add_argument("--open-browser", action="store_true", help="Open the created release in a browser")
-    p.add_argument("--auto-commit", action="store_true", help="If the working tree is dirty, automatically create a commit before packaging")
-    p.add_argument("--commit-message", help="Commit message to use when --auto-commit is enabled (will prompt with a sensible default if omitted)")
-    p.add_argument("--yes", action="store_true", help="Non-interactive; accept defaults and flags provided")
+    p.add_argument(
+        "--gh-release",
+        action="store_true",
+        help="Create a GitHub Release using 'gh' and attach artifacts (draft)",
+    )
+    p.add_argument(
+        "--open-browser", action="store_true", help="Open the created release in a browser"
+    )
+    p.add_argument(
+        "--auto-commit",
+        action="store_true",
+        help="If the working tree is dirty, automatically create a commit before packaging",
+    )
+    p.add_argument(
+        "--commit-message",
+        help="Commit message to use when --auto-commit is enabled (will prompt with a sensible default if omitted)",
+    )
+    p.add_argument(
+        "--yes", action="store_true", help="Non-interactive; accept defaults and flags provided"
+    )
     args = p.parse_args(argv)
 
     interactive = not args.yes
@@ -402,69 +454,82 @@ def main(argv: list[str] | None = None) -> int:
         opts.version = default_v
 
     # Quick-mode defaults and minimal prompting
-    user_passed_any_flags = any([
-        opts.gpg_sign, opts.strict, opts.sbom, opts.install_syft,
-        opts.verify_sha, opts.verify_cosign, opts.cosign_issuer is not None,
-        opts.cosign_identity is not None, opts.no_git_check, opts.skip_checklist
-    ])
+    user_passed_any_flags = any(
+        [
+            opts.gpg_sign,
+            opts.strict,
+            opts.sbom,
+            opts.install_syft,
+            opts.verify_sha,
+            opts.verify_cosign,
+            opts.cosign_issuer is not None,
+            opts.cosign_identity is not None,
+            opts.no_git_check,
+            opts.skip_checklist,
+        ]
+    )
 
     if interactive and not user_passed_any_flags:
         # Apply sensible defaults automatically to minimize prompts
         defaults = {
-            'gpg_sign': False,
-            'strict': False,
-            'sbom': True,
-            'install_syft': True,
-            'verify_sha': True,
-            'verify_cosign': True,
-            'no_git_check': False,
-            'skip_checklist': False,
-            'make_tag': False,
-            'sign_tag': False,
-            'push': False,
-            'gh_release': False,
-            'open_browser': False,
-            'auto_commit': True,
+            "gpg_sign": False,
+            "strict": False,
+            "sbom": True,
+            "install_syft": True,
+            "verify_sha": True,
+            "verify_cosign": True,
+            "no_git_check": False,
+            "skip_checklist": False,
+            "make_tag": False,
+            "sign_tag": False,
+            "push": False,
+            "gh_release": False,
+            "open_browser": False,
+            "auto_commit": True,
         }
-        opts.gpg_sign = defaults['gpg_sign']
-        opts.strict = defaults['strict']
-        opts.sbom = defaults['sbom']
-        opts.install_syft = defaults['install_syft']
-        opts.verify_sha = defaults['verify_sha']
-        opts.verify_cosign = defaults['verify_cosign']
-        opts.no_git_check = defaults['no_git_check']
-        opts.skip_checklist = defaults['skip_checklist']
-        opts.make_tag = defaults['make_tag']
-        opts.sign_tag = defaults['sign_tag']
-        opts.push = defaults['push']
-        opts.gh_release = defaults['gh_release']
-        opts.open_browser = defaults['open_browser']
-        opts.auto_commit = defaults['auto_commit']
+        opts.gpg_sign = defaults["gpg_sign"]
+        opts.strict = defaults["strict"]
+        opts.sbom = defaults["sbom"]
+        opts.install_syft = defaults["install_syft"]
+        opts.verify_sha = defaults["verify_sha"]
+        opts.verify_cosign = defaults["verify_cosign"]
+        opts.no_git_check = defaults["no_git_check"]
+        opts.skip_checklist = defaults["skip_checklist"]
+        opts.make_tag = defaults["make_tag"]
+        opts.sign_tag = defaults["sign_tag"]
+        opts.push = defaults["push"]
+        opts.gh_release = defaults["gh_release"]
+        opts.open_browser = defaults["open_browser"]
+        opts.auto_commit = defaults["auto_commit"]
     else:
         # Granular prompts only when the user has provided some flags and wants to refine
-            if not opts.gpg_sign:
-                opts.gpg_sign = prompt_yn("Attempt GPG signing?", default=False)
-            if opts.gpg_sign and not opts.strict:
-                opts.strict = prompt_yn("Fail if GPG signature not produced (strict)?", default=False)
-            if not opts.sbom and not getattr(sys.modules[__name__], 'args', None):
-                # Respect --no-sbom if provided
-                opts.sbom = prompt_yn("Generate SPDX SBOM with syft?", default=True)
-            if opts.sbom and not opts.install_syft:
-                opts.install_syft = prompt_yn("Auto-install syft to ~/.local/bin if missing?", default=True)
-            if not opts.verify_sha:
-                opts.verify_sha = prompt_yn("Verify SHA256 manifest?", default=True)
-            if not opts.verify_cosign:
-                opts.verify_cosign = prompt_yn("Verify cosign signature if present?", default=False)
-            if not opts.make_tag:
-                opts.make_tag = prompt_yn("Create git tag vX.Y.Z after packaging?", default=False)
-            if opts.make_tag and not opts.sign_tag:
-                opts.sign_tag = prompt_yn("GPG-sign the tag (requires secret key)?", default=False)
-            if opts.make_tag and not opts.push:
-                opts.push = prompt_yn("Push the tag to origin?", default=False)
-            if not opts.gh_release:
-                opts.gh_release = prompt_yn("Create a GitHub Release (draft) with assets?", default=False)
-            if opts.gh_release and not opts.open_browser:
-                opts.open_browser = prompt_yn("Open the created release in your browser?", default=True)
+        if not opts.gpg_sign:
+            opts.gpg_sign = prompt_yn("Attempt GPG signing?", default=False)
+        if opts.gpg_sign and not opts.strict:
+            opts.strict = prompt_yn("Fail if GPG signature not produced (strict)?", default=False)
+        if not opts.sbom and not getattr(sys.modules[__name__], "args", None):
+            # Respect --no-sbom if provided
+            opts.sbom = prompt_yn("Generate SPDX SBOM with syft?", default=True)
+        if opts.sbom and not opts.install_syft:
+            opts.install_syft = prompt_yn(
+                "Auto-install syft to ~/.local/bin if missing?", default=True
+            )
+        if not opts.verify_sha:
+            opts.verify_sha = prompt_yn("Verify SHA256 manifest?", default=True)
+        if not opts.verify_cosign:
+            opts.verify_cosign = prompt_yn("Verify cosign signature if present?", default=False)
+        if not opts.make_tag:
+            opts.make_tag = prompt_yn("Create git tag vX.Y.Z after packaging?", default=False)
+        if opts.make_tag and not opts.sign_tag:
+            opts.sign_tag = prompt_yn("GPG-sign the tag (requires secret key)?", default=False)
+        if opts.make_tag and not opts.push:
+            opts.push = prompt_yn("Push the tag to origin?", default=False)
+        if not opts.gh_release:
+            opts.gh_release = prompt_yn(
+                "Create a GitHub Release (draft) with assets?", default=False
+            )
+        if opts.gh_release and not opts.open_browser:
+            opts.open_browser = prompt_yn("Open the created release in your browser?", default=True)
 
     # If user requested GPG signing, ensure a key exists; assist if missing
     if opts.gpg_sign and not has_gpg_secret_key():
@@ -481,11 +546,12 @@ def main(argv: list[str] | None = None) -> int:
             opts.gpg_sign = False
 
     # Honor explicit --no-sbom
-    if '--no-sbom' in (argv or sys.argv[1:]):
+    if "--no-sbom" in (argv or sys.argv[1:]):
         opts.sbom = False
 
     # If git tree is dirty: optionally auto-commit, otherwise offer to continue/abort
     if not opts.no_git_check and not is_git_clean():
+
         def attempt_commit():
             default_msg = f"chore: release prep v{opts.version} (automation, SBOM, docs)"
             msg = opts.commit_message
@@ -502,9 +568,13 @@ def main(argv: list[str] | None = None) -> int:
         if opts.auto_commit:
             clean_after = attempt_commit()
             if not clean_after:
-                if interactive and prompt_yn("Working tree still not clean. Skip clean check and continue?", default=False):
+                if interactive and prompt_yn(
+                    "Working tree still not clean. Skip clean check and continue?", default=False
+                ):
                     opts.no_git_check = True
-                elif interactive and prompt_yn("Attempt another commit (perhaps you staged new changes)?", default=False):
+                elif interactive and prompt_yn(
+                    "Attempt another commit (perhaps you staged new changes)?", default=False
+                ):
                     attempt_commit()
                     if not is_git_clean() and not opts.no_git_check:
                         if prompt_yn("Still dirty. Continue anyway?", default=False):
@@ -513,17 +583,24 @@ def main(argv: list[str] | None = None) -> int:
                             print("Aborting due to dirty working tree.")
                             return 1
                 elif not interactive:
-                    print("Warning: git tree not clean and --no-git-check not set. Proceeding may fail.")
+                    print(
+                        "Warning: git tree not clean and --no-git-check not set. Proceeding may fail."
+                    )
                 else:
                     print("Aborting due to dirty working tree.")
                     return 1
         else:
             if interactive:
-                if prompt_yn("Git working tree is not clean. Continue without committing (skip clean check)?", default=False):
+                if prompt_yn(
+                    "Git working tree is not clean. Continue without committing (skip clean check)?",
+                    default=False,
+                ):
                     opts.no_git_check = True
                 else:
                     if prompt_yn("Commit changes before continuing?", default=True):
-                        if not attempt_commit() and not prompt_yn("Commit didn't clean everything. Continue anyway?", default=False):
+                        if not attempt_commit() and not prompt_yn(
+                            "Commit didn't clean everything. Continue anyway?", default=False
+                        ):
                             print("Aborting due to dirty working tree.")
                             return 1
                     else:
@@ -584,7 +661,9 @@ def main(argv: list[str] | None = None) -> int:
             identity_default = f"https://github.com/{repo_slug}/.github/workflows/release-bundle.yml@refs/tags/v{opts.version}"
             identity = opts.cosign_identity or identity_default
             if not which("cosign"):
-                if interactive and prompt_yn("cosign not found. Install to ~/.local/bin now?", default=True):
+                if interactive and prompt_yn(
+                    "cosign not found. Install to ~/.local/bin now?", default=True
+                ):
                     ensure_cosign(auto_install=True)
             verify_cosign_signature(sbom_path, sbom_sig, issuer, identity)
         else:

@@ -13,11 +13,11 @@ Reports surviving mutants (no test failures), which indicate gaps in test sensit
 """
 from __future__ import annotations
 
-import shutil
-import tempfile
-import subprocess
-import re
 import json
+import re
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,7 +34,14 @@ TARGET_POLICIES = [
 
 def run_opa_tests(policy_path: Path, tmp_root: Path) -> int:
     # Run tests against mutated policy + original others
-    cmd = ["opa", "test", str(tmp_root / "policies"), str(ROOT / "tools" / "vectorscan"), str(TEST_DIR), "-v"]
+    cmd = [
+        "opa",
+        "test",
+        str(tmp_root / "policies"),
+        str(ROOT / "tools" / "vectorscan"),
+        str(TEST_DIR),
+        "-v",
+    ]
     proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
     # Return code 0 means all tests passed (bad for mutation), non-zero means failure (good: mutant killed)
     if proc.returncode == 0:
@@ -76,8 +83,10 @@ def mutate_content(content: str, policy_name: str) -> list[tuple[str, str]]:
 
     # 5) Numeric threshold tweak (+1) for scaling-limits policy
     if "P-FIN-002-scaling-limits.rego" in policy_name:
+
         def plus_one(m: re.Match) -> str:
             return str(int(m.group(0)) + 1)
+
         tweaked = re.sub(r"\b(\d{1,3})\b", plus_one, content, count=1)
         if tweaked != content:
             mutants.append(("threshold_plus_one", tweaked))
@@ -87,10 +96,15 @@ def mutate_content(content: str, policy_name: str) -> list[tuple[str, str]]:
 
 def main() -> int:
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out", default=str(ROOT / "coverage" / "mutation_summary.json"), help="Path to write mutation summary JSON")
+    parser.add_argument(
+        "--out",
+        default=str(ROOT / "coverage" / "mutation_summary.json"),
+        help="Path to write mutation summary JSON",
+    )
     args = parser.parse_args()
-    tmp = Path(tempfile.mkdtemp(prefix="mutation_") )
+    tmp = Path(tempfile.mkdtemp(prefix="mutation_"))
     try:
         # Copy full policies dir for isolation
         shutil.copytree(POLICIES_DIR, tmp / "policies")

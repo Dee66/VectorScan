@@ -6,15 +6,18 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform as _platform_module
+import subprocess as _subprocess_module
 import sys
 import tempfile as _tempfile
 import time
-import platform as _platform_module
-import subprocess as _subprocess_module
-from urllib import request as _urllib_request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, cast
+from urllib import request as _urllib_request
+
+# ruff: noqa: E402
+
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
@@ -29,10 +32,12 @@ from tools.vectorscan.constants import (
     EXIT_SUCCESS,
     EXIT_TERRAFORM_ERROR,
     EXIT_TERRAFORM_FAIL,
-    SEVERITY_LEVELS,
-    ROOT_DIR as _ROOT_DIR,
 )
-from tools.vectorscan.env_flags import is_offline, is_strict_mode
+from tools.vectorscan.constants import ROOT_DIR as _ROOT_DIR
+from tools.vectorscan.constants import (
+    SEVERITY_LEVELS,
+)
+from tools.vectorscan.env_flags import env_falsey, env_truthy, is_offline, is_strict_mode
 from tools.vectorscan.environment import (
     StrictModeViolation,
     _build_environment_metadata,
@@ -43,26 +48,37 @@ from tools.vectorscan.environment import (
     _status_badge,
     _strict_require,
 )
-from tools.vectorscan.plan_utils import (
-    PlanLoadError as _PlanLoadError,
-    build_plan_diff,
-    compute_plan_metadata,
-    iter_resources as _iter_resources,
-    load_json as _plan_load_json,
-    load_plan_context,
+from tools.vectorscan.iam_drift import build_iam_drift_report
+from tools.vectorscan.lead_capture import maybe_post, write_local_capture
+from tools.vectorscan.metrics import (
+    compute_metrics,
+    compute_security_grade,
+    compute_violation_severity_summary,
 )
 from tools.vectorscan.plan_evolution import compute_plan_evolution
 from tools.vectorscan.plan_risk import compute_plan_risk_profile
 from tools.vectorscan.plan_smell import compute_smell_report
-from tools.vectorscan.preview import PreviewManifestError, load_preview_manifest
-from tools.vectorscan.policies import get_policy, get_policies
-from tools.vectorscan.policies.common import TAGGABLE_TYPES as _POLICY_TAGGABLE_TYPES, is_nonempty_string
+from tools.vectorscan.plan_utils import PlanLoadError as _PlanLoadError
+from tools.vectorscan.plan_utils import (
+    build_plan_diff,
+    compute_plan_metadata,
+)
+from tools.vectorscan.plan_utils import iter_resources as _iter_resources
+from tools.vectorscan.plan_utils import load_json as _plan_load_json
+from tools.vectorscan.plan_utils import (
+    load_plan_context,
+)
+from tools.vectorscan.policies import get_policies, get_policy
+from tools.vectorscan.policies.common import TAGGABLE_TYPES as _POLICY_TAGGABLE_TYPES
+from tools.vectorscan.policies.common import is_nonempty_string
 from tools.vectorscan.policy_manifest import (
     PolicyManifestError,
     build_policy_manifest,
     load_policy_manifest,
 )
 from tools.vectorscan.policy_pack import PolicyPackError, policy_pack_hash
+from tools.vectorscan.python_compat import ensure_supported_python, UnsupportedPythonVersion
+from tools.vectorscan.preview import PreviewManifestError, load_preview_manifest
 from tools.vectorscan.reports import (
     build_explanation,
     build_violation_structs,
@@ -70,32 +86,30 @@ from tools.vectorscan.reports import (
     render_plan_diff_text,
     render_plan_evolution_text,
 )
+from tools.vectorscan.suspicious_defaults import detect_suspicious_defaults
+from tools.vectorscan.terraform import LegacyTerraformTestStrategy as _LegacyTerraformTestStrategy
+from tools.vectorscan.terraform import ModernTerraformTestStrategy as _ModernTerraformTestStrategy
+from tools.vectorscan.terraform import TerraformDownloadError as _TerraformDownloadError
+from tools.vectorscan.terraform import TerraformManager as _TerraformManager
+from tools.vectorscan.terraform import TerraformManagerError as _TerraformManagerError
+from tools.vectorscan.terraform import TerraformNotFoundError as _TerraformNotFoundError
+from tools.vectorscan.terraform import TerraformResolution as _TerraformResolution
+from tools.vectorscan.terraform import TerraformTestStrategy as _TerraformTestStrategy
+from tools.vectorscan.terraform import _safe_chdir_flag as _terraform_safe_chdir_flag
+from tools.vectorscan.terraform import _select_strategy as _terraform_select_strategy
 from tools.vectorscan.terraform import (
-    LegacyTerraformTestStrategy as _LegacyTerraformTestStrategy,
-    ModernTerraformTestStrategy as _ModernTerraformTestStrategy,
-    TerraformDownloadError as _TerraformDownloadError,
-    TerraformManager as _TerraformManager,
-    TerraformManagerError as _TerraformManagerError,
-    TerraformNotFoundError as _TerraformNotFoundError,
-    TerraformResolution as _TerraformResolution,
-    TerraformTestStrategy as _TerraformTestStrategy,
-    _safe_chdir_flag as _terraform_safe_chdir_flag,
     _truncate_output,
-    register_vectorscan_module as _register_vectorscan_module,
-    _select_strategy as _terraform_select_strategy,
-    set_strategy_resolver as _set_strategy_resolver,
+)
+from tools.vectorscan.terraform import register_vectorscan_module as _register_vectorscan_module
+from tools.vectorscan.terraform import (
     run_terraform_tests,
 )
-from tools.vectorscan.suspicious_defaults import detect_suspicious_defaults
+from tools.vectorscan.terraform import set_strategy_resolver as _set_strategy_resolver
 from tools.vectorscan.versioning import OUTPUT_SCHEMA_VERSION, POLICY_VERSION, VECTORSCAN_VERSION
-from tools.vectorscan.metrics import (
-    compute_metrics,
-    compute_violation_severity_summary,
-    compute_security_grade,
+from tools.vectorscan.python_compat import (
+    UnsupportedPythonVersion,
+    ensure_supported_python,
 )
-from tools.vectorscan.iam_drift import build_iam_drift_report
-from tools.vectorscan.lead_capture import maybe_post, write_local_capture
-
 
 # Backwards-compatible shims for legacy tests and monkeypatching
 _write_local_capture = write_local_capture
@@ -115,6 +129,8 @@ def load_json(path: Path) -> Dict[str, Any]:
         return _plan_load_json(path)
     except _PlanLoadError:
         sys.exit(EXIT_INVALID_INPUT)
+
+
 ROOT_DIR = _ROOT_DIR
 ModernTerraformTestStrategy = _ModernTerraformTestStrategy
 LegacyTerraformTestStrategy = _LegacyTerraformTestStrategy
@@ -152,6 +168,12 @@ __all__ = [
 _current_module = sys.modules[__name__]
 sys.modules["vectorscan"] = _current_module
 _register_vectorscan_module(_current_module)
+
+try:
+    ensure_supported_python()
+except UnsupportedPythonVersion as exc:
+    print(str(exc), file=sys.stderr)
+    sys.exit(EXIT_CONFIG_ERROR)
 
 
 POLICY_PACK_HASH: Optional[str]
@@ -251,7 +273,12 @@ def _resolve_resource_scope(target: str, resources: Sequence[Dict[str, Any]]) ->
     normalized = (target or "").strip()
     if not normalized:
         raise _ResourceScopeError("Resource address must be non-empty.")
-    address_pairs = [(addr, res) for res in resources for addr in [_normalize_resource_address(res.get("address"))] if addr]
+    address_pairs = [
+        (addr, res)
+        for res in resources
+        for addr in [_normalize_resource_address(res.get("address"))]
+        if addr
+    ]
     if not address_pairs:
         raise _ResourceScopeError("Plan has no addressable resources.")
     for addr, res in address_pairs:
@@ -274,11 +301,9 @@ def _resolve_resource_scope(target: str, resources: Sequence[Dict[str, Any]]) ->
     )
 
 
-def _tokenize_multi_value(values: Optional[Sequence[str]]) -> List[str]:
+def _tokenize_multi_value(values: Optional[Sequence[Any]]) -> List[str]:
     tokens: List[str] = []
     for value in values or []:
-        if value is None:
-            continue
         if not isinstance(value, str):
             continue
         parts = value.split(",")
@@ -366,10 +391,12 @@ class _PolicyEvaluationGuard:
         if not issubclass(exc_type, Exception):
             return False
         policy_id = getattr(getattr(self._policy, "metadata", None), "policy_id", "unknown")
-        self._sink.append({
-            "policy": policy_id,
-            "error": f"{exc.__class__.__name__}: {exc}",
-        })
+        self._sink.append(
+            {
+                "policy": policy_id,
+                "error": f"{exc.__class__.__name__}: {exc}",
+            }
+        )
         return True
 
 
@@ -425,10 +452,14 @@ def _run_compare_mode(
     }
     payload = cast(Dict[str, Any], _sanitize_for_json(payload))
     if as_json:
-        json_dump_config = {"indent": 2, "ensure_ascii": False}
-        if gha_mode:
-            json_dump_config["sort_keys"] = True
-        print(json.dumps(payload, **json_dump_config))
+        print(
+            json.dumps(
+                payload,
+                indent=2,
+                ensure_ascii=False,
+                sort_keys=gha_mode,
+            )
+        )
     else:
         print(render_plan_evolution_text(plan_evolution))
     return EXIT_SUCCESS
@@ -446,7 +477,9 @@ def _load_manifest_override(
         raise PolicyManifestError(
             "Policy manifest hash does not match the active policy pack.",
         )
-    manifest_ids = {entry.get("id") for entry in manifest.get("policies", []) if isinstance(entry, dict)}
+    manifest_ids = {
+        entry.get("id") for entry in manifest.get("policies", []) if isinstance(entry, dict)
+    }
     if manifest_ids and not set(selected_policy_ids).issubset(manifest_ids):
         missing = sorted(set(selected_policy_ids) - manifest_ids)
         raise PolicyManifestError(
@@ -456,12 +489,27 @@ def _load_manifest_override(
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="VectorScan: minimal tfplan checks (encryption + mandatory tags)")
+    parser = argparse.ArgumentParser(
+        description="VectorScan: minimal tfplan checks (encryption + mandatory tags)"
+    )
     parser.add_argument("plan", type=str, nargs="?", help="Path to tfplan.json")
     parser.add_argument("--json", action="store_true", dest="as_json", help="Emit JSON result")
     parser.add_argument("--email", type=str, help="Optional email for lead capture payload")
-    parser.add_argument("--lead-capture", action="store_true", help="Enable local lead capture (writes JSON under tools/vectorscan/captures)")
-    parser.add_argument("--endpoint", type=str, help="Optional HTTP endpoint to POST lead payload (default from env VSCAN_LEAD_ENDPOINT)")
+    parser.add_argument(
+        "--lead-capture",
+        action="store_true",
+        help="Enable local lead capture (writes JSON under tools/vectorscan/captures)",
+    )
+    parser.add_argument(
+        "--allow-network",
+        action="store_true",
+        help="Opt-in to lead capture POSTs, telemetry uploads, and Terraform downloads (default: network disabled)",
+    )
+    parser.add_argument(
+        "--endpoint",
+        type=str,
+        help="Optional HTTP endpoint to POST lead payload (default from env VSCAN_LEAD_ENDPOINT)",
+    )
     parser.add_argument(
         "--iam-drift-penalty",
         type=int,
@@ -489,15 +537,29 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip automatic Terraform downloads when running tests",
     )
-    parser.add_argument("--no-color", action="store_true", help="Disable ANSI color in human-readable output")
-    parser.add_argument("--explain", action="store_true", help="Include a narrative explain block (also adds 'explanation' to JSON output)")
-    parser.add_argument("--diff", action="store_true", help="Show only changed attributes via a structured plan diff block")
+    parser.add_argument(
+        "--no-color", action="store_true", help="Disable ANSI color in human-readable output"
+    )
+    parser.add_argument(
+        "--explain",
+        action="store_true",
+        help="Include a narrative explain block (also adds 'explanation' to JSON output)",
+    )
+    parser.add_argument(
+        "--diff",
+        action="store_true",
+        help="Show only changed attributes via a structured plan diff block",
+    )
     parser.add_argument(
         "--preview-vectorguard",
         action="store_true",
         help="Emit VectorGuard preview metadata (no paid policies) and exit with code 10",
     )
-    parser.add_argument("--resource", type=str, help="Terraform address (e.g., module.db.aws_db_instance.example) to scope checks")
+    parser.add_argument(
+        "--resource",
+        type=str,
+        help="Terraform address (e.g., module.db.aws_db_instance.example) to scope checks",
+    )
     parser.add_argument(
         "--policy-manifest",
         nargs="?",
@@ -544,18 +606,44 @@ def _should_run_terraform_tests(ns: argparse.Namespace) -> bool:
     return ns.terraform_tests or os.getenv("VSCAN_TERRAFORM_TESTS", "0") == "1"
 
 
-def _execute_terraform_tests(ns: argparse.Namespace, *, offline_mode: bool) -> Dict[str, Any] | None:
+def _should_auto_download_terraform(ns: argparse.Namespace, offline_mode: bool) -> bool:
+    if offline_mode:
+        return False
+    if getattr(ns, "no_terraform_download", False):
+        return False
+
+    allow_env = os.getenv("VSCAN_ALLOW_TERRAFORM_DOWNLOAD")
+    if allow_env is not None:
+        if env_truthy(allow_env):
+            return True
+        if env_falsey(allow_env):
+            return False
+
+    legacy_env = os.getenv("VSCAN_TERRAFORM_AUTO_DOWNLOAD")
+    if legacy_env is not None:
+        if env_truthy(legacy_env):
+            return True
+        if env_falsey(legacy_env):
+            return False
+
+    return False
+
+
+def _execute_terraform_tests(
+    ns: argparse.Namespace, *, offline_mode: bool
+) -> Dict[str, Any] | None:
     if not _should_run_terraform_tests(ns):
         return None
-    auto_download = not ns.no_terraform_download and os.getenv("VSCAN_TERRAFORM_AUTO_DOWNLOAD", "1") != "0"
-    if offline_mode:
-        auto_download = False
+    auto_download = _should_auto_download_terraform(ns, offline_mode)
     print("[VectorScan] Ensuring Terraform CLI for module tests...", file=sys.stderr)
     terraform_report = run_terraform_tests(ns.terraform_bin, auto_download)
     status = terraform_report.get("status") if terraform_report else "SKIP"
     version = terraform_report.get("version", "?") if terraform_report else "?"
     source = terraform_report.get("source", "?") if terraform_report else "?"
-    print(f"[VectorScan] Terraform test status: {status} (CLI {version}, source={source})", file=sys.stderr)
+    print(
+        f"[VectorScan] Terraform test status: {status} (CLI {version}, source={source})",
+        file=sys.stderr,
+    )
     if terraform_report:
         stdout_full = terraform_report.get("stdout", "")
         stderr_full = terraform_report.get("stderr", "")
@@ -623,6 +711,8 @@ def _run_cli(argv: list[str] | None = None) -> int:
         ns.no_color = True
     compare_args = list(getattr(ns, "compare") or [])
     offline_mode = is_offline()
+    if getattr(ns, "allow_network", False):
+        offline_mode = False
     strict_mode = is_strict_mode()
     _ensure_strict_clock(strict_mode)
     use_color = _should_use_color(ns.no_color)
@@ -643,10 +733,14 @@ def _run_cli(argv: list[str] | None = None) -> int:
     if ns.plan is None:
         if manifest_flag_value is None:
             parser.error("Path to tfplan.json is required unless --policy-manifest is used.")
-        manifest_path = None if manifest_flag_value == _POLICY_MANIFEST_SENTINEL else manifest_flag_value
+        manifest_path = (
+            None if manifest_flag_value == _POLICY_MANIFEST_SENTINEL else manifest_flag_value
+        )
         return _print_policy_manifest(manifest_path)
     if manifest_flag_value == _POLICY_MANIFEST_SENTINEL:
-        parser.error("--policy-manifest requires a PATH when scanning. Run without a plan to print the embedded manifest.")
+        parser.error(
+            "--policy-manifest requires a PATH when scanning. Run without a plan to print the embedded manifest."
+        )
     manifest_override_path: Optional[str] = None
     if manifest_flag_value not in (None, _POLICY_MANIFEST_SENTINEL):
         manifest_override_path = manifest_flag_value
@@ -683,7 +777,9 @@ def _run_cli(argv: list[str] | None = None) -> int:
     all_policies = get_policies()
     available_policy_ids = [p.metadata.policy_id for p in all_policies]
     try:
-        selected_policy_ids = _resolve_policy_selection(ns.policy_ids, ns.policies, available_policy_ids)
+        selected_policy_ids = _resolve_policy_selection(
+            ns.policy_ids, ns.policies, available_policy_ids
+        )
     except _PolicySelectionError as exc:
         print(exc.message, file=sys.stderr)
         if exc.choices:
@@ -718,7 +814,11 @@ def _run_cli(argv: list[str] | None = None) -> int:
             policy_pack_hash_value=policy_pack_hash_value,
         )
 
-    _strict_require(strict_mode, not policy_errors, "Strict mode prohibits policy_errors; ensure all policies execute cleanly.")
+    _strict_require(
+        strict_mode,
+        not policy_errors,
+        "Strict mode prohibits policy_errors; ensure all policies execute cleanly.",
+    )
 
     severity_summary = compute_violation_severity_summary(violations, severity_lookup)
     status = "FAIL" if (violations or policy_errors) else "PASS"
@@ -763,7 +863,18 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
     if terraform_report is not None:
         payload["terraform_tests"] = {
-            **{k: terraform_report.get(k) for k in ("status", "version", "binary", "source", "strategy", "message", "returncode")},
+            **{
+                k: terraform_report.get(k)
+                for k in (
+                    "status",
+                    "version",
+                    "binary",
+                    "source",
+                    "strategy",
+                    "message",
+                    "returncode",
+                )
+            },
             "stdout": _truncate_output(terraform_report.get("stdout"), strict=strict_mode),
             "stderr": _truncate_output(terraform_report.get("stderr"), strict=strict_mode),
         }
@@ -780,7 +891,9 @@ def _run_cli(argv: list[str] | None = None) -> int:
         strict_mode=strict_mode,
         offline_mode=offline_mode,
         terraform_report=terraform_report,
-        vectorscan_version_value=payload["vectorscan_version"],
+        vectorscan_version_value=str(
+            payload.get("vectorscan_version", VECTORSCAN_VERSION)
+        ),
     )
     plan_metadata = compute_plan_metadata(
         plan,
@@ -790,11 +903,18 @@ def _run_cli(argv: list[str] | None = None) -> int:
         resource_filter=resource_filter_set,
     )
     payload["plan_metadata"] = plan_metadata
-    parser_mode_value = plan_metadata.get("parser_mode") or ("streaming" if module_stats else "legacy")
+    parser_mode_value = plan_metadata.get("parser_mode") or (
+        "streaming" if module_stats else "legacy"
+    )
     resource_count_value = plan_metadata.get("resource_count")
 
     suspicious_defaults = detect_suspicious_defaults(plan, all_resources)
     payload["suspicious_defaults"] = suspicious_defaults
+    suspicious_default_reasons: List[str] = []
+    for entry in suspicious_defaults:
+        reason = entry.get("reason") if isinstance(entry, dict) else None
+        if isinstance(reason, str) and reason:
+            suspicious_default_reasons.append(reason)
 
     smell_report = compute_smell_report(
         plan_metadata=plan_metadata,
@@ -848,7 +968,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
     risk_result = compute_plan_risk_profile(
         severity_summary=severity_summary,
         metrics=metrics,
-        suspicious_defaults=suspicious_defaults,
+        suspicious_defaults=suspicious_default_reasons,
     )
     payload["plan_risk_profile"] = risk_result["profile"]
     if risk_result["factors"]:
@@ -883,17 +1003,17 @@ def _run_cli(argv: list[str] | None = None) -> int:
             return EXIT_CONFIG_ERROR
         code = EXIT_PREVIEW_MODE
 
-    payload = cast(Dict[str, Any], _sanitize_for_json(payload))
-    violations = cast(List[str], payload.get("violations", []))
-    violation_structs = payload.get("violations_struct", violation_structs)
-    severity_summary = payload.get("violation_severity_summary", severity_summary)
-    policy_errors = payload.get("policy_errors", policy_errors)
+    safe_payload = cast(Dict[str, Any], _sanitize_for_json(payload))
 
     if ns.as_json:
-        json_dump_config = {"indent": 2, "ensure_ascii": False}
-        if gha_mode:
-            json_dump_config["sort_keys"] = True
-        print(json.dumps(payload, **json_dump_config))
+        print(
+            json.dumps(
+                safe_payload,
+                indent=2,
+                ensure_ascii=False,
+                sort_keys=gha_mode,
+            )
+        )
         return code
 
     has_policy_failures = bool(policy_errors)
@@ -923,16 +1043,22 @@ def _run_cli(argv: list[str] | None = None) -> int:
         for v in violations:
             print("  ", v)
         if violations:
-            summary_line = ", ".join(f"{level}={severity_summary.get(level, 0)}" for level in SEVERITY_LEVELS)
+            summary_line = ", ".join(
+                f"{level}={severity_summary.get(level, 0)}" for level in SEVERITY_LEVELS
+            )
             print(f"  Violation severity summary: {summary_line}")
         if policy_errors:
             print("  Policy engine errors detected (partial coverage):")
             for err in policy_errors:
                 print(f"    - {err['policy']}: {err['error']}")
         print("\n🚀 Want full, automated Zero-Trust & FinOps coverage?")
-        print("Get the complete 8-point compliance kit (Blueprint) for $79/year → https://gumroad.com/l/vectorguard-blueprint\n")
+        print(
+            "Get the complete 8-point compliance kit (Blueprint) for $79/year → https://gumroad.com/l/vectorguard-blueprint\n"
+        )
     else:
-        print(f"{_status_badge('PASS', use_color)} - tfplan.json - VectorScan checks (encryption + mandatory tags)")
+        print(
+            f"{_status_badge('PASS', use_color)} - tfplan.json - VectorScan checks (encryption + mandatory tags)"
+        )
 
     if ns.explain and not ns.as_json and explanation_block:
         print("")
@@ -950,14 +1076,18 @@ def _run_cli(argv: list[str] | None = None) -> int:
             print(f"  - {entry['id']}: {entry['summary']}")
         preview_path = preview_manifest_data.get("path")
         if preview_path:
-            print(f"  Manifest: {preview_path} (verified={preview_manifest_data.get('verified', False)})")
+            print(
+                f"  Manifest: {preview_path} (verified={preview_manifest_data.get('verified', False)})"
+            )
         print("Preview mode exit code: 10 (PREVIEW_MODE_ONLY)")
 
     # Optional lead capture (local, and optional HTTP POST if configured)
-    if (not offline_mode) and (ns.lead_capture or ns.email or ns.endpoint or os.getenv("VSCAN_LEAD_ENDPOINT")):
+    if (not offline_mode) and (
+        ns.lead_capture or ns.email or ns.endpoint or os.getenv("VSCAN_LEAD_ENDPOINT")
+    ):
         lead = {
             "email": (ns.email or ""),
-            "result": payload,
+            "result": safe_payload,
             "timestamp": _now(),
             "source": "vectorscan-cli",
         }
@@ -973,7 +1103,11 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     try:
+        ensure_supported_python()
         return _run_cli(argv)
+    except UnsupportedPythonVersion as exc:
+        print(f"[Python Compatibility] {exc}", file=sys.stderr)
+        return EXIT_CONFIG_ERROR
     except StrictModeViolation as exc:
         print(f"[Strict Mode] {exc}", file=sys.stderr)
         return EXIT_CONFIG_ERROR

@@ -1,9 +1,9 @@
 import contextlib
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import uuid
+from pathlib import Path
 
 import yaml
 
@@ -66,6 +66,8 @@ def test_audit_ledger_generation_matches_template():
     # Compare key sections presence
     for key in ("environment:", "timestamp:", "overall_score:", "audit_status:", "policy_errors:"):
         assert key in generated
+    assert "input_file: tests/fixtures/tfplan_iam_drift.json" in generated
+    assert "violations:" in generated
     assert "environment_metadata:" in generated
     for env_key in (
         "    platform:",
@@ -81,11 +83,18 @@ def test_audit_ledger_generation_matches_template():
     assert "violation_severity_summary:" in generated
     for level in ("critical", "high", "medium", "low"):
         assert f"    {level}:" in generated
-    for plan_key in ("change_summary:", "resources_by_type:", "file_size_mb:", "exceeds_threshold:"):
+    for plan_key in (
+        "change_summary:",
+        "resources_by_type:",
+        "file_size_mb:",
+        "exceeds_threshold:",
+    ):
         assert plan_key in generated
     assert "plan_slo:" in generated
     assert "file_size_limit_bytes:" in generated
     assert "scan_duration_ms:" in generated
+    assert "evidence:" in generated
+    assert "terraform_test_results:" in generated
 
 
 def test_audit_ledger_rejects_outside_repo(tmp_path):
@@ -139,21 +148,32 @@ def test_audit_ledger_yaml_structure():
     required_keys = {
         "timestamp",
         "environment",
+        "input_file",
         "environment_metadata",
         "plan_metadata",
         "policy_errors",
+        "violations",
         "violation_severity_summary",
         "smell_report",
         "audit_status",
         "overall_score",
+        "evidence",
+        "terraform_test_results",
     }
     missing = required_keys - set(root)
     assert not missing, f"missing keys: {missing}"
     assert isinstance(root["environment_metadata"], dict)
     assert isinstance(root["plan_metadata"], dict)
     assert isinstance(root["policy_errors"], list)
+    assert isinstance(root["violations"], list)
     assert isinstance(root["violation_severity_summary"], dict)
     assert isinstance(root["smell_report"], dict)
+    evidence = root["evidence"]
+    assert isinstance(evidence, dict)
+    assert isinstance(evidence.get("iam_drift"), list)
+    terraform = root["terraform_test_results"]
+    assert isinstance(terraform, dict)
+    assert "status" in terraform
 
 
 def test_audit_ledger_smell_report_block():
@@ -203,4 +223,3 @@ def test_audit_ledger_creates_missing_subdirectories():
             target.unlink()
         with contextlib.suppress(OSError):
             shutil.rmtree(target.parent, ignore_errors=True)
-

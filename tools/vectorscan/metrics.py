@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 from tools.vectorscan.constants import SEVERITY_LEVELS
 from tools.vectorscan.policies import get_policies
 from tools.vectorscan.policies.common import REQUIRED_TAGS, TAGGABLE_TYPES, is_nonempty_string
-
 
 __all__ = [
     "compute_metrics",
@@ -18,7 +17,7 @@ __all__ = [
 
 
 def compute_violation_severity_summary(
-    violations: List[str], severity_lookup: Dict[str, str] | None = None
+    violations: Sequence[Any], severity_lookup: Dict[str, str] | None = None
 ) -> Dict[str, int]:
     if severity_lookup is None:
         severity_lookup = {p.metadata.policy_id: p.metadata.severity for p in get_policies()}
@@ -125,7 +124,9 @@ def compute_metrics(resources: List[Dict[str, Any]], violations: List[str]) -> D
 
     total_checks = len(enc_targets) + len(tag_targets)
     passed_checks = enc_pass + tag_pass
-    compliance_score = 100 if total_checks == 0 else int(round(100 * (passed_checks / total_checks)))
+    compliance_score = (
+        100 if total_checks == 0 else int(round(100 * (passed_checks / total_checks)))
+    )
 
     open_sg_count, open_sg_details = check_network_exposure(resources)
     network_exposure_score = max(0, 100 - min(100, open_sg_count * 25))

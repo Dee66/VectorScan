@@ -4,8 +4,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 _ROOT = Path(__file__).resolve().parents[2]
 TOOLS_DIR = _ROOT / "tools" / "vectorscan"
 for path in (str(_ROOT), str(TOOLS_DIR)):
@@ -30,7 +28,9 @@ def _run_vectorscan_json(base_env: dict[str, str]) -> str:
 
 
 def _policy_status(violations: list[str], prefix: str) -> str:
-    return "FAIL" if any(isinstance(v, str) and v.startswith(prefix) for v in violations) else "PASS"
+    return (
+        "FAIL" if any(isinstance(v, str) and v.startswith(prefix) for v in violations) else "PASS"
+    )
 
 
 def _build_audit_ledger(json_payload: str, environment: str) -> str:

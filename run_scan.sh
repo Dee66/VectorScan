@@ -12,12 +12,28 @@ else
   export PYTHONPATH="$REPO_ROOT:$PYTHONPATH"
 fi
 
-OFFLINE_MODE=0
+OFFLINE_MODE=1
+
+if [ -n "${VSCAN_ALLOW_NETWORK:-}" ]; then
+  _allow_norm="$(printf '%s' "${VSCAN_ALLOW_NETWORK}" | tr '[:upper:]' '[:lower:]')"
+  case "${_allow_norm}" in
+    1|true|yes|on)
+      OFFLINE_MODE=0
+      ;;
+    0|false|no|off)
+      OFFLINE_MODE=1
+      ;;
+  esac
+fi
+
 if [ -n "${VSCAN_OFFLINE:-}" ]; then
   _offline_norm="$(printf '%s' "${VSCAN_OFFLINE}" | tr '[:upper:]' '[:lower:]')"
   case "${_offline_norm}" in
     1|true|yes|on)
       OFFLINE_MODE=1
+      ;;
+    0|false|no|off)
+      OFFLINE_MODE=0
       ;;
   esac
 fi
@@ -41,6 +57,21 @@ done
 
 if [ ! -f "$PLAN" ]; then
   echo "Error: plan not found: $PLAN" >&2
+  exit 2
+fi
+
+if ! INPUT_FILE=$(python3 - "$PLAN" "$REPO_ROOT" <<'PY'
+import os, sys
+plan = os.path.realpath(sys.argv[1])
+root = os.path.realpath(sys.argv[2])
+prefix = root + os.sep
+if plan == root or plan.startswith(prefix):
+    print(os.path.relpath(plan, root))
+else:
+    print(plan)
+PY
+); then
+  echo "Error: failed to normalize input file path" >&2
   exit 2
 fi
 
@@ -169,24 +200,30 @@ print(deterministic_isoformat(), end='')
 PY
 )
 
-EVIDENCE=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
-import sys, json, os
+EVIDENCE_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+import json, os
+
 with open(os.environ['JSON_FILE']) as fh:
-  d = json.load(fh)
-items = (d.get('iam_drift_report') or {}).get('items') or []
-lines = []
-for it in items:
-    rtype = it.get('resource_type','')
-    rname = it.get('resource_name','')
-    adds = it.get('risky_additions', [])
-    lines.append(f"  - resource: {rtype}.{rname}")
-    if adds:
-        lines.append("    risky_additions:")
-        for a in adds:
-            lines.append(f"      - {a}")
+  payload = json.load(fh)
+
+items = (payload.get('iam_drift_report') or {}).get('items') or []
+print("  evidence:")
+if not items:
+  print("    iam_drift: []")
+else:
+  print("    iam_drift:")
+  for record in items:
+    rtype = record.get('resource_type', '').strip() or 'resource'
+    rname = record.get('resource_name', '').strip() or 'unknown'
+    resource = f"{rtype}.{rname}".strip('.')
+    print("      - resource: " + json.dumps(resource, ensure_ascii=False))
+    additions = record.get('risky_additions') or []
+    if additions:
+      print("        risky_additions:")
+      for addition in additions:
+        print("          - " + json.dumps(addition, ensure_ascii=False))
     else:
-        lines.append("    risky_additions: []")
-print("\n".join(lines))
+      print("        risky_additions: []")
 PY
 )
 
@@ -358,10 +395,68 @@ else:
 PY
 )
 
+VIOLATIONS_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+import json, os
+
+with open(os.environ['JSON_FILE']) as fh:
+  payload = json.load(fh)
+
+violations = payload.get('violations') or []
+if not violations:
+  print("  violations: []")
+else:
+  print("  violations:")
+  for violation in violations:
+    print(f"    - {json.dumps(violation, ensure_ascii=False)}")
+PY
+)
+
+TERRAFORM_TEST_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+import json, os
+
+def _print_multiline(label: str, value: str):
+  print(f"    {label}: |")
+  lines = (value or "").splitlines() or [""]
+  for line in lines:
+    print(f"      {line}")
+
+with open(os.environ['JSON_FILE']) as fh:
+  payload = json.load(fh)
+
+tests = payload.get('terraform_tests') or {}
+print("  terraform_test_results:")
+if not tests:
+  print("    status: not_run")
+else:
+  ordered = [
+    'status',
+    'version',
+    'binary',
+    'source',
+    'strategy',
+    'message',
+    'returncode',
+  ]
+  for key in ordered:
+    value = tests.get(key)
+    if value is None:
+      print(f"    {key}: null")
+    else:
+      print(f"    {key}: {json.dumps(value, ensure_ascii=False)}")
+  for stream in ('stdout', 'stderr'):
+    value = tests.get(stream)
+    if value is None:
+      print(f"    {stream}: null")
+    else:
+      _print_multiline(stream, str(value))
+PY
+)
+
 cat > "$OUT" <<YAML
 VectorScan_Audit_Ledger:
   timestamp: $STAMP
   environment: $ENVIRONMENT
+  input_file: $INPUT_FILE
   environment_metadata:
     platform: $ENV_PLATFORM
     platform_release: $ENV_PLATFORM_RELEASE
@@ -377,6 +472,7 @@ $PLAN_METADATA_BLOCK
   schema_version: $SCHEMA_VERSION
   policy_pack_hash: $POLICY_PACK_HASH
 ${POLICY_ERRORS_BLOCK}
+${VIOLATIONS_BLOCK}
 ${SEVERITY_BLOCK}
   plan_risk_profile: $PLAN_RISK_PROFILE
 ${PLAN_RISK_FACTORS_BLOCK}
@@ -395,8 +491,8 @@ ${SMELL_DETAILS_BLOCK}
   scan_duration_ms: $SCAN_DURATION_MS
   parser_mode: $PARSER_MODE
   resource_count: $RESOURCE_COUNT
-  iam_drift_evidence:
-$EVIDENCE
+${EVIDENCE_BLOCK}
+${TERRAFORM_TEST_BLOCK}
 YAML
 
 echo "Audit Ledger Generated: $OUT"

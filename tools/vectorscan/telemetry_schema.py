@@ -1,4 +1,5 @@
 """Telemetry schema metadata for VectorScan monitoring artifacts."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

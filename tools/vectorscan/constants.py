@@ -1,4 +1,5 @@
 """Shared constants for the VectorScan CLI."""
+
 from __future__ import annotations
 
 import os
@@ -51,7 +52,11 @@ REQUIRED_TERRAFORM_VERSION = os.getenv("VSCAN_TERRAFORM_REQUIRED_VERSION", "1.13
 MIN_TERRAFORM_TESTS_VERSION = (1, 8, 0)
 
 _TERRAFORM_CACHE_ENV = os.getenv("VSCAN_TERRAFORM_CACHE")
-DEFAULT_TERRAFORM_CACHE = Path(_TERRAFORM_CACHE_ENV).expanduser() if _TERRAFORM_CACHE_ENV else Path(__file__).resolve().parent / ".terraform-bin"
+DEFAULT_TERRAFORM_CACHE = (
+    Path(_TERRAFORM_CACHE_ENV).expanduser()
+    if _TERRAFORM_CACHE_ENV
+    else Path(__file__).resolve().parent / ".terraform-bin"
+)
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
 EXIT_SUCCESS = 0

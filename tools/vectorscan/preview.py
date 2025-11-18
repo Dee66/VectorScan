@@ -1,4 +1,5 @@
 """Preview manifest loader and verifier."""
+
 from __future__ import annotations
 
 import hashlib
@@ -41,7 +42,9 @@ def load_preview_manifest(path: Optional[os.PathLike[str] | str] = None) -> Dict
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as exc:
-        raise PreviewManifestError(f"Preview manifest is invalid JSON: {manifest_path}: {exc}") from exc
+        raise PreviewManifestError(
+            f"Preview manifest is invalid JSON: {manifest_path}: {exc}"
+        ) from exc
 
     policies = data.get("policies")
     if not isinstance(policies, list) or not policies:

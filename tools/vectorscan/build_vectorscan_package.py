@@ -12,35 +12,43 @@ Usage:
   python3 tools/vectorscan/build_vectorscan_package.py
 """
 from __future__ import annotations
+
 import argparse
+import hashlib
+import importlib.util
 import json
 import os
 import shutil
+import sys
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-import hashlib
-import importlib.util
-import sys
-from typing import List, Dict, Any, Iterable
+from typing import Any, Dict, Iterable, List
 
-from tools.vectorscan.time_utils import deterministic_epoch
-from tools.vectorscan.versioning import (
-    VECTORSCAN_VERSION,
-    POLICY_VERSION,
-    OUTPUT_SCHEMA_VERSION,
-)
-from tools.vectorscan.policy_pack import policy_pack_hash
 from tools.vectorscan.policies import get_policies
 from tools.vectorscan.policy_manifest import build_policy_manifest
-from tools.vectorscan.preview import load_preview_manifest, PreviewManifestError
+from tools.vectorscan.policy_pack import policy_pack_hash
+from tools.vectorscan.preview import PreviewManifestError, load_preview_manifest
+from tools.vectorscan.time_utils import deterministic_epoch
+from tools.vectorscan.versioning import (
+    OUTPUT_SCHEMA_VERSION,
+    POLICY_VERSION,
+    VECTORSCAN_VERSION,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC = REPO_ROOT / "tools" / "vectorscan"
 DIST = REPO_ROOT / "dist"
 REQUIREMENT_FILES = [REPO_ROOT / "requirements.txt", REPO_ROOT / "requirements-dev.txt"]
 
-PACKAGE_EXCLUDE_DIRS = {"captures", "__pycache__", ".terraform", ".terraform-bin", ".venv", ".cache"}
+PACKAGE_EXCLUDE_DIRS = {
+    "captures",
+    "__pycache__",
+    ".terraform",
+    ".terraform-bin",
+    ".venv",
+    ".cache",
+}
 PACKAGE_EXCLUDE_FILES = {"build_vectorscan_package.py"}
 
 PROHIBITED_ARCNAME_PARTS = {"__MACOSX"}
@@ -48,8 +56,20 @@ PROHIBITED_FILENAMES = {".DS_Store"}
 SENSITIVE_DIR_NAMES = {"__pycache__", ".terraform", ".venv", ".cache"}
 SENSITIVE_FILENAMES = {".env", ".envrc", "id_rsa", "id_dsa"}
 SENSITIVE_SUFFIXES = {".env", ".pem", ".key", ".crt", ".pfx", ".p12"}
-TEXT_FILE_EXTENSIONS = {".py", ".md", ".rego", ".txt", ".json", ".sh", ".yaml", ".yml", ".cfg", ".ini", ".tf", ".tfvars"}
-
+TEXT_FILE_EXTENSIONS = {
+    ".py",
+    ".md",
+    ".rego",
+    ".txt",
+    ".json",
+    ".sh",
+    ".yaml",
+    ".yml",
+    ".cfg",
+    ".ini",
+    ".tf",
+    ".tfvars",
+}
 
 
 def _collect_cli_package_files() -> List[Path]:
@@ -87,6 +107,7 @@ LICENSE_TEXT = (
 
 SIGNER_DOCUMENTATION_URL = "docs/release-distribution.md#verifying-downloads"
 
+
 def _signer_metadata(bundle_name: str) -> List[Dict[str, str]]:
     base = f"{bundle_name}.zip"
     return [
@@ -105,6 +126,7 @@ def _signer_metadata(bundle_name: str) -> List[Dict[str, str]]:
             "documentation": SIGNER_DOCUMENTATION_URL,
         }
     ]
+
 
 DEFAULT_BUNDLE_VERSION = os.getenv("VSCAN_BUNDLE_VERSION", "dev")
 SPECIFIERS = ["==", "!=", ">=", "<=", "~=", ">", "<"]
@@ -125,7 +147,9 @@ def write_sha256(p: Path) -> None:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build the VectorScan free bundle with bundled Terraform binary")
+    parser = argparse.ArgumentParser(
+        description="Build the VectorScan free bundle with bundled Terraform binary"
+    )
     parser.add_argument(
         "--bundle-name",
         default="vectorscan-free",
@@ -152,7 +176,7 @@ def load_vectorscan_module():
         raise RuntimeError("Unable to load vectorscan module for packaging")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)  # type: ignore[attr-defined]
+    spec.loader.exec_module(module)
     return module
 
 
@@ -237,24 +261,30 @@ def _policy_manifest_summary() -> Dict[str, Any]:
     metadata_entries = [policy.metadata for policy in policies]
     if not metadata_entries:
         raise RuntimeError("No policies registered for manifest generation")
-    return build_policy_manifest(metadata_entries, policy_pack_hash_value=policy_pack_hash(), path="embedded")
+    return build_policy_manifest(
+        metadata_entries, policy_pack_hash_value=policy_pack_hash(), path="embedded"
+    )
 
 
 def _preview_manifest_summary() -> Dict[str, Any]:
     manifest_path = SRC / "preview_manifest.json"
     if not manifest_path.exists():
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
-        placeholder = {
+        placeholder: Dict[str, Any] = {
             "version": "dev",
             "generated_at": "1970-01-01T00:00:00Z",
             "policies": [
                 {"id": "P-PLACEHOLDER", "summary": "Placeholder preview manifest"},
             ],
         }
-        canonical = json.dumps(placeholder["policies"], sort_keys=True, separators=(",", ":")).encode("utf-8")
+        canonical = json.dumps(
+            placeholder["policies"], sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
         placeholder["signature"] = f"sha256:{hashlib.sha256(canonical).hexdigest()}"
         placeholder["verified"] = True
-        manifest_path.write_text(json.dumps(placeholder, indent=2, ensure_ascii=False), encoding="utf-8")
+        manifest_path.write_text(
+            json.dumps(placeholder, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
     try:
         manifest = load_preview_manifest(manifest_path)
     except PreviewManifestError as exc:  # pragma: no cover - validation should always succeed
@@ -387,7 +417,9 @@ def _collect_requirement_entries(files: Iterable[Path]) -> List[Dict[str, str]]:
     return entries
 
 
-def _build_sbom(bundle_name: str, bundle_version: str, components: List[Dict[str, str]]) -> Dict[str, Any]:
+def _build_sbom(
+    bundle_name: str, bundle_version: str, components: List[Dict[str, str]]
+) -> Dict[str, Any]:
     timestamp = _deterministic_timestamp()
     sbom_components: List[Dict[str, Any]] = []
     for comp in components:
@@ -399,7 +431,7 @@ def _build_sbom(bundle_name: str, bundle_version: str, components: List[Dict[str
         }
         props = [
             {"name": "cdx:lockfile", "value": comp.get("source", "requirements.txt")},
-            {"name": "cdx:requirement", "value": comp.get("raw", comp["name"])}
+            {"name": "cdx:requirement", "value": comp.get("raw", comp["name"])},
         ]
         constraint = comp.get("constraint")
         if constraint:
@@ -444,7 +476,9 @@ def _write_path_with_fixed_metadata(z: zipfile.ZipFile, src: Path, arcname: str)
         shutil.copyfileobj(reader, writer, length=1024 * 64)
 
 
-def _write_bytes_with_fixed_metadata(z: zipfile.ZipFile, arcname: str, data: bytes, mode: int | None = 0o644) -> None:
+def _write_bytes_with_fixed_metadata(
+    z: zipfile.ZipFile, arcname: str, data: bytes, mode: int | None = 0o644
+) -> None:
     zi = _zipinfo_for_arcname(arcname, mode)
     z.writestr(zi, data)
 
@@ -466,7 +500,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Warning: skipping Terraform bundling ({exc})")
 
     dependencies = _collect_requirement_entries(REQUIREMENT_FILES)
-    sbom_payload = json.dumps(_build_sbom(bundle_name, bundle_version, dependencies), indent=2, sort_keys=True) + "\n"
+    sbom_payload = (
+        json.dumps(_build_sbom(bundle_name, bundle_version, dependencies), indent=2, sort_keys=True)
+        + "\n"
+    )
     sbom_bytes = sbom_payload.encode("utf-8")
 
     DIST.mkdir(parents=True, exist_ok=True)

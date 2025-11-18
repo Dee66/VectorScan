@@ -45,7 +45,11 @@ def test_stream_plan_collects_resources_and_stats(tmp_path):
             }
         },
         "resource_changes": [
-            {"address": "aws_db_instance.db", "type": "aws_db_instance", "change": {"actions": ["update"]}}
+            {
+                "address": "aws_db_instance.db",
+                "type": "aws_db_instance",
+                "change": {"actions": ["update"]},
+            }
         ],
     }
     path = _write_plan(tmp_path, plan)
@@ -63,13 +67,7 @@ def test_stream_plan_collects_resources_and_stats(tmp_path):
 
 
 def test_stream_plan_schema_errors(tmp_path):
-    bad_plan = {
-        "planned_values": {
-            "root_module": {
-                "resources": {"not": "a list"}
-            }
-        }
-    }
+    bad_plan = {"planned_values": {"root_module": {"resources": {"not": "a list"}}}}
     path = _write_plan(tmp_path, bad_plan)
     with pytest.raises(PlanSchemaError):
         stream_plan(path)

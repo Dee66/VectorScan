@@ -1,4 +1,5 @@
 """Terraform management and test helpers for VectorScan."""
+
 from __future__ import annotations
 
 import hashlib
@@ -14,21 +15,21 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 from urllib import request
 
 from tools.vectorscan.constants import (
     DEFAULT_TERRAFORM_CACHE,
     MIN_TERRAFORM_TESTS_VERSION,
     REQUIRED_TERRAFORM_VERSION,
-    ROOT_DIR as _ROOT_DIR,
 )
+from tools.vectorscan.constants import ROOT_DIR as _ROOT_DIR
 
 
 def _parse_semver(value: str) -> Tuple[int, int, int]:
     parts: List[int] = []
-    for token in value.split('.'):
-        digits = ''.join(ch for ch in token if ch.isdigit())
+    for token in value.split("."):
+        digits = "".join(ch for ch in token if ch.isdigit())
         parts.append(int(digits) if digits else 0)
     while len(parts) < 3:
         parts.append(0)
@@ -103,7 +104,7 @@ def _shared_safe_chdir_flag() -> Callable[..., str]:
     for module in _vectorscan_modules():
         candidate = getattr(module, "_safe_chdir_flag", None)
         if callable(candidate):
-            return candidate  # type: ignore[return-value]
+            return cast(Callable[..., str], candidate)
     return _safe_chdir_flag
 
 
@@ -138,7 +139,12 @@ class TerraformResolution:
 
 
 class TerraformManager:
-    def __init__(self, required_version: str = REQUIRED_TERRAFORM_VERSION, download_dir: Optional[Path] = None, auto_download: bool = True):
+    def __init__(
+        self,
+        required_version: str = REQUIRED_TERRAFORM_VERSION,
+        download_dir: Optional[Path] = None,
+        auto_download: bool = True,
+    ):
         self.required_version = required_version
         self.required_tuple = _parse_semver(required_version)
         self.download_dir = download_dir or DEFAULT_TERRAFORM_CACHE
@@ -162,25 +168,34 @@ class TerraformManager:
         if not self.auto_download:
             if candidates:
                 return candidates[0]
-            raise TerraformNotFoundError("Terraform CLI not found and auto-download disabled. Set VSCAN_TERRAFORM_BIN or enable downloads.")
+            raise TerraformNotFoundError(
+                "Terraform CLI not found and auto-download disabled. Set VSCAN_TERRAFORM_BIN or enable downloads."
+            )
 
         try:
             downloaded = self._download()
         except TerraformDownloadError as exc:
             if candidates:
-                print(f"VectorScan: Terraform download failed ({exc}); falling back to installed Terraform {candidates[0].version}.", file=sys.stderr)
+                print(
+                    f"VectorScan: Terraform download failed ({exc}); falling back to installed Terraform {candidates[0].version}.",
+                    file=sys.stderr,
+                )
                 return candidates[0]
             raise
 
         res = self._resolution_for(downloaded, source="download")
         if not res:
-            raise TerraformManagerError("Failed to determine version of downloaded Terraform binary.")
+            raise TerraformManagerError(
+                "Failed to determine version of downloaded Terraform binary."
+            )
         return res
 
     def _resolve_override(self, path: Path) -> TerraformResolution:
         res = self._resolution_for(path, source="override")
         if not res:
-            raise TerraformManagerError(f"Could not determine Terraform version for override path: {path}")
+            raise TerraformManagerError(
+                f"Could not determine Terraform version for override path: {path}"
+            )
         return res
 
     def _resolution_for(self, path: Path, source: str) -> Optional[TerraformResolution]:
@@ -191,7 +206,9 @@ class TerraformManager:
 
     def _binary_version(self, binary: Path) -> Optional[str]:
         try:
-            result = subprocess.run([str(binary), "version", "-json"], capture_output=True, text=True)
+            result = subprocess.run(
+                [str(binary), "version", "-json"], capture_output=True, text=True
+            )
         except FileNotFoundError:
             return None
         if result.returncode == 0:
@@ -232,7 +249,9 @@ class TerraformManager:
             "aarch64": "arm64",
         }
         if os_tag not in os_map or arch_tag not in arch_map:
-            raise TerraformDownloadError(f"Unsupported platform for auto-download: {platform.system()} {platform.machine()}")
+            raise TerraformDownloadError(
+                f"Unsupported platform for auto-download: {platform.system()} {platform.machine()}"
+            )
 
         dest_dir = self.download_dir / self.required_version
         dest_dir.mkdir(parents=True, exist_ok=True)
@@ -260,11 +279,15 @@ class TerraformManager:
             try:
                 member = zf.getinfo(binary_name)
             except KeyError as exc:
-                raise TerraformDownloadError(f"Binary {binary_name} not found in Terraform archive") from exc
+                raise TerraformDownloadError(
+                    f"Binary {binary_name} not found in Terraform archive"
+                ) from exc
             try:
                 tmp_dir = Path(tempfile.mkdtemp(prefix="terraform-download-"))
             except OSError as exc:
-                raise TerraformDownloadError(f"Failed to create temp dir for Terraform download: {exc}") from exc
+                raise TerraformDownloadError(
+                    f"Failed to create temp dir for Terraform download: {exc}"
+                ) from exc
             try:
                 zf.extract(member, path=tmp_dir)
                 extracted = tmp_dir / binary_name
@@ -389,7 +412,7 @@ def _shared_select_strategy() -> Callable[[str], TerraformTestStrategy]:
     for module in _vectorscan_modules():
         candidate = getattr(module, "_select_strategy", None)
         if callable(candidate):
-            return candidate  # type: ignore[return-value]
+            return cast(Callable[[str], TerraformTestStrategy], candidate)
     return _select_strategy
 
 
@@ -413,7 +436,11 @@ def _strategy_error_report(
 
 
 def run_terraform_tests(override_bin: Optional[str], auto_download: bool) -> Dict[str, Any]:
-    manager = TerraformManager(required_version=REQUIRED_TERRAFORM_VERSION, download_dir=DEFAULT_TERRAFORM_CACHE, auto_download=auto_download)
+    manager = TerraformManager(
+        required_version=REQUIRED_TERRAFORM_VERSION,
+        download_dir=DEFAULT_TERRAFORM_CACHE,
+        auto_download=auto_download,
+    )
     try:
         resolution = manager.ensure(override_bin)
     except TerraformNotFoundError as exc:

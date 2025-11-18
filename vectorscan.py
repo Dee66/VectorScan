@@ -2,8 +2,9 @@
 
 This file allows tests and linters to import `vectorscan` directly without relying on `sys.path` hacks.
 """
-from importlib import import_module
+
 import sys
+from importlib import import_module
 
 _vectorscan_module = import_module("tools.vectorscan.vectorscan")
 sys.modules[__name__] = _vectorscan_module

@@ -42,7 +42,9 @@ def _run_cosign(bundle: Path, signature: Path, public_key: Path, require: bool) 
         if require:
             print("gumroad-validator: cosign not found but required", file=sys.stderr)
             return False
-        print("gumroad-validator: cosign not found; skipping signature verification", file=sys.stderr)
+        print(
+            "gumroad-validator: cosign not found; skipping signature verification", file=sys.stderr
+        )
         return True
 
     cmd = [
@@ -74,13 +76,27 @@ def _normalize_digest(value: Optional[str]) -> Optional[str]:
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate Gumroad bundle against release artifact")
-    parser.add_argument("--release-bundle", required=True, type=Path, help="Path to the GitHub release bundle")
-    parser.add_argument("--gumroad-bundle", required=True, type=Path, help="Path to the Gumroad-uploaded bundle")
+    parser.add_argument(
+        "--release-bundle", required=True, type=Path, help="Path to the GitHub release bundle"
+    )
+    parser.add_argument(
+        "--gumroad-bundle", required=True, type=Path, help="Path to the Gumroad-uploaded bundle"
+    )
     parser.add_argument("--release-sha256", help="Expected SHA256 for the release bundle (hex)")
-    parser.add_argument("--release-sha256-file", type=Path, help="File containing expected SHA256 for the release bundle")
+    parser.add_argument(
+        "--release-sha256-file",
+        type=Path,
+        help="File containing expected SHA256 for the release bundle",
+    )
     parser.add_argument("--gumroad-sha256", help="Expected SHA256 for the Gumroad bundle (hex)")
-    parser.add_argument("--gumroad-sha256-file", type=Path, help="File containing expected SHA256 for the Gumroad bundle")
-    parser.add_argument("--public-key", type=Path, help="Path to cosign public key for signature verification")
+    parser.add_argument(
+        "--gumroad-sha256-file",
+        type=Path,
+        help="File containing expected SHA256 for the Gumroad bundle",
+    )
+    parser.add_argument(
+        "--public-key", type=Path, help="Path to cosign public key for signature verification"
+    )
     parser.add_argument("--signature", type=Path, help="Path to cosign signature for the bundle")
     parser.add_argument(
         "--require-cosign",
@@ -154,7 +170,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         if not _run_cosign(release_bundle, signature, public_key, args.require_cosign):
             return EXIT_COSIGN_FAILURE
     elif args.public_key or args.signature:
-        print("gumroad-validator: provide both --public-key and --signature or neither", file=sys.stderr)
+        print(
+            "gumroad-validator: provide both --public-key and --signature or neither",
+            file=sys.stderr,
+        )
         return EXIT_INVALID_INPUT
 
     print("gumroad-validator: validation complete")

@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/suspicious_defaults.py
+# hypothesis_version: 6.148.1
+
+['*', '0', '0.0.0.0/0', '1', ':*', '::/0', 'Action', 'Statement', 'acl', 'address', 'after', 'aws_db_instance', 'aws_iam_group_policy', 'aws_iam_policy', 'aws_iam_role_policy', 'aws_iam_user_policy', 'aws_rds_cluster', 'aws_rds_instance', 'aws_s3_bucket', 'aws_security_group', 'aws_subnet', 'change', 'cidr_blocks', 'enabled', 'encrypt_at_rest', 'false', 'ingress', 'ipv6_cidr_blocks', 'name', 'no', 'off', 'on', 'policy', 'public-read', 'public-read-write', 'reason', 'resource_changes', 'resource_type', 'storage_encrypted', 'true', 'type', 'unknown', 'values', 'yes']

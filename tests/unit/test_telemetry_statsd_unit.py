@@ -1,20 +1,19 @@
+import importlib.util
 import json
 import tempfile
 from pathlib import Path
-from types import SimpleNamespace
-
-import importlib.util
-from importlib.machinery import ModuleSpec
-from typing import cast, List, Tuple
+from types import ModuleType, SimpleNamespace
+from typing import List, Tuple
 
 
-def load_module_from_path(name: str, path: Path):
+def load_module_from_path(name: str, path: Path) -> ModuleType:
     spec_opt = importlib.util.spec_from_file_location(name, str(path))
     assert spec_opt is not None, "Failed to create spec for module"
-    spec = cast(ModuleSpec, spec_opt)
-    module = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
-    assert spec.loader is not None, "Spec has no loader"
-    spec.loader.exec_module(module)  # type: ignore[union-attr]
+    spec = spec_opt
+    module = importlib.util.module_from_spec(spec)
+    loader = spec.loader
+    assert loader is not None, "Spec has no loader"
+    loader.exec_module(module)
     return module
 
 
@@ -153,7 +152,9 @@ def test_main_statsd_toggle_and_csv_idempotency(monkeypatch):
         monkeypatch.setattr(tc, "parse_args", lambda: args_disabled_flag)
         rc_disabled = tc.main()
         assert rc_disabled == 0
-        assert len(factory.instances) == sockets_before_disable  # no additional sockets when disabled flag set
+        assert (
+            len(factory.instances) == sockets_before_disable
+        )  # no additional sockets when disabled flag set
 
         # Now run with statsd host unset (legacy behavior)
         args_no_statsd = SimpleNamespace(

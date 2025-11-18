@@ -1,4 +1,5 @@
 """Global pytest configuration for VectorScan tests."""
+
 from __future__ import annotations
 
 import os

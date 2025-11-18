@@ -1,4 +1,5 @@
 """Utilities for strict mode, environment metadata, and CLI color helpers."""
+
 from __future__ import annotations
 
 import os
@@ -7,8 +8,6 @@ import sys
 import time
 from typing import Any, Dict, Optional
 
-from tools.vectorscan.env_flags import env_falsey, env_truthy
-from tools.vectorscan.time_utils import deterministic_epoch
 from tools.vectorscan.constants import (
     ANSI_BOLD,
     ANSI_GREEN,
@@ -16,6 +15,8 @@ from tools.vectorscan.constants import (
     ANSI_RESET,
     ANSI_YELLOW,
 )
+from tools.vectorscan.env_flags import env_falsey, env_truthy
+from tools.vectorscan.time_utils import deterministic_epoch
 
 
 class StrictModeViolation(RuntimeError):

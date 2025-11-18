@@ -50,37 +50,59 @@ def compute_progress(text: str) -> tuple[int, int, int]:
     return done, total, percent
 
 
-def update_progress_value(html: str, percent: int) -> str:
-    # Replace the first <progress id="vg-progress"|"vs-progress" ...> tag's value
-    def replace_tag(match: re.Match) -> str:
+def update_progress_value(html: str, percent: int, progress_ids: list[str]) -> str:
+    """Replace the value attribute on the first matching progress tag."""
+
+    def replace_tag(match: re.Match[str]) -> str:
         tag = match.group(0)
-        if re.search(r"\bvalue=", tag):
-            tag = re.sub(r"(\bvalue=[\"']?)(\d{1,3})([\"']?)", rf"\g<1>{percent}\g<3>", tag, count=1)
+        has_value_attr = re.search(r"\bvalue=", tag) is not None
+        if has_value_attr:
+            tag = re.sub(
+                r"(\bvalue=[\"']?)(\d{1,3})([\"']?)", rf"\g<1>{percent}\g<3>", tag, count=1
+            )
         else:
-            tag = tag.rstrip('>') + f' value="{percent}">'
+            tag = tag.rstrip(">") + f' value="{percent}">'
         return tag
 
-    updated = re.sub(r"<progress\b[^>]*id=[\"']vg-progress[\"'][^>]*>", replace_tag, html, count=1, flags=re.IGNORECASE)
-    if updated == html:
-        updated = re.sub(r"<progress\b[^>]*id=[\"']vs-progress[\"'][^>]*>", replace_tag, html, count=1, flags=re.IGNORECASE)
+    updated = html
+    for progress_id in progress_ids:
+        pattern = rf"<progress\\b[^>]*id=[\"']{re.escape(progress_id)}[\"'][^>]*>"
+        candidate = re.sub(pattern, replace_tag, updated, count=1, flags=re.IGNORECASE)
+        if candidate != updated:
+            return candidate
     return updated
 
 
-def update_progress_label(html: str, done: int, total: int, percent: int) -> str:
+def update_progress_label(
+    html: str, done: int, total: int, percent: int, label_ids: list[str]
+) -> str:
     new_text = f"{percent}% Complete ({done}/{total})"
-    pattern_vg = r"(<div[^>]*id=[\"']vg-progress-label[\"'][^>]*>)(.*?)(</div>)"
-    updated = re.sub(pattern_vg, r"\g<1>" + new_text + r"\g<3>", html, count=1, flags=re.IGNORECASE | re.DOTALL)
-    if updated == html:
-        pattern_vs = r"(<div[^>]*id=[\"']vs-progress-label[\"'][^>]*>)(.*?)(</div>)"
-        updated = re.sub(pattern_vs, r"\g<1>" + new_text + r"\g<3>", html, count=1, flags=re.IGNORECASE | re.DOTALL)
+    updated = html
+    for label_id in label_ids:
+        pattern = rf"(<div[^>]*id=[\"']{re.escape(label_id)}[\"'][^>]*>)(.*?)(</div>)"
+        candidate = re.sub(
+            pattern,
+            r"\g<1>" + new_text + r"\g<3>",
+            updated,
+            count=1,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        if candidate != updated:
+            return candidate
     return updated
 
 
-def update_file(path: Path, dry_run: bool = False) -> tuple[int, int, int]:
+def update_file(
+    path: Path,
+    *,
+    progress_ids: list[str],
+    label_ids: list[str],
+    dry_run: bool = False,
+) -> tuple[int, int, int]:
     text = path.read_text(encoding="utf-8")
     done, total, percent = compute_progress(text)
-    updated = update_progress_value(text, percent)
-    updated = update_progress_label(updated, done, total, percent)
+    updated = update_progress_value(text, percent, progress_ids)
+    updated = update_progress_label(updated, done, total, percent, label_ids)
 
     if not dry_run and updated != text:
         path.write_text(updated, encoding="utf-8")
@@ -89,8 +111,28 @@ def update_file(path: Path, dry_run: bool = False) -> tuple[int, int, int]:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Update checklist progress bar based on checkboxes")
-    p.add_argument("-f", "--file", type=Path, default=DEFAULT_CHECKLIST_PATH, help="Path to checklist markdown file")
-    p.add_argument("--dry-run", action="store_true", help="Do not write changes, only print computed progress")
+    p.add_argument(
+        "-f",
+        "--file",
+        type=Path,
+        default=DEFAULT_CHECKLIST_PATH,
+        help="Path to checklist markdown file",
+    )
+    p.add_argument(
+        "--progress-id",
+        dest="progress_ids",
+        action="append",
+        help="Progress element id to update (can be provided multiple times)",
+    )
+    p.add_argument(
+        "--label-id",
+        dest="label_ids",
+        action="append",
+        help="Progress label div id to update (can be provided multiple times)",
+    )
+    p.add_argument(
+        "--dry-run", action="store_true", help="Do not write changes, only print computed progress"
+    )
     return p.parse_args(argv)
 
 
@@ -99,7 +141,14 @@ def main(argv: list[str] | None = None) -> int:
     if not args.file.exists():
         print(f"Error: file not found: {args.file}", file=sys.stderr)
         return 2
-    done, total, percent = update_file(args.file, dry_run=args.dry_run)
+    progress_ids = args.progress_ids or ["vg-progress", "vs-progress"]
+    label_ids = args.label_ids or ["vg-progress-label", "vs-progress-label"]
+    done, total, percent = update_file(
+        args.file,
+        progress_ids=progress_ids,
+        label_ids=label_ids,
+        dry_run=args.dry_run,
+    )
     print(f"Progress: {percent}% ({done}/{total})")
     return 0
 

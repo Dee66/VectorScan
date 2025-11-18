@@ -20,8 +20,12 @@ Manifest = Dict[str, Any]
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Validate VectorScan bundles using the embedded manifest")
-    parser.add_argument("--bundle", required=True, type=Path, help="Path to the VectorScan bundle zip")
+    parser = argparse.ArgumentParser(
+        description="Validate VectorScan bundles using the embedded manifest"
+    )
+    parser.add_argument(
+        "--bundle", required=True, type=Path, help="Path to the VectorScan bundle zip"
+    )
     parser.add_argument(
         "--manifest",
         type=Path,
@@ -41,7 +45,9 @@ def _read_manifest_from_zip(bundle: Path) -> tuple[str, Manifest]:
             try:
                 manifest_bytes = zf.read(MANIFEST_NAME)
             except KeyError as exc:
-                raise FileNotFoundError(f"bundle integrity: missing {MANIFEST_NAME} in {bundle}") from exc
+                raise FileNotFoundError(
+                    f"bundle integrity: missing {MANIFEST_NAME} in {bundle}"
+                ) from exc
     except zipfile.BadZipFile as exc:
         raise ValueError(f"bundle integrity: not a valid zip archive: {bundle}") from exc
 

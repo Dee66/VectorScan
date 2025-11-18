@@ -1,10 +1,10 @@
 """Automate the GitHub checks for the VectorScan CLI release workflow."""
+
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import sys
 import urllib.error
 import urllib.request
 from typing import Any, Dict, Iterable, Sequence
@@ -12,7 +12,12 @@ from typing import Any, Dict, Iterable, Sequence
 API_BASE = "https://api.github.com/repos"
 USER_AGENT = "VectorScanReleaseChecker/1.0"
 
-REQUIRED_ASSET_SUFFIXES = ["vectorscan-free.zip", "vectorscan-free.zip.sha256", "vectorscan-free.zip.sig", "vectorscan-free.zip.crt"]
+REQUIRED_ASSET_SUFFIXES = [
+    "vectorscan-free.zip",
+    "vectorscan-free.zip.sha256",
+    "vectorscan-free.zip.sig",
+    "vectorscan-free.zip.crt",
+]
 
 
 class GithubQueryError(RuntimeError):
@@ -71,10 +76,21 @@ def print_workflow_summary(runs: Sequence[Dict[str, Any]]) -> None:
 
 
 def main(argv: Iterable[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Validate the VectorScan GitHub release and workflow status.")
-    parser.add_argument("--repo", type=str, default="Dee66/VectorScan", help="GitHub repo to check.")
-    parser.add_argument("--workflow", type=str, default="vectorscan-distribution.yml", help="Workflow filename to inspect.")
-    parser.add_argument("--branch", type=str, default="main", help="Branch to scope the workflow run query.")
+    parser = argparse.ArgumentParser(
+        description="Validate the VectorScan GitHub release and workflow status."
+    )
+    parser.add_argument(
+        "--repo", type=str, default="Dee66/VectorScan", help="GitHub repo to check."
+    )
+    parser.add_argument(
+        "--workflow",
+        type=str,
+        default="vectorscan-distribution.yml",
+        help="Workflow filename to inspect.",
+    )
+    parser.add_argument(
+        "--branch", type=str, default="main", help="Branch to scope the workflow run query."
+    )
     parser.add_argument("--token", type=str, help="GitHub token (or set GITHUB_TOKEN).")
     seq = tuple(argv) if argv is not None else None
     args = parser.parse_args(seq or None)

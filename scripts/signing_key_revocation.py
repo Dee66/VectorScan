@@ -22,9 +22,15 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Verify replacement cosign keys during an emergency revocation and append to the revocation log",
     )
-    parser.add_argument("--bundle", required=True, type=Path, help="Path to the newly re-signed release bundle")
-    parser.add_argument("--bundle-version", required=True, help="Version string for the bundle (e.g., v1.5.1")
-    parser.add_argument("--revoked-key", required=True, type=Path, help="Path to the compromised cosign public key")
+    parser.add_argument(
+        "--bundle", required=True, type=Path, help="Path to the newly re-signed release bundle"
+    )
+    parser.add_argument(
+        "--bundle-version", required=True, help="Version string for the bundle (e.g., v1.5.1"
+    )
+    parser.add_argument(
+        "--revoked-key", required=True, type=Path, help="Path to the compromised cosign public key"
+    )
     parser.add_argument(
         "--replacement-key",
         required=True,
@@ -48,7 +54,9 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         default=Path("docs") / "signing_key_revocations.json",
         help="JSON file recording revocation events (default: docs/signing_key_revocations.json)",
     )
-    parser.add_argument("--cosign-path", type=Path, help="Explicit path to cosign binary (defaults to PATH lookup)")
+    parser.add_argument(
+        "--cosign-path", type=Path, help="Explicit path to cosign binary (defaults to PATH lookup)"
+    )
     parser.add_argument(
         "--note",
         help="Optional free-form note to include in the revocation log (e.g., operator, link to RCA)",

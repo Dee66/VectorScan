@@ -89,13 +89,15 @@ def _parse_policy(s: str) -> List[Dict[str, Any]]:
                 return [y for y in x if isinstance(y, str)]
             return []
 
-        out.append({
-            "Effect": eff,
-            "Actions": norm_list(act),
-            "NotActions": norm_list(not_act),
-            "Resources": norm_list(res),
-            "NotResources": norm_list(not_res),
-        })
+        out.append(
+            {
+                "Effect": eff,
+                "Actions": norm_list(act),
+                "NotActions": norm_list(not_act),
+                "Resources": norm_list(res),
+                "NotResources": norm_list(not_res),
+            }
+        )
     return out
 
 
@@ -157,14 +159,16 @@ def build_iam_drift_report(plan: Dict[str, Any]) -> Dict[str, Any]:
                     severity_by_action[term] = "high"
         if risky_additions:
             risky_count += 1
-            items.append({
-                "resource_type": rtype,
-                "resource_name": name,
-                "change": change.get("actions", []),
-                "risky_additions": risky_additions,
-                "severity_by_action": severity_by_action,
-                "notaction_broad_allow": notaction_flag,
-            })
+            items.append(
+                {
+                    "resource_type": rtype,
+                    "resource_name": name,
+                    "change": change.get("actions", []),
+                    "risky_additions": risky_additions,
+                    "severity_by_action": severity_by_action,
+                    "notaction_broad_allow": notaction_flag,
+                }
+            )
     status = "PASS" if risky_count == 0 else "FAIL"
     return {
         "status": status,

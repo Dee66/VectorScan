@@ -112,12 +112,14 @@ def test_cli_policy_manifest_print_command():
 
 
 def test_cli_policy_filter_limits_checks():
-    res = _run_cli([
-        str(FIXTURES / "tfplan_fail.json"),
-        "--json",
-        "--policy",
-        "P-FIN-001",
-    ])
+    res = _run_cli(
+        [
+            str(FIXTURES / "tfplan_fail.json"),
+            "--json",
+            "--policy",
+            "P-FIN-001",
+        ]
+    )
     assert res.returncode == 3, res.stdout + "\n" + res.stderr
     payload = json.loads(res.stdout)
     assert payload["checks"] == ["P-FIN-001"]
@@ -125,34 +127,40 @@ def test_cli_policy_filter_limits_checks():
 
 
 def test_cli_policy_preset_works():
-    res = _run_cli([
-        str(FIXTURES / "tfplan_pass.json"),
-        "--json",
-        "--policies",
-        "finops",
-    ])
+    res = _run_cli(
+        [
+            str(FIXTURES / "tfplan_pass.json"),
+            "--json",
+            "--policies",
+            "finops",
+        ]
+    )
     assert res.returncode == 0, res.stderr
     payload = json.loads(res.stdout)
     assert payload["checks"] == ["P-FIN-001"]
 
 
 def test_cli_policy_selection_invalid_option():
-    res = _run_cli([
-        str(FIXTURES / "tfplan_pass.json"),
-        "--json",
-        "--policies",
-        "unknown-pack",
-    ])
+    res = _run_cli(
+        [
+            str(FIXTURES / "tfplan_pass.json"),
+            "--json",
+            "--policies",
+            "unknown-pack",
+        ]
+    )
     assert res.returncode == 2
     assert "unknown-pack" in res.stderr.lower()
 
 
 def test_cli_github_action_mode_forces_json_sorted_output():
     plan = FIXTURES / "tfplan_fail.json"
-    res = _run_cli([
-        str(plan),
-        "--gha",
-    ])
+    res = _run_cli(
+        [
+            str(plan),
+            "--gha",
+        ]
+    )
     assert res.returncode == 3, res.stderr
     assert "\x1b" not in res.stdout
     assert not res.stderr.strip()
@@ -166,11 +174,14 @@ def test_cli_github_action_mode_forces_json_sorted_output():
 def test_cli_preview_manifest_override_requires_valid_signature(tmp_path):
     manifest = _write_preview_manifest(tmp_path, signature="sha256:deadbeef")
     env = {"VSCAN_PREVIEW_MANIFEST": str(manifest)}
-    res = _run_cli([
-        str(FIXTURES / "tfplan_pass.json"),
-        "--json",
-        "--preview-vectorguard",
-    ], env=env)
+    res = _run_cli(
+        [
+            str(FIXTURES / "tfplan_pass.json"),
+            "--json",
+            "--preview-vectorguard",
+        ],
+        env=env,
+    )
     assert res.returncode == 6
     assert "signature mismatch" in res.stderr.lower()
 
@@ -181,11 +192,14 @@ def test_cli_preview_manifest_skip_verify_allows_override(tmp_path):
         "VSCAN_PREVIEW_MANIFEST": str(manifest),
         "VSCAN_PREVIEW_SKIP_VERIFY": "1",
     }
-    res = _run_cli([
-        str(FIXTURES / "tfplan_pass.json"),
-        "--json",
-        "--preview-vectorguard",
-    ], env=env)
+    res = _run_cli(
+        [
+            str(FIXTURES / "tfplan_pass.json"),
+            "--json",
+            "--preview-vectorguard",
+        ],
+        env=env,
+    )
     assert res.returncode == 10, res.stderr
     payload = json.loads(res.stdout)
     assert payload["preview_generated"] is True

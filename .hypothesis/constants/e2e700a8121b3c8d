@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/plan_utils.py
+# hypothesis_version: 6.148.1
+
+[197, 200, 1000, 1000000, '"', '.', '...', '/', ']', '_', '_format_diff_display', '_schema_error', 'actions', 'address', 'adds', 'after', 'before', 'build_plan_diff', 'change', 'change_summary', 'change_type', 'changed_attributes', 'changes', 'child_module_count', 'child_modules', 'create', 'delete', 'destroys', 'exceeds_threshold', 'file_size_bytes', 'file_size_mb', 'has_child_modules', 'iter_resources', 'legacy', 'load_json', 'load_plan_context', 'module_count', 'modules', 'name', 'parse_duration_ms', 'parser_mode', 'path', 'plan_slo', 'planned', 'planned_values', 'provider', 'provider[', 'provider_name', 'providers', 'resource', 'resource_changes', 'resource_count', 'resource_types', 'resources', 'resources_by_type', 'root', 'root_module', 'streaming', 'summary', 'type', 'unknown', 'unnamed', 'update', 'utf-8', 'with_resources']

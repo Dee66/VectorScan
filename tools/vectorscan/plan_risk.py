@@ -1,4 +1,5 @@
 """Plan risk profile heuristics for VectorScan outputs."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Tuple

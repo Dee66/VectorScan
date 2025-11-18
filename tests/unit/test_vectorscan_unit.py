@@ -3,22 +3,48 @@ import sys
 from pathlib import Path
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))
 
+from tests.helpers.plan_helpers import (
+    enable_strict_mode,
+    set_deterministic_clock,
+    write_plan,
+)
 from tools.vectorscan import vectorscan as vs
 from tools.vectorscan.policies import get_policy
 
+
 # Property-based test: iter_resources with random nested modules
 @given(
-    resources=st.lists(st.dictionaries(st.text(), st.integers() | st.text() | st.none() | st.dictionaries(st.text(), st.integers() | st.text() | st.none())), max_size=5),
-    child_modules=st.lists(st.dictionaries(keys=st.just("resources"), values=st.lists(st.dictionaries(st.text(), st.integers() | st.text() | st.none()), max_size=3)), max_size=3)
+    resources=st.lists(
+        st.dictionaries(
+            st.text(),
+            st.integers()
+            | st.text()
+            | st.none()
+            | st.dictionaries(st.text(), st.integers() | st.text() | st.none()),
+        ),
+        max_size=5,
+    ),
+    child_modules=st.lists(
+        st.dictionaries(
+            keys=st.just("resources"),
+            values=st.lists(
+                st.dictionaries(st.text(), st.integers() | st.text() | st.none()), max_size=3
+            ),
+        ),
+        max_size=3,
+    ),
 )
 def test_iter_resources_property(resources, child_modules):
-    plan = {"planned_values": {"root_module": {"resources": resources, "child_modules": child_modules}}}
+    plan = {
+        "planned_values": {"root_module": {"resources": resources, "child_modules": child_modules}}
+    }
     res = vs.iter_resources(plan)
     assert isinstance(res, list)
 
@@ -27,7 +53,9 @@ normalized_resource_strategy = st.fixed_dictionaries(
     {
         "type": st.text(max_size=6),
         "name": st.text(max_size=6),
-        "values": st.dictionaries(st.text(max_size=5), st.text(max_size=5) | st.integers() | st.none(), max_size=2),
+        "values": st.dictionaries(
+            st.text(max_size=5), st.text(max_size=5) | st.integers() | st.none(), max_size=2
+        ),
     }
 )
 
@@ -61,17 +89,37 @@ def test_iter_resources_plan_normalization(module):
     expected = _flatten_module(module)
     assert vs.iter_resources(plan) == expected
 
+
 # Property-based test: check_encryption with random resource dicts
 @given(
-    resources=st.lists(st.dictionaries(st.text(), st.integers() | st.text() | st.none() | st.dictionaries(st.text(), st.integers() | st.text() | st.none())), max_size=5)
+    resources=st.lists(
+        st.dictionaries(
+            st.text(),
+            st.integers()
+            | st.text()
+            | st.none()
+            | st.dictionaries(st.text(), st.integers() | st.text() | st.none()),
+        ),
+        max_size=5,
+    )
 )
 def test_check_encryption_property(resources):
     out = vs.check_encryption(resources)
     assert isinstance(out, list)
 
+
 # Property-based test: check_tags with random resource dicts
 @given(
-    resources=st.lists(st.dictionaries(st.text(), st.integers() | st.text() | st.none() | st.dictionaries(st.text(), st.integers() | st.text() | st.none())), max_size=5)
+    resources=st.lists(
+        st.dictionaries(
+            st.text(),
+            st.integers()
+            | st.text()
+            | st.none()
+            | st.dictionaries(st.text(), st.integers() | st.text() | st.none()),
+        ),
+        max_size=5,
+    )
 )
 def test_check_tags_property(resources):
     out = vs.check_tags(resources)
@@ -86,7 +134,9 @@ tag_values_strategy = st.dictionaries(
 
 resource_strategy = st.fixed_dictionaries(
     {
-        "type": st.sampled_from(sorted(list(vs.TAGGABLE_TYPES)) + ["aws_custom_app", "random_type"]),
+        "type": st.sampled_from(
+            sorted(list(vs.TAGGABLE_TYPES)) + ["aws_custom_app", "random_type"]
+        ),
         "values": st.fixed_dictionaries(
             {
                 "storage_encrypted": st.one_of(st.none(), st.booleans()),
@@ -96,6 +146,7 @@ resource_strategy = st.fixed_dictionaries(
         ),
     }
 )
+
 
 @given(st.lists(resource_strategy, max_size=5))
 def test_compute_metrics_compliance_score_bounds(resources):
@@ -114,10 +165,12 @@ def test_compute_violation_severity_summary_counts():
 
 
 def test_compute_violation_severity_summary_defaults_to_medium():
-    summary = vs.compute_violation_severity_summary([
-        "P-UNKNOWN-123: something else",
-        "not even a policy prefix",
-    ])
+    summary = vs.compute_violation_severity_summary(
+        [
+            "P-UNKNOWN-123: something else",
+            "not even a policy prefix",
+        ]
+    )
     assert summary["medium"] == 2
 
 
@@ -144,15 +197,25 @@ def test_structured_remediation_blocks(tmp_path, capsys):
         assert remediation["docs"], "Docs list should not be empty"
         assert remediation["hcl_examples"], "HCL examples required for remediation"
 
+
 # Combinatorial test: deeply nested child modules
 def test_iter_resources_deep_nesting():
-    plan = {"planned_values": {"root_module": {"resources": [], "child_modules": [
-        {"resources": [], "child_modules": [
-            {"resources": [{"type": "aws_db_instance"}]}
-        ]}
-    ]}}}
+    plan = {
+        "planned_values": {
+            "root_module": {
+                "resources": [],
+                "child_modules": [
+                    {
+                        "resources": [],
+                        "child_modules": [{"resources": [{"type": "aws_db_instance"}]}],
+                    }
+                ],
+            }
+        }
+    }
     res = vs.iter_resources(plan)
     assert any(r["type"] == "aws_db_instance" for r in res)
+
 
 # Negative test: malformed resource (missing type)
 def test_check_encryption_malformed():
@@ -160,41 +223,57 @@ def test_check_encryption_malformed():
     out = vs.check_encryption(resources)
     assert isinstance(out, list)
 
+
 # Edge case: _is_nonempty_string with whitespace and special chars
-@pytest.mark.parametrize("val,expected", [
-    ("   ", False),
-    ("\n\t", False),
-    ("foo", True),
-    ("!@#", True),
-    ("", False),
-    (None, False),
-])
+@pytest.mark.parametrize(
+    "val,expected",
+    [
+        ("   ", False),
+        ("\n\t", False),
+        ("foo", True),
+        ("!@#", True),
+        ("", False),
+        (None, False),
+    ],
+)
 def test__is_nonempty_string_edge(val, expected):
     assert vs._is_nonempty_string(val) == expected
 
+
 # Stress test: large number of resources
 def test_iter_resources_large():
-    resources = [{"type": "aws_db_instance", "values": {"storage_encrypted": True, "tags": {}}}] * 1000
+    resources = [
+        {"type": "aws_db_instance", "values": {"storage_encrypted": True, "tags": {}}}
+    ] * 1000
     plan = {"planned_values": {"root_module": {"resources": resources}}}
     res = vs.iter_resources(plan)
     assert len(res) == 1000
+
+
 # --- Additional test expansions for uncovered logic and error handling ---
 import pytest
+
 
 def test_iter_resources_empty_child_modules():
     plan = {"planned_values": {"root_module": {"resources": [], "child_modules": []}}}
     res = vs.iter_resources(plan)
     assert res == []
 
+
 def test_check_encryption_multiple_resources():
     resources = [
         {"type": "aws_db_instance", "values": {"storage_encrypted": True, "kms_key_id": "abc"}},
-        {"type": "aws_db_instance", "values": {"storage_encrypted": False, "kms_key_id": "abc"}, "name": "db1"},
+        {
+            "type": "aws_db_instance",
+            "values": {"storage_encrypted": False, "kms_key_id": "abc"},
+            "name": "db1",
+        },
         {"type": "aws_db_instance", "values": {"storage_encrypted": True}, "name": "db2"},
     ]
     out = vs.check_encryption(resources)
     assert any("storage_encrypted" in v for v in out)
     assert any("kms_key_id" in v for v in out)
+
 
 def test_check_tags_missing_all_tags():
     resources = [
@@ -204,8 +283,10 @@ def test_check_tags_missing_all_tags():
     out = vs.check_tags(resources)
     assert all("no tags" in v for v in out)
 
+
 def test__write_local_capture_creates_dir(tmp_path, monkeypatch):
     import os
+
     payload = {"foo": "bar"}
     # Patch __file__ to use tmp_path
     monkeypatch.setattr("vectorscan.__file__", str(tmp_path / "vectorscan.py"))
@@ -215,11 +296,15 @@ def test__write_local_capture_creates_dir(tmp_path, monkeypatch):
         assert "foo" in f.read()
     os.remove(path)
 
+
 def test__maybe_post_invalid_url():
     ok, info = vs._maybe_post("http://invalid:9999", {"foo": "bar"}, timeout=1)
     assert not ok
     assert isinstance(info, str)
+
+
 import pytest
+
 
 def test_load_json_valid_plan(tmp_path):
     plan = {
@@ -236,7 +321,7 @@ def test_load_json_valid_plan(tmp_path):
     assert result == plan
 
 
-@pytest.mark.parametrize("content", ["[]", "123", "null", "\"x\"", "true", "false"])
+@pytest.mark.parametrize("content", ["[]", "123", "null", '"x"', "true", "false"])
 def test_load_json_non_object(tmp_path, monkeypatch, content):
     import sys
 
@@ -254,12 +339,16 @@ def test_load_json_non_object(tmp_path, monkeypatch, content):
     with pytest.raises(DummySchemaError):
         vs.load_json(path)
 
+
 def test_load_json_file_not_found(monkeypatch):
     import sys
-    import builtins
-    class DummyFileNotFound(Exception): pass
+
+    class DummyFileNotFound(Exception):
+        pass
+
     def fake_exit(code):
         raise DummyFileNotFound()
+
     monkeypatch.setattr(sys, "exit", fake_exit)
     try:
         vs.load_json(Path("/not/a/real/file.json"))
@@ -268,11 +357,17 @@ def test_load_json_file_not_found(monkeypatch):
     else:
         assert False, "Should exit on file not found"
 
+
 def test_load_json_invalid_json(monkeypatch):
-    import sys, tempfile
-    class DummyJSONDecode(Exception): pass
+    import sys
+    import tempfile
+
+    class DummyJSONDecode(Exception):
+        pass
+
     def fake_exit(code):
         raise DummyJSONDecode()
+
     monkeypatch.setattr(sys, "exit", fake_exit)
     with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=True) as tf:
         tf.write("not valid json")
@@ -334,13 +429,29 @@ def test_load_json_child_modules_must_be_list(monkeypatch, tmp_path):
         vs.load_json(path)
 
 
-@pytest.mark.parametrize("plan,expected_types", [
-    ( {"planned_values": {"root_module": {"resources": [{"type": "aws_db_instance"}], "child_modules": [{"resources": [{"type": "aws_rds_cluster"}]}]}}}, {"aws_db_instance", "aws_rds_cluster"}),
-    ( {"planned_values": {"root_module": {}}}, set()),
-    ( {}, set()),
-    ( {"planned_values": {"root_module": {"resources": []}}}, set()),
-    ( {"planned_values": {"root_module": {"resources": [{"type": "aws_s3_bucket"}]}}}, {"aws_s3_bucket"}),
-])
+@pytest.mark.parametrize(
+    "plan,expected_types",
+    [
+        (
+            {
+                "planned_values": {
+                    "root_module": {
+                        "resources": [{"type": "aws_db_instance"}],
+                        "child_modules": [{"resources": [{"type": "aws_rds_cluster"}]}],
+                    }
+                }
+            },
+            {"aws_db_instance", "aws_rds_cluster"},
+        ),
+        ({"planned_values": {"root_module": {}}}, set()),
+        ({}, set()),
+        ({"planned_values": {"root_module": {"resources": []}}}, set()),
+        (
+            {"planned_values": {"root_module": {"resources": [{"type": "aws_s3_bucket"}]}}},
+            {"aws_s3_bucket"},
+        ),
+    ],
+)
 def test_iter_resources_cases(plan, expected_types):
     res = vs.iter_resources(plan)
     assert {r["type"] for r in res} == expected_types
@@ -422,7 +533,7 @@ def test_policy_isolation_runs_other_checks_when_encryption_fails(monkeypatch, t
             }
         }
     }
-    plan_path = _write_plan(tmp_path, plan)
+    plan_path = write_plan(tmp_path, plan)
 
     encryption_policy = get_policy("P-SEC-001")
 
@@ -459,7 +570,7 @@ def test_policy_isolation_runs_other_checks_when_tags_fail(monkeypatch, tmp_path
             }
         }
     }
-    plan_path = _write_plan(tmp_path, plan)
+    plan_path = write_plan(tmp_path, plan)
 
     tagging_policy = get_policy("P-FIN-001")
 
@@ -495,8 +606,8 @@ def test_vectorscan_json_handles_unicode(monkeypatch, tmp_path, capsys):
             }
         }
     }
-    plan_path = _write_plan(tmp_path, plan)
-    _set_deterministic_clock(monkeypatch)
+    plan_path = write_plan(tmp_path, plan)
+    set_deterministic_clock(monkeypatch)
 
     capsys.readouterr()
     code = vs.main([str(plan_path), "--json"])
@@ -508,14 +619,46 @@ def test_vectorscan_json_handles_unicode(monkeypatch, tmp_path, capsys):
     assert "数据库" in serialized
 
 
-@pytest.mark.parametrize("resources,expected_violations", [
-    ([{"type": "aws_db_instance", "values": {"storage_encrypted": True, "kms_key_id": "abc"}}], []),
-    ([{"type": "aws_db_instance", "values": {"storage_encrypted": False, "kms_key_id": "abc"}, "name": "db1"}], ["storage_encrypted"]),
-    ([{"type": "aws_db_instance", "values": {"storage_encrypted": True}, "name": "db2"}], ["kms_key_id"]),
-    ([{"type": "aws_s3_bucket", "values": {}}], []),
-    ([{"type": "aws_db_instance", "values": {}}], ["storage_encrypted"]),
-    ([{"type": "aws_rds_cluster", "values": {"storage_encrypted": False, "kms_key_id": None}, "name": "c1"}], ["storage_encrypted"]),
-])
+@pytest.mark.parametrize(
+    "resources,expected_violations",
+    [
+        (
+            [
+                {
+                    "type": "aws_db_instance",
+                    "values": {"storage_encrypted": True, "kms_key_id": "abc"},
+                }
+            ],
+            [],
+        ),
+        (
+            [
+                {
+                    "type": "aws_db_instance",
+                    "values": {"storage_encrypted": False, "kms_key_id": "abc"},
+                    "name": "db1",
+                }
+            ],
+            ["storage_encrypted"],
+        ),
+        (
+            [{"type": "aws_db_instance", "values": {"storage_encrypted": True}, "name": "db2"}],
+            ["kms_key_id"],
+        ),
+        ([{"type": "aws_s3_bucket", "values": {}}], []),
+        ([{"type": "aws_db_instance", "values": {}}], ["storage_encrypted"]),
+        (
+            [
+                {
+                    "type": "aws_rds_cluster",
+                    "values": {"storage_encrypted": False, "kms_key_id": None},
+                    "name": "c1",
+                }
+            ],
+            ["storage_encrypted"],
+        ),
+    ],
+)
 def test_check_encryption_cases(resources, expected_violations):
     out = vs.check_encryption(resources)
     for v in expected_violations:
@@ -545,21 +688,6 @@ def test_vectorscan_json_output_stable(monkeypatch, capsys):
     assert json.loads(output1) == json.loads(output2)
 
 
-def _write_plan(tmp_path, payload):
-    path = tmp_path / "plan.json"
-    path.write_text(json.dumps(payload))
-    return path
-
-
-def _set_deterministic_clock(monkeypatch):
-    monkeypatch.setenv("VSCAN_CLOCK_EPOCH", "1700000000")
-    monkeypatch.setenv("VSCAN_CLOCK_ISO", "2024-01-02T00:00:00Z")
-
-
-def _enable_strict_mode(monkeypatch):
-    monkeypatch.setenv("VSCAN_STRICT", "1")
-
-
 def test_build_environment_metadata_overrides(monkeypatch):
     monkeypatch.setenv("VSCAN_ENV_PLATFORM", "unit-os")
     monkeypatch.setenv("VSCAN_ENV_PLATFORM_RELEASE", "release-x")
@@ -586,8 +714,8 @@ def test_build_environment_metadata_overrides(monkeypatch):
 
 def test_cli_outputs_environment_block(monkeypatch, tmp_path, capsys):
     plan = {"planned_values": {"root_module": {"resources": []}}}
-    plan_path = _write_plan(tmp_path, plan)
-    _set_deterministic_clock(monkeypatch)
+    plan_path = write_plan(tmp_path, plan)
+    set_deterministic_clock(monkeypatch)
     monkeypatch.setenv("VSCAN_ENV_PLATFORM", "unit-os")
     monkeypatch.setenv("VSCAN_ENV_PLATFORM_RELEASE", "rel-1")
     monkeypatch.setenv("VSCAN_ENV_PYTHON_VERSION", "3.11.test")
@@ -608,8 +736,8 @@ def test_cli_outputs_environment_block(monkeypatch, tmp_path, capsys):
 
 
 def test_strict_mode_requires_clock_overrides(monkeypatch, tmp_path, capsys):
-    plan_path = _write_plan(tmp_path, {"planned_values": {"root_module": {"resources": []}}})
-    _enable_strict_mode(monkeypatch)
+    plan_path = write_plan(tmp_path, {"planned_values": {"root_module": {"resources": []}}})
+    enable_strict_mode(monkeypatch)
     for key in ("VSCAN_CLOCK_EPOCH", "VSCAN_CLOCK_ISO", "SOURCE_DATE_EPOCH"):
         monkeypatch.delenv(key, raising=False)
 
@@ -635,9 +763,9 @@ def test_strict_mode_disallows_policy_errors(monkeypatch, tmp_path, capsys):
             }
         }
     }
-    plan_path = _write_plan(tmp_path, plan)
-    _set_deterministic_clock(monkeypatch)
-    _enable_strict_mode(monkeypatch)
+    plan_path = write_plan(tmp_path, plan)
+    set_deterministic_clock(monkeypatch)
+    enable_strict_mode(monkeypatch)
 
     encryption_policy = get_policy("P-SEC-001")
 
@@ -656,9 +784,9 @@ def test_strict_mode_disallows_policy_errors(monkeypatch, tmp_path, capsys):
 
 def test_strict_mode_passes_when_clean(monkeypatch, tmp_path, capsys):
     plan = {"planned_values": {"root_module": {"resources": []}}}
-    plan_path = _write_plan(tmp_path, plan)
-    _set_deterministic_clock(monkeypatch)
-    _enable_strict_mode(monkeypatch)
+    plan_path = write_plan(tmp_path, plan)
+    set_deterministic_clock(monkeypatch)
+    enable_strict_mode(monkeypatch)
 
     capsys.readouterr()
     code = vs.main([str(plan_path), "--json"])
@@ -673,9 +801,7 @@ def test_compliance_score_penalty_clamped(monkeypatch, tmp_path, capsys):
     policy_after = json.dumps(
         {
             "Version": "2012-10-17",
-            "Statement": [
-                {"Effect": "Allow", "Action": ["iam:*"], "Resource": "*"}
-            ],
+            "Statement": [{"Effect": "Allow", "Action": ["iam:*"], "Resource": "*"}],
         }
     )
     plan = {
@@ -705,8 +831,8 @@ def test_compliance_score_penalty_clamped(monkeypatch, tmp_path, capsys):
             }
         ],
     }
-    plan_path = _write_plan(tmp_path, plan)
-    _set_deterministic_clock(monkeypatch)
+    plan_path = write_plan(tmp_path, plan)
+    set_deterministic_clock(monkeypatch)
 
     capsys.readouterr()
     exit_code = vs.main([str(plan_path), "--json", "--iam-drift-penalty", "250"])
@@ -732,8 +858,8 @@ def test_unknown_resource_types_handled(monkeypatch, tmp_path, capsys):
             }
         }
     }
-    plan_path = _write_plan(tmp_path, plan)
-    _set_deterministic_clock(monkeypatch)
+    plan_path = write_plan(tmp_path, plan)
+    set_deterministic_clock(monkeypatch)
 
     capsys.readouterr()
     exit_code = vs.main([str(plan_path), "--json"])
@@ -745,6 +871,7 @@ def test_unknown_resource_types_handled(monkeypatch, tmp_path, capsys):
     assert data["metrics"]["eligible_checks"] == 0
     assert data["metrics"]["compliance_score"] == 100
 
+
 def test__is_nonempty_string():
     assert vs._is_nonempty_string("foo")
     assert not vs._is_nonempty_string("")
@@ -752,14 +879,40 @@ def test__is_nonempty_string():
     assert not vs._is_nonempty_string("   ")
 
 
-@pytest.mark.parametrize("resources,expected", [
-    ([{"type": "aws_db_instance", "values": {"tags": {"CostCenter": "A", "Project": "B"}}}], []),
-    ([{"type": "aws_db_instance", "values": {"tags": {"CostCenter": "", "Project": "B"}}, "name": "db1"}], ["missing/empty tag"]),
-    ([{"type": "aws_db_instance", "values": {}, "name": "db2"}], ["no tags"]),
-    ([{"type": "aws_lambda_function", "values": {"tags": {"CostCenter": "A", "Project": "B"}}}], []),
-    ([{"type": "aws_db_instance", "values": {"tags": {}}}], ["no tags"]),
-    ([{"type": "aws_db_instance", "values": {"tags": {"CostCenter": "A"}}}], ["missing/empty tag"]),
-])
+@pytest.mark.parametrize(
+    "resources,expected",
+    [
+        (
+            [{"type": "aws_db_instance", "values": {"tags": {"CostCenter": "A", "Project": "B"}}}],
+            [],
+        ),
+        (
+            [
+                {
+                    "type": "aws_db_instance",
+                    "values": {"tags": {"CostCenter": "", "Project": "B"}},
+                    "name": "db1",
+                }
+            ],
+            ["missing/empty tag"],
+        ),
+        ([{"type": "aws_db_instance", "values": {}, "name": "db2"}], ["no tags"]),
+        (
+            [
+                {
+                    "type": "aws_lambda_function",
+                    "values": {"tags": {"CostCenter": "A", "Project": "B"}},
+                }
+            ],
+            [],
+        ),
+        ([{"type": "aws_db_instance", "values": {"tags": {}}}], ["no tags"]),
+        (
+            [{"type": "aws_db_instance", "values": {"tags": {"CostCenter": "A"}}}],
+            ["missing/empty tag"],
+        ),
+    ],
+)
 def test_check_tags_cases(resources, expected):
     out = vs.check_tags(resources)
     for v in expected:
@@ -770,6 +923,7 @@ def test_check_tags_cases(resources, expected):
 
 def test__write_local_capture(tmp_path):
     import os
+
     payload = {"foo": "bar"}
     path = vs._write_local_capture(payload)
     assert path.exists()
@@ -787,10 +941,20 @@ def test__maybe_post():
 
 def test_main_smoke(tmp_path):
     import json as js
+
     f = tmp_path / "plan.json"
     f.write_text(js.dumps({"planned_values": {"root_module": {"resources": []}}}))
     code = vs.main([str(f), "--json"])
     assert code == 0
+
+
+def test_main_handles_unsupported_python(monkeypatch):
+    def boom():
+        raise vs.UnsupportedPythonVersion("bad python")
+
+    monkeypatch.setattr(vs, "ensure_supported_python", boom)
+    code = vs.main([])
+    assert code == vs.EXIT_CONFIG_ERROR
 
 
 def test_offline_mode_disables_terraform_auto_download(tmp_path, monkeypatch):
@@ -814,3 +978,75 @@ def test_offline_mode_disables_terraform_auto_download(tmp_path, monkeypatch):
     assert captured.get("auto_download") is False
     monkeypatch.delenv("VSCAN_OFFLINE", raising=False)
     monkeypatch.delenv("VSCAN_TERRAFORM_TESTS", raising=False)
+
+
+def _prepare_plan_for_terraform_toggle(tmp_path, monkeypatch):
+    plan = {"planned_values": {"root_module": {"resources": []}}}
+    plan_path = tmp_path / "plan-terraform-toggle.json"
+    plan_path.write_text(json.dumps(plan))
+    monkeypatch.delenv("VSCAN_OFFLINE", raising=False)
+    monkeypatch.delenv("VSCAN_ALLOW_NETWORK", raising=False)
+    monkeypatch.delenv("VSCAN_ALLOW_TERRAFORM_DOWNLOAD", raising=False)
+    monkeypatch.delenv("VSCAN_TERRAFORM_AUTO_DOWNLOAD", raising=False)
+    monkeypatch.setenv("VSCAN_TERRAFORM_TESTS", "1")
+    captured = {}
+
+    def fake_run(override_bin, auto_download):
+        captured["auto_download"] = auto_download
+        return {"status": "SKIP", "message": "toggle"}
+
+    monkeypatch.setattr(vs, "run_terraform_tests", fake_run)
+    return plan_path, captured
+
+
+def test_terraform_auto_download_requires_explicit_opt_in(tmp_path, monkeypatch):
+    plan_path, captured = _prepare_plan_for_terraform_toggle(tmp_path, monkeypatch)
+    code = vs.main([str(plan_path), "--allow-network"])
+    assert code == 0
+    assert captured.get("auto_download") is False
+
+
+def test_terraform_auto_download_enabled_via_new_env(tmp_path, monkeypatch):
+    plan_path, captured = _prepare_plan_for_terraform_toggle(tmp_path, monkeypatch)
+    monkeypatch.setenv("VSCAN_ALLOW_TERRAFORM_DOWNLOAD", "1")
+    code = vs.main([str(plan_path), "--allow-network"])
+    assert code == 0
+    assert captured.get("auto_download") is True
+
+
+def test_terraform_auto_download_enabled_via_legacy_env(tmp_path, monkeypatch):
+    plan_path, captured = _prepare_plan_for_terraform_toggle(tmp_path, monkeypatch)
+    monkeypatch.setenv("VSCAN_TERRAFORM_AUTO_DOWNLOAD", "1")
+    code = vs.main([str(plan_path), "--allow-network"])
+    assert code == 0
+    assert captured.get("auto_download") is True
+
+
+def test_terraform_auto_download_respects_no_download_flag(tmp_path, monkeypatch):
+    plan_path, captured = _prepare_plan_for_terraform_toggle(tmp_path, monkeypatch)
+    monkeypatch.setenv("VSCAN_ALLOW_TERRAFORM_DOWNLOAD", "1")
+    code = vs.main([str(plan_path), "--allow-network", "--no-terraform-download"])
+    assert code == 0
+    assert captured.get("auto_download") is False
+
+
+def test_permission_denied_plan_read(monkeypatch, tmp_path, capsys):
+    plan_path = tmp_path / "plan-permission.json"
+    plan_path.write_text("{}")
+
+    original_read_text = Path.read_text
+
+    def fake_read_text(self, *args, **kwargs):
+        if self == plan_path:
+            raise PermissionError("mock permission denied")
+        return original_read_text(self, *args, **kwargs)
+
+    monkeypatch.setenv("VSCAN_STREAMING_DISABLE", "1")
+    monkeypatch.setattr(Path, "read_text", fake_read_text)
+
+    code = vs.main([str(plan_path), "--json"])
+    captured = capsys.readouterr()
+
+    assert code == vs.EXIT_INVALID_INPUT
+    assert "permission denied" in captured.err.lower()
+    monkeypatch.delenv("VSCAN_STREAMING_DISABLE", raising=False)

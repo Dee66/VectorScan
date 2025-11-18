@@ -14,13 +14,17 @@ Output:
 - Optionally writes JSON with --out
 """
 from __future__ import annotations
-import argparse, glob, json, sys
+
+import argparse
+import glob
+import json
+import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
 DEFAULT_GLOBS = [
     "vectorscan-*.json",
-    str(Path("tools")/"vectorscan"/"captures"/"*.json"),
+    str(Path("tools") / "vectorscan" / "captures" / "*.json"),
 ]
 SEVERITY_LEVELS = ("critical", "high", "medium", "low")
 

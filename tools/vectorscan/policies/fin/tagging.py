@@ -1,7 +1,8 @@
 """FinOps tagging policy plugin."""
+
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 from ..base_policy import BasePolicy, PolicyMetadata, register_policy
 from ..common import REQUIRED_TAGS, TAGGABLE_TYPES, is_nonempty_string
@@ -17,7 +18,7 @@ class TaggingPolicy(BasePolicy):
         description="Taggable AWS resources must include CostCenter and Project tags.",
     )
 
-    def evaluate(self, resources: List[Dict[str, Any]]) -> List[str]:
+    def evaluate(self, resources: Sequence[Dict[str, Any]]) -> List[str]:
         violations: List[str] = []
         for resource in resources:
             if resource.get("type") not in TAGGABLE_TYPES:

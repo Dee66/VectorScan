@@ -1,11 +1,14 @@
 [tool.black]
 line-length = 100
 target-version = ["py311"]
-exclude = [
-  "/__pycache__/",
-  "/.terraform-bin/",
-  "/dist/",
-]
+exclude = """
+/(
+    \\.venv
+  | __pycache__
+  | \\.terraform-bin
+  | dist
+)/
+"""
 
 [tool.ruff]
 line-length = 100
@@ -15,6 +18,8 @@ extend-exclude = [
   ".terraform-bin",
   "dist",
 ]
+
+[tool.ruff.lint]
 # Enable basic rule sets (pyflakes, pycodestyle)
 select = ["E", "F", "W"]
 ignore = [
@@ -27,3 +32,18 @@ ignore = [
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = [
+  "vectorscan",
+  "tools",
+  "tests",
+]
+skip = [
+  "__pycache__",
+  ".terraform-bin",
+  "dist",
+  ".venv",
+]

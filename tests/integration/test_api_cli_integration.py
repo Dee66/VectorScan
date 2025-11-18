@@ -1,7 +1,6 @@
-import os
 import json
+import os
 import sys
-import subprocess
 from pathlib import Path
 
 # Ensure repository root is importable for direct module imports like `lead_api`
@@ -10,6 +9,8 @@ _TOOLS_VSCAN = _ROOT / "tools" / "vectorscan"
 for p in (str(_ROOT), str(_TOOLS_VSCAN)):
     if p not in sys.path:
         sys.path.insert(0, p)
+
+os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
 
 import pytest
 
@@ -43,11 +44,13 @@ def test_cli_to_api_lead_capture(tmp_path, monkeypatch):
     os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
 
     import urllib.request as ur
+
     original = ur.urlopen
     ur.urlopen = fake_urlopen  # type: ignore
     fake_urlopen.last = None
     try:
         import vectorscan
+
         code = vectorscan.main([str(plan_path), "--lead-capture", "--email", "int@example.com"])  # type: ignore
     finally:
         ur.urlopen = original
@@ -63,7 +66,8 @@ def test_cli_to_api_lead_capture(tmp_path, monkeypatch):
 def test_api_rate_limiting(monkeypatch):
     # Simulate rate limiting window filled for an IP
     import time
-    from lead_api import _HITS, _WINDOW_SECONDS, _allow_request
+
+    from lead_api import _HITS, _allow_request
 
     ip = "10.1.2.3"
     now = int(time.time())
@@ -71,6 +75,8 @@ def test_api_rate_limiting(monkeypatch):
     assert _allow_request(ip) is False
 
 
-@pytest.mark.skip(reason="CORS headers require running the real HTTP server; skipped in integration test")
+@pytest.mark.skip(
+    reason="CORS headers require running the real HTTP server; skipped in integration test"
+)
 def test_api_cors():
     assert True

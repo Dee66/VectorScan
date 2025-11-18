@@ -47,7 +47,13 @@ def summarize(results: dict) -> tuple[int, int]:
 
 def main() -> int:
     ts = deterministic_isoformat()
-    unit_json = opa_test_json([str(ROOT / "policies"), str(ROOT / "tools" / "vectorscan"), str(ROOT / "tests" / "rego-tests")])
+    unit_json = opa_test_json(
+        [
+            str(ROOT / "policies"),
+            str(ROOT / "tools" / "vectorscan"),
+            str(ROOT / "tests" / "rego-tests"),
+        ]
+    )
     unit_total, unit_fail = summarize(unit_json)
 
     # Integration (same runner includes integration tests file)
@@ -59,11 +65,15 @@ def main() -> int:
 
     # Corpus sizes (if present)
     consolidated_dir = ROOT / "corpora" / "consolidated_db"
-    consolidated_count = sum(1 for _ in consolidated_dir.rglob("*")) if consolidated_dir.exists() else 0
+    consolidated_count = (
+        sum(1 for _ in consolidated_dir.rglob("*")) if consolidated_dir.exists() else 0
+    )
     minimized_dir = ROOT / "corpora" / "minimized_db"
     minimized_count = sum(1 for _ in minimized_dir.rglob("*")) if minimized_dir.exists() else 0
     pruned_examples_dir = ROOT / "corpora" / "pruned"
-    pruned_examples_count = len(list(pruned_examples_dir.glob("*.json"))) if pruned_examples_dir.exists() else 0
+    pruned_examples_count = (
+        len(list(pruned_examples_dir.glob("*.json"))) if pruned_examples_dir.exists() else 0
+    )
 
     # Previous metrics for deltas
     prev_metrics_path = ROOT / "coverage" / "prev_test_metrics.json"
@@ -112,14 +122,16 @@ def main() -> int:
         f"- Unit tests: {unit_total} total, {unit_fail} failed",
         f"- Integration tests: {integ_total} total, {integ_fail} failed",
         f"- Violation artifacts: {vio_count}",
-    f"- Consolidated corpus files: {consolidated_count} {delta('consolidated_count', consolidated_count)}",
-    f"- Minimized corpus files: {minimized_count} {delta('minimized_count', minimized_count)}",
-    f"- Pruned saved examples: {pruned_examples_count} {delta('pruned_examples_count', pruned_examples_count)}",
+        f"- Consolidated corpus files: {consolidated_count} {delta('consolidated_count', consolidated_count)}",
+        f"- Minimized corpus files: {minimized_count} {delta('minimized_count', minimized_count)}",
+        f"- Pruned saved examples: {pruned_examples_count} {delta('pruned_examples_count', pruned_examples_count)}",
     ]
     if shards and total_examples:
         md.append(f"- Nightly fuzz config: shards={shards}, total_examples={total_examples}")
     if kill_ratio is not None:
-        md.append(f"- Mutation kill ratio: {kill_ratio:.2%} ({killed}/{total_mutants}, survived={survived})")
+        md.append(
+            f"- Mutation kill ratio: {kill_ratio:.2%} ({killed}/{total_mutants}, survived={survived})"
+        )
     md.append("")
     DOC.write_text("\n".join(md) + "\n")
     print("Wrote", DOC)
@@ -133,8 +145,8 @@ def main() -> int:
         "integration_total": integ_total,
         "integration_fail": integ_fail,
         "violation_artifacts": vio_count,
-    "consolidated_count": consolidated_count,
-    "minimized_count": minimized_count,
+        "consolidated_count": consolidated_count,
+        "minimized_count": minimized_count,
         "pruned_examples_count": pruned_examples_count,
         "kill_ratio": kill_ratio,
         "killed": killed,

@@ -1,8 +1,9 @@
 """Base classes and registry for VectorScan policy plugins."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Sequence
+from typing import Any, Dict, List, Sequence
 
 
 @dataclass(frozen=True)
@@ -20,7 +21,9 @@ class BasePolicy:
     # Subclasses should override these attributes
     metadata: PolicyMetadata
 
-    def evaluate(self, resources: Sequence[dict]) -> List[str]:  # pragma: no cover - abstract
+    def evaluate(
+        self, resources: Sequence[Dict[str, Any]]
+    ) -> List[str]:  # pragma: no cover - abstract
         raise NotImplementedError
 
 

@@ -23,6 +23,21 @@ VectorScan helps you catch these issues *before deployment* with a tiny, auditab
 
 ---
 
+## Python compatibility
+
+VectorScan officially supports CPython **3.9 through 3.12**. The CLI enforces this window at startup so unsupported interpreters fail fast with a clear message. Use the included `noxfile.py` to run the full test suite across every supported interpreter:
+
+```bash
+nox -s tests-3.9
+nox -s tests-3.10
+nox -s tests-3.11
+nox -s tests-3.12
+```
+
+See `docs/python-compatibility.md` for FAQs and troubleshooting steps.
+
+---
+
 ## Features (benefits first)
 
 - **P-SEC-001 / Encryption Mandate  -  *Prevent Data Exfiltration.***  
@@ -93,7 +108,8 @@ Pair it with `jq` or `yq` in your workflow to extract metrics, or tee the output
 VectorScan can optionally run module-level Terraform tests and include their results in the scanner’s JSON output. This is useful for CI pipelines that want both policy checks and Terraform test evidence in a single run.
 
 - Enable with the `--terraform-tests` flag.
-- Terraform will be auto-downloaded to `.terraform-bin/` if not already present.
+- Auto-downloads stay disabled unless you explicitly opt in by setting `VSCAN_ALLOW_TERRAFORM_DOWNLOAD=1` (or the legacy `VSCAN_TERRAFORM_AUTO_DOWNLOAD=1`) **and** allowing network access via `--allow-network` or `VSCAN_ALLOW_NETWORK=1`. When enabled, Terraform is cached under `.terraform-bin/`.
+- You can still point at a pre-installed binary with `--terraform-bin` / `VSCAN_TERRAFORM_BIN`; auto-download is only used when opt-in succeeds.
 - The JSON output gains a `terraform_tests` block with:
   - `status`: `PASS` or `FAIL`
   - `strategy`: test harness strategy used (e.g., `modern`)
@@ -102,13 +118,16 @@ VectorScan can optionally run module-level Terraform tests and include their res
   - `tests`: array of individual test case results
 
 Notes
-- Running `--terraform-tests` does not require Terraform to be pre-installed; VectorScan manages a compatible binary automatically.
+- Running `--terraform-tests` no longer downloads Terraform automatically; either provide a binary via `--terraform-bin`/`VSCAN_TERRAFORM_BIN` or opt in to downloads with `VSCAN_ALLOW_TERRAFORM_DOWNLOAD=1`.
 - Exit codes remain consistent: 0=PASS, 2=invalid input, 3=policy FAIL, 4=policy pack load error, 5=terraform test fail, 6=terraform error, 10=preview-only (`--preview-vectorguard`).
 
 Example (JSON mode)
 
 ```bash
-python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json --terraform-tests --json
+VSCAN_ALLOW_TERRAFORM_DOWNLOAD=1 \
+python3 tools/vectorscan/vectorscan.py \
+  examples/aws-pgvector-rag/tfplan-pass.json \
+  --allow-network --terraform-tests --json
 ```
 
 See more details in `docs/terraform-tests.md`.
@@ -377,9 +396,12 @@ Because the extraction uses the same deterministic helpers as the golden JSON te
 - Override `metrics.scan_duration_ms` via `VSCAN_FORCE_DURATION_MS` when you need reproducible fixtures or deterministic CI snapshots; `parser_mode` and `resource_count` always reflect the CLI’s real plan metadata so telemetry can verify parsing coverage and scale.
 - Aggregate helpers and StatsD exports stream the trio as gauges/timers (avg/p95/max/latest where applicable) so Datadog/Graphite dashboards can spot slow scans, parser fallbacks, or sudden resource spikes.
 
-### Offline mode (`VSCAN_OFFLINE`)
-- Set `VSCAN_OFFLINE=1` (or `true/yes/on`) to disable every side-effecting integration - telemetry collection, metrics summaries, StatsD emission, lead capture (local + HTTP), and Terraform auto-downloads - while keeping CLI/stdout/JSON output identical for reproducible, air-gapped workflows.
-- `tools/vectorscan/vectorscan.py`, `run_scan.sh`, and the telemetry helpers (`scripts/collect_metrics.py`, `scripts/metrics_summary.py`, `scripts/telemetry_consumer.py`) all honor the flag so no network activity or telemetry files are produced.
+### Offline mode (default)
+- VectorScan now starts in offline mode by default, meaning no telemetry collection, StatsD emission, Terraform auto-downloads, or lead-capture POSTs happen unless you explicitly opt in.
+- Export `VSCAN_ALLOW_NETWORK=1` (or `true/yes/on`) _or_ pass `--allow-network` to `tools/vectorscan/vectorscan.py` when you need online behaviors. Both toggles lift the default offline guardrail for that run.
+- `VSCAN_OFFLINE=1` remains available to force offline behavior even when `VSCAN_ALLOW_NETWORK`/`--allow-network` are present, ensuring air-gapped runs stay deterministic. Use `VSCAN_OFFLINE=0` if you prefer an environment variable over the CLI flag to re-enable network access.
+- Terraform downloads require an explicit second opt-in: set `VSCAN_ALLOW_TERRAFORM_DOWNLOAD=1` (legacy: `VSCAN_TERRAFORM_AUTO_DOWNLOAD=1`) in addition to the network toggle when you want VectorScan to fetch the CLI automatically; otherwise it will stick to local binaries or skip tests.
+- `tools/vectorscan/vectorscan.py`, `run_scan.sh`, and the telemetry helpers (`scripts/collect_metrics.py`, `scripts/metrics_summary.py`, `scripts/telemetry_consumer.py`) all honor the new opt-in sequence so automation behaves consistently across shell wrappers and Python entry points.
 - Terraform module tests can still run when `--terraform-tests` is provided and a binary is already available; offline mode simply guarantees VectorScan never downloads a new CLI or sends outbound packets.
 - Need a softer kill switch? Pass `--disable-statsd` to `scripts/telemetry_consumer.py` or export `VSCAN_DISABLE_STATSD=1` (with optional `VSCAN_ENABLE_STATSD=1` overrides) to silence StatsD packets without touching other telemetry behaviors.
 
@@ -414,5 +436,5 @@ Because the extraction uses the same deterministic helpers as the golden JSON te
 - `tests/integration/test_packaging_verification.py::test_cli_runs_from_unzipped_bundle` extracts the generated archive and executes `tools/vectorscan/vectorscan.py` directly to guarantee the published bundle works end-to-end with real plans.
 - Text assets are normalized to LF line endings before zipping, preventing CRLF drift on Windows hosts (`test_text_files_normalized_to_lf`).
 - Unicode filenames remain intact inside the archive so localized docs or assets can ship safely (`test_unicode_filename_is_preserved`).
-- The Terraform auto-download path verifies HashiCorp’s published SHA256 sums before bundling the binary; any mismatch fails the build immediately.
+- When Terraform downloads are enabled, the auto-download path verifies HashiCorp’s published SHA256 sums before bundling the binary; any mismatch fails the build immediately.
 - Sensitive artifacts such as `.env`, private keys, caches, and `__pycache__` directories are blocked during packaging (`test_sensitive_files_are_blocked`).

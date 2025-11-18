@@ -1,4 +1,5 @@
 """Secure tempfile helpers shared across VectorScan utilities."""
+
 from __future__ import annotations
 
 import os

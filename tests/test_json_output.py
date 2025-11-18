@@ -101,7 +101,9 @@ def run_compare(old_plan: Path, new_plan: Path):
     )
 
 
-def _assert_matches(plan_name: str, golden_name: str, expected_code: int, extra_args: list[str] | None = None) -> dict:
+def _assert_matches(
+    plan_name: str, golden_name: str, expected_code: int, extra_args: list[str] | None = None
+) -> dict:
     res = run_json(FIX / plan_name, extra_args=extra_args)
     assert res.returncode == expected_code, res.stderr
     got = _normalize(json.loads(res.stdout))
@@ -127,6 +129,58 @@ def test_fail_matches_golden():
     _assert_matches("tfplan_fail.json", "fail_output.json", expected_code=3)
 
 
+def test_tfplan_no_encryption_enforces_p_sec_001():
+    res = run_json(FIX / "tfplan_no_encryption.json")
+    assert res.returncode == 3, res.stderr
+    payload = json.loads(res.stdout)
+
+    assert any("P-SEC-001" in item for item in payload["violations"])
+    assert payload["metrics"]["compliance_score"] == 50
+
+    encryption_structs = [entry for entry in payload["violations_struct"] if entry["policy_id"] == "P-SEC-001"]
+    assert encryption_structs, "Expected structured violation details for P-SEC-001"
+    violation_entry = encryption_structs[0]
+    assert "storage_encrypted != true" in violation_entry["message"]
+    assert violation_entry["resource"] == "aws_rds_cluster.vector_db"
+    assert violation_entry["resource_details"]["address"] == "aws_rds_cluster.vector_db"
+
+    remediation = violation_entry.get("remediation") or {}
+    assert remediation.get("summary", "").startswith("Enable encryption and configure kms_key_id")
+    assert remediation.get("docs")
+    assert remediation.get("hcl_examples")
+
+    suspicious_defaults = payload.get("suspicious_defaults") or []
+    assert any(
+        entry.get("address") == "aws_rds_cluster.vector_db" and "storage_encrypted" in entry.get("reason", "")
+        for entry in suspicious_defaults
+    )
+
+
+def test_tfplan_missing_tags_enforces_p_fin_001():
+    res = run_json(FIX / "tfplan_missing_tags.json")
+    assert res.returncode == 3, res.stderr
+    payload = json.loads(res.stdout)
+
+    assert payload["counts"]["violations"] == 2
+    assert payload["metrics"]["compliance_score"] == 50
+
+    messages = payload["violations"]
+    assert any("CostCenter" in msg for msg in messages)
+    assert any("Project" in msg for msg in messages)
+
+    tagging_structs = [entry for entry in payload["violations_struct"] if entry["policy_id"] == "P-FIN-001"]
+    assert len(tagging_structs) == 2
+    assert {entry["resource"] for entry in tagging_structs} == {"aws_rds_cluster.vector_db"}
+
+    for entry in tagging_structs:
+        details = entry.get("resource_details") or {}
+        assert details.get("address") == "aws_rds_cluster.vector_db"
+        remediation = entry.get("remediation") or {}
+        assert remediation.get("summary", "").startswith("Populate CostCenter and Project tags")
+        assert remediation.get("docs")
+        assert remediation.get("hcl_examples")
+
+
 def test_iam_drift_matches_golden_and_penalty():
     got = _assert_matches("tfplan_iam_drift.json", "iam_drift_output.json", expected_code=0)
     assert got["iam_drift_report"]["status"] == "FAIL"
@@ -138,7 +192,9 @@ def test_iam_drift_matches_golden_and_penalty():
 def test_explain_mode_snapshots():
     _assert_matches_explain("tfplan_pass.json", "pass_explain_output.json", expected_code=0)
     _assert_matches_explain("tfplan_fail.json", "fail_explain_output.json", expected_code=3)
-    explain = _assert_matches_explain("tfplan_iam_drift.json", "iam_drift_explain_output.json", expected_code=0)
+    explain = _assert_matches_explain(
+        "tfplan_iam_drift.json", "iam_drift_explain_output.json", expected_code=0
+    )
     assert "explanation" in explain
     assert explain["explanation"]["iam_drift"]["status"] == "FAIL"
 

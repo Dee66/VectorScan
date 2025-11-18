@@ -1,10 +1,10 @@
 import functools
 import hashlib
 import os
-import threading
-from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
-from pathlib import Path
 import subprocess
+import threading
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 import pytest
 

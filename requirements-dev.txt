@@ -4,6 +4,9 @@ hypothesis
 pytest-cov
 ruff
 black
+isort
 mypy
 httpx
 pyyaml
+types-PyYAML
+nox

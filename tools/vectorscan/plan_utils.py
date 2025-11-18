@@ -1,4 +1,5 @@
 """Plan loading, metadata, and diff helpers for VectorScan."""
+
 from __future__ import annotations
 
 import json
@@ -8,15 +9,17 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, cast
 
-from tools.vectorscan.constants import EXIT_INVALID_INPUT
 from tools.vectorscan.env_flags import env_falsey
 from tools.vectorscan.plan_stream import (
     ModuleStats,
     PlanSchemaError,
     PlanStreamError,
-    build_slo_metadata as _build_slo_metadata,
+)
+from tools.vectorscan.plan_stream import build_slo_metadata as _build_slo_metadata
+from tools.vectorscan.plan_stream import (
     stream_plan,
 )
+
 
 class PlanLoadError(Exception):
     """Raised when a Terraform plan cannot be parsed or fails schema validation."""
@@ -59,6 +62,12 @@ def load_json(path: Path) -> Dict[str, Any]:
     except FileNotFoundError:
         print(f"Error: file not found: {path}", file=sys.stderr)
         raise PlanLoadError(f"missing plan: {path}")
+    except PermissionError as exc:
+        print(f"Error: permission denied reading plan: {path}: {exc}", file=sys.stderr)
+        raise PlanLoadError(f"permission denied: {path}")
+    except OSError as exc:
+        print(f"Error: unable to read plan: {path}: {exc}", file=sys.stderr)
+        raise PlanLoadError(f"plan read error: {path}")
     except json.JSONDecodeError as exc:
         print(f"Error: invalid JSON: {path}: {exc}", file=sys.stderr)
         raise PlanLoadError(f"invalid plan json: {path}")
@@ -68,7 +77,9 @@ def load_json(path: Path) -> Dict[str, Any]:
     return data
 
 
-def load_plan_context(path: Path) -> Tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any], Optional[ModuleStats]]:
+def load_plan_context(
+    path: Path,
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any], Optional[ModuleStats]]:
     """Load a tfplan with streaming parser when enabled."""
 
     disable_flag = os.getenv("VSCAN_STREAMING_DISABLE")
@@ -88,7 +99,9 @@ def load_plan_context(path: Path) -> Tuple[Dict[str, Any], List[Dict[str, Any]],
     return _load_plan_eager_context(path)
 
 
-def _load_plan_streaming_context(path: Path) -> Tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any], ModuleStats]:
+def _load_plan_streaming_context(
+    path: Path,
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any], ModuleStats]:
     try:
         result = stream_plan(path)
     except FileNotFoundError:
@@ -110,7 +123,9 @@ def _load_plan_streaming_context(path: Path) -> Tuple[Dict[str, Any], List[Dict[
     return plan, result.resources, plan_limits, result.module_stats
 
 
-def _load_plan_eager_context(path: Path) -> Tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any], Optional[ModuleStats]]:
+def _load_plan_eager_context(
+    path: Path,
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any], Optional[ModuleStats]]:
     start = time.perf_counter()
     plan = load_json(path)
     duration_ms = int(round((time.perf_counter() - start) * 1000))
@@ -382,18 +397,22 @@ def _collect_changed_attributes(before: Any, after: Any) -> List[Dict[str, Any]]
             return
         if isinstance(b, list) and isinstance(a, list) and b == a:
             return
-        entries.append({
-            "path": path or ".",
-            "before": _safe_diff_value(b),
-            "after": _safe_diff_value(a),
-        })
+        entries.append(
+            {
+                "path": path or ".",
+                "before": _safe_diff_value(b),
+                "after": _safe_diff_value(a),
+            }
+        )
 
     walk(before, after, "")
     entries.sort(key=lambda item: item.get("path") or "")
     return entries
 
 
-def build_plan_diff(plan: Dict[str, Any], resource_filter: Optional[Set[str]] = None) -> Dict[str, Any]:
+def build_plan_diff(
+    plan: Dict[str, Any], resource_filter: Optional[Set[str]] = None
+) -> Dict[str, Any]:
     summary = {"adds": 0, "changes": 0, "destroys": 0}
     resource_filter = {addr for addr in (resource_filter or set()) if addr}
     resources: List[Dict[str, Any]] = []
@@ -417,14 +436,16 @@ def build_plan_diff(plan: Dict[str, Any], resource_filter: Optional[Set[str]] = 
             r_type = rc.get("type") or "resource"
             r_name = rc.get("name") or "unnamed"
             address = f"{r_type}.{r_name}"
-        resources.append({
-            "address": address,
-            "type": rc.get("type"),
-            "name": rc.get("name"),
-            "change_type": change_type,
-            "actions": actions,
-            "changed_attributes": attrs,
-        })
+        resources.append(
+            {
+                "address": address,
+                "type": rc.get("type"),
+                "name": rc.get("name"),
+                "change_type": change_type,
+                "actions": actions,
+                "changed_attributes": attrs,
+            }
+        )
     resources.sort(key=lambda entry: entry.get("address") or "")
     return {
         "summary": summary,

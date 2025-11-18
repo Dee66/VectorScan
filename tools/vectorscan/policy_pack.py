@@ -1,4 +1,5 @@
 """Utilities for describing the bundled policy pack."""
+
 from __future__ import annotations
 
 import hashlib
@@ -8,9 +9,7 @@ from pathlib import Path
 from typing import Iterable, List
 
 _POLICY_DIR = Path(__file__).resolve().parent
-_DEFAULT_POLICY_FILES = (
-    _POLICY_DIR / "free_policies.rego",
-)
+_DEFAULT_POLICY_FILES = (_POLICY_DIR / "free_policies.rego",)
 
 _ENV_PATHS = "VSCAN_POLICY_PACK_FILES"
 _ENV_HASH = "VSCAN_POLICY_PACK_HASH"
@@ -102,4 +101,3 @@ __all__ = [
     "PolicyPackError",
     "policy_pack_hash",
 ]
-

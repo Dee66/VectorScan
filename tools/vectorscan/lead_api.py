@@ -13,12 +13,17 @@ Environment:
   LEAD_API_OUTPUT_DIR (optional): override storage directory
 """
 from __future__ import annotations
+
+import hashlib
+import json
+import os
+import time
+from pathlib import Path
+from typing import Dict, Optional
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
-from typing import Dict, Optional
-from pathlib import Path
-import time, json, hashlib, os
 
 app = FastAPI(title="VectorScan Lead API", version="0.1.0")
 
@@ -99,6 +104,7 @@ async def post_lead(lead: LeadModel):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # --- Basic in-memory rate limiting (per-IP in a sliding window) ---
 _HITS: dict[str, list[int]] = {}
 _WINDOW_SECONDS = 60
@@ -125,15 +131,19 @@ async def rate_limit_middleware(request: Request, call_next):
         raise HTTPException(status_code=429, detail="Too Many Requests")
     return await call_next(request)
 
+
 # --- Optional API token auth (via env LEAD_API_TOKEN). If not set, auth is disabled. ---
 @app.middleware("http")
 async def token_auth_middleware(request: Request, call_next):
     token_required = os.getenv("LEAD_API_TOKEN")
     if token_required:
-        provided = request.headers.get("x-api-key") or request.headers.get("authorization", "").removeprefix("Bearer ")
+        provided = request.headers.get("x-api-key") or request.headers.get(
+            "authorization", ""
+        ).removeprefix("Bearer ")
         if provided != token_required:
             raise HTTPException(status_code=401, detail="Unauthorized")
     return await call_next(request)
+
 
 # --- Optional CORS (enable with LEAD_API_ENABLE_CORS=true; set origins via LEAD_API_CORS_ORIGINS=comma,separated) ---
 if os.getenv("LEAD_API_ENABLE_CORS", "").lower() in {"1", "true", "yes"}:
@@ -143,5 +153,5 @@ if os.getenv("LEAD_API_ENABLE_CORS", "").lower() in {"1", "true", "yes"}:
         allow_origins=origins,
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*"]
+        allow_headers=["*"],
     )

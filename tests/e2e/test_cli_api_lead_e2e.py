@@ -1,10 +1,10 @@
-import os
-import sys
-import time
 import json
+import os
 import socket
-import threading
 import subprocess
+import sys
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -48,6 +48,7 @@ def test_cli_lead_capture_success(tmp_path):
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
     from tools.vectorscan.lead_api import app
+
     server, thread = _start_uvicorn(app, host, port)
 
     # Give the server a moment to start
@@ -57,7 +58,16 @@ def test_cli_lead_capture_success(tmp_path):
 
     # Run CLI with lead-capture and endpoint
     env = os.environ.copy()
-    cmd = [sys.executable, str(cli_path), str(plan_path), "--lead-capture", "--email", "user@example.com", "--endpoint", endpoint]
+    cmd = [
+        sys.executable,
+        str(cli_path),
+        str(plan_path),
+        "--lead-capture",
+        "--email",
+        "user@example.com",
+        "--endpoint",
+        endpoint,
+    ]
     result = subprocess.run(cmd, capture_output=True, text=True, env=env)
 
     # Stop server (best-effort): uvicorn doesn't expose a clean shutdown here; daemon thread will end at process exit
@@ -93,7 +103,16 @@ def test_cli_lead_capture_http_failure(tmp_path):
     endpoint = f"http://127.0.0.1:{port}/lead"
 
     env = os.environ.copy()
-    cmd = [sys.executable, str(cli_path), str(plan_path), "--lead-capture", "--email", "user2@example.com", "--endpoint", endpoint]
+    cmd = [
+        sys.executable,
+        str(cli_path),
+        str(plan_path),
+        "--lead-capture",
+        "--email",
+        "user2@example.com",
+        "--endpoint",
+        endpoint,
+    ]
     result = subprocess.run(cmd, capture_output=True, text=True, env=env)
 
     out = (result.stdout or "") + (result.stderr or "")

@@ -29,7 +29,11 @@ def test_compute_plan_evolution_detects_downgrades():
     addresses = [entry["address"] for entry in downgraded["resources"]]
     assert "aws_rds_cluster.vector_db" in addresses
     assert "aws_rds_cluster.analytics" in addresses
-    vector_entry = next(entry for entry in downgraded["resources"] if entry["address"] == "aws_rds_cluster.vector_db")
+    vector_entry = next(
+        entry
+        for entry in downgraded["resources"]
+        if entry["address"] == "aws_rds_cluster.vector_db"
+    )
     assert vector_entry["previous"]["storage_encrypted"] is True
     assert vector_entry["current"]["storage_encrypted"] is False
     assert "storage_encrypted flipped to false" in vector_entry["reasons"]

@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/metrics.py
+# hypothesis_version: 6.148.1
+
+[100, '*', '0.0.0.0/0', ':', ':*', '::/0', '<unnamed>', 'A', 'Action', 'B', 'C', 'D', 'F', 'Statement', 'aws_db_instance', 'aws_iam_policy', 'aws_iam_role', 'aws_iam_role_policy', 'aws_iam_user_policy', 'aws_rds_cluster', 'aws_security_group', 'cidr_blocks', 'compliance_score', 'compute_metrics', 'critical', 'eligible_checks', 'high', 'iam:PassRole', 'iam_risky_actions', 'iam_risky_details', 'ingress', 'ipv6_cidr_blocks', 'kms_key_id', 'medium', 'name', 'notes', 'open_security_groups', 'open_sg_count', 'passed_checks', 'policy', 'rds:*', 's3:DeleteObject', 's3:PutObject', 'storage_encrypted', 'tags', 'type', 'values', 'violation_count']

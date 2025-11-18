@@ -1,6 +1,7 @@
 VectorScan_Audit_Ledger:
   timestamp: 2024-01-02T00:00:00Z
   environment: tests
+  input_file: tests/fixtures/tfplan_iam_drift.json
   environment_metadata:
     platform: linux
     platform_release: unit-kernel
@@ -61,6 +62,7 @@ VectorScan_Audit_Ledger:
   schema_version: 1.2.0
   policy_pack_hash: 126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c
   policy_errors: []
+  violations: []
   violation_severity_summary:
     critical: 0
     high: 0
@@ -84,8 +86,11 @@ VectorScan_Audit_Ledger:
   scan_duration_ms: 123
   parser_mode: streaming
   resource_count: 1
-  iam_drift_evidence:
-  - resource: aws_iam_policy.app_policy
-    risky_additions:
-      - iam:PassRole
-      - s3:DeleteObject
+  evidence:
+    iam_drift:
+      - resource: "aws_iam_policy.app_policy"
+        risky_additions:
+          - "iam:PassRole"
+          - "s3:DeleteObject"
+  terraform_test_results:
+    status: not_run

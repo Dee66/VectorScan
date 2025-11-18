@@ -1,15 +1,12 @@
-import os
-import sys
-import json
-import io
-import zipfile
-import subprocess
 import importlib.util
+import io
+import json
+import os
 import re
+import subprocess
+import sys
+import zipfile
 from pathlib import Path
-
-import pytest
-
 
 # Ensure repository root and tools/vectorscan are importable
 _ROOT = Path(__file__).resolve().parents[2]
@@ -17,6 +14,8 @@ _TOOLS_VSCAN = _ROOT / "tools" / "vectorscan"
 for p in (str(_ROOT), str(_TOOLS_VSCAN)):
     if p not in sys.path:
         sys.path.insert(0, p)
+
+os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
 
 
 def _read_json(p: Path) -> dict:
@@ -50,7 +49,7 @@ def test_end_to_end_happy_path(tmp_path, capsys):
     captures_dir = _TOOLS_VSCAN / "captures"
     before = set(captures_dir.glob("lead_*.json")) if captures_dir.exists() else set()
 
-    code = vectorscan.main([str(plan), "--lead-capture", "--email", "e2e@example.com"])  # type: ignore[arg-type]
+    code = vectorscan.main([str(plan), "--lead-capture", "--email", "e2e@example.com"])
     out = capsys.readouterr().out
     clean = _strip_ansi(out)
 
@@ -72,7 +71,7 @@ def test_end_to_end_unhappy_path(capsys):
     import vectorscan
 
     plan = _ROOT / "examples" / "aws-pgvector-rag" / "tfplan-fail.json"
-    code = vectorscan.main([str(plan)])  # type: ignore[arg-type]
+    code = vectorscan.main([str(plan)])
     out = capsys.readouterr().out
     clean = _strip_ansi(out)
 
@@ -84,23 +83,23 @@ def test_end_to_end_unhappy_path(capsys):
 
 def test_end_to_end_partial_failure(monkeypatch, capsys):
     # Partial failure: PASS plan but remote POST fails; CLI still succeeds and prints POST result
-    import vectorscan
-    from urllib import error
     import urllib.request as ur
+    from urllib import error
+
+    import vectorscan
 
     plan = _ROOT / "examples" / "aws-pgvector-rag" / "tfplan-pass.json"
 
     # Force urlopen to raise immediately (simulate endpoint outage) to keep test fast
-    original = ur.urlopen
     def boom(*args, **kwargs):
         raise error.URLError("connection refused")
-    ur.urlopen = boom  # type: ignore[assignment]
+
+    monkeypatch.setattr(ur, "urlopen", boom)
 
     try:
         os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
-        code = vectorscan.main([str(plan), "--lead-capture", "--email", "e2e2@example.com"])  # type: ignore[arg-type]
+        code = vectorscan.main([str(plan), "--lead-capture", "--email", "e2e2@example.com"])
     finally:
-        ur.urlopen = original
         os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
 
     out = capsys.readouterr().out
@@ -114,35 +113,40 @@ def test_end_to_end_unicode_output(monkeypatch, tmp_path, capsys):
     import vectorscan
 
     plan = tmp_path / "unicode-plan.json"
-    plan.write_text(json.dumps({
-        "planned_values": {
-            "root_module": {
-                "resources": [
-                    {
-                        "type": "aws_db_instance",
-                        "name": "db-🚀",
-                        "values": {
-                            "storage_encrypted": False,
-                            "kms_key_id": None,
-                            "tags": {"CostCenter": "研发", "Project": "测试"},
-                        },
-                    },
-                    {
-                        "type": "aws_db_instance",
-                        "name": "db-pass",
-                        "values": {
-                            "storage_encrypted": True,
-                            "kms_key_id": "🔐",
-                            "tags": {"CostCenter": "研发", "Project": "测试"},
-                        },
-                    },
-                ]
+    plan.write_text(
+        json.dumps(
+            {
+                "planned_values": {
+                    "root_module": {
+                        "resources": [
+                            {
+                                "type": "aws_db_instance",
+                                "name": "db-🚀",
+                                "values": {
+                                    "storage_encrypted": False,
+                                    "kms_key_id": None,
+                                    "tags": {"CostCenter": "研发", "Project": "测试"},
+                                },
+                            },
+                            {
+                                "type": "aws_db_instance",
+                                "name": "db-pass",
+                                "values": {
+                                    "storage_encrypted": True,
+                                    "kms_key_id": "🔐",
+                                    "tags": {"CostCenter": "研发", "Project": "测试"},
+                                },
+                            },
+                        ]
+                    }
+                }
             }
-        }
-    }), encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
 
     capsys.readouterr()
-    code = vectorscan.main([str(plan), "--json"])  # type: ignore[arg-type]
+    code = vectorscan.main([str(plan), "--json"])
     output = capsys.readouterr().out
     payload = json.loads(output)
 
@@ -152,7 +156,7 @@ def test_end_to_end_unicode_output(monkeypatch, tmp_path, capsys):
 
     # Human-readable output should also preserve Unicode/emoji
     capsys.readouterr()
-    code_text = vectorscan.main([str(plan)])  # type: ignore[arg-type]
+    code_text = vectorscan.main([str(plan)])
     human = capsys.readouterr().out
     human_clean = _strip_ansi(human)
     assert code_text == 3
@@ -167,7 +171,8 @@ def test_release_bundle_reproducibility(monkeypatch, tmp_path):
     )
     assert spec and spec.loader
     builder = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(builder)  # type: ignore[attr-defined]
+    loader = spec.loader
+    loader.exec_module(builder)
 
     epoch = 1_700_000_000
     monkeypatch.setenv("VSCAN_CLOCK_EPOCH", str(epoch))

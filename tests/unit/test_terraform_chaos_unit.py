@@ -1,7 +1,7 @@
+import hashlib
 import io
 import sys
 import zipfile
-import hashlib
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -15,7 +15,9 @@ import tools.vectorscan.vectorscan as vs  # noqa: E402
 
 
 def test_run_terraform_tests_handles_binary_crash(monkeypatch):
-    resolution = vs.TerraformResolution(path=Path("/fake/bin/terraform"), version="1.8.5", source="system")
+    resolution = vs.TerraformResolution(
+        path=Path("/fake/bin/terraform"), version="1.8.5", source="system"
+    )
 
     def fake_ensure(self, override_path):  # pragma: no cover - monkeypatched
         return resolution
@@ -78,7 +80,9 @@ def test_modern_strategy_reports_corrupted_state(monkeypatch):
 
 def test_run_terraform_tests_skips_when_missing(monkeypatch):
     def fake_ensure(self, override_path):  # pragma: no cover - monkeypatched helper
-        raise vs.TerraformNotFoundError("Terraform CLI not found and auto-download disabled. Set VSCAN_TERRAFORM_BIN or enable downloads.")
+        raise vs.TerraformNotFoundError(
+            "Terraform CLI not found and auto-download disabled. Set VSCAN_TERRAFORM_BIN or enable downloads."
+        )
 
     monkeypatch.setattr(vs.TerraformManager, "ensure", fake_ensure)
     report = vs.run_terraform_tests(None, auto_download=False)
@@ -88,7 +92,9 @@ def test_run_terraform_tests_skips_when_missing(monkeypatch):
 
 def test_terraform_download_handles_unwritable_tmpdir(monkeypatch, tmp_path):
     version = "9.9.9"
-    manager = vs.TerraformManager(required_version=version, download_dir=tmp_path, auto_download=True)
+    manager = vs.TerraformManager(
+        required_version=version, download_dir=tmp_path, auto_download=True
+    )
 
     os_tag = vs.platform.system().lower()
     arch_tag = vs.platform.machine().lower()
@@ -138,7 +144,9 @@ def test_terraform_download_handles_unwritable_tmpdir(monkeypatch, tmp_path):
 
 def test_terraform_download_rejects_checksum_mismatch(monkeypatch, tmp_path):
     version = "9.9.9"
-    manager = vs.TerraformManager(required_version=version, download_dir=tmp_path, auto_download=True)
+    manager = vs.TerraformManager(
+        required_version=version, download_dir=tmp_path, auto_download=True
+    )
 
     os_tag = vs.platform.system().lower()
     arch_tag = vs.platform.machine().lower()

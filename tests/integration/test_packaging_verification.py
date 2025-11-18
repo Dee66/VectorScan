@@ -1,31 +1,37 @@
+import importlib.util
 import json
 import os
 import shutil
 import subprocess
 import sys
 import uuid
-from pathlib import Path, PurePosixPath
 import zipfile
+from pathlib import Path, PurePosixPath
+from typing import Any
 
 # Ensure repository root import paths
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.vectorscan.policy_manifest import build_policy_manifest
 from tools.vectorscan.policies import get_policies
+from tools.vectorscan.policy_manifest import build_policy_manifest
 from tools.vectorscan.policy_pack import policy_pack_hash
 from tools.vectorscan.preview import load_preview_manifest
+
+
+def _load_module(name: str, path: Path) -> Any:
+    spec = importlib.util.spec_from_file_location(name, str(path))
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_build_vectorscan_package_smoke(tmp_path, monkeypatch):
     # Import module
     pkg_path = ROOT / "tools" / "vectorscan" / "build_vectorscan_package.py"
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(pkg_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("build_vectorscan_package", pkg_path)
 
     # Use a temporary dist directory by monkeypatching DIST
     monkeypatch.setattr(mod, "DIST", tmp_path)
@@ -90,11 +96,7 @@ def test_build_vectorscan_package_smoke(tmp_path, monkeypatch):
 def test_create_release_bundle_dry_run(tmp_path, monkeypatch):
     # Import module
     script_path = ROOT / "scripts" / "create_release_bundle.py"
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("create_release_bundle", str(script_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("create_release_bundle", script_path)
 
     # Monkeypatch REPO_ROOT to a temp copy so we don't bundle the whole repo
     # Create minimal structure in tmp: README.md, tools/vectorscan, docs
@@ -130,12 +132,7 @@ def test_create_release_bundle_dry_run(tmp_path, monkeypatch):
 
 def test_build_vectorscan_package_reproducible(tmp_path, monkeypatch):
     pkg_path = ROOT / "tools" / "vectorscan" / "build_vectorscan_package.py"
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(pkg_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("build_vectorscan_package", pkg_path)
 
     bundle_name = "vectorscan-free-repro"
     monkeypatch.setattr(mod, "DIST", tmp_path)
@@ -169,12 +166,7 @@ def test_build_vectorscan_package_reproducible(tmp_path, monkeypatch):
 
 def test_zip_entries_have_fixed_timestamp(tmp_path, monkeypatch):
     pkg_path = ROOT / "tools" / "vectorscan" / "build_vectorscan_package.py"
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(pkg_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("build_vectorscan_package", pkg_path)
 
     bundle_name = "vectorscan-free-fixed-time"
     monkeypatch.setattr(mod, "DIST", tmp_path)
@@ -188,17 +180,19 @@ def test_zip_entries_have_fixed_timestamp(tmp_path, monkeypatch):
         infos = z.infolist()
         assert infos, "expected zip entries"
         for info in infos:
-            assert info.date_time == (1980, 1, 1, 0, 0, 0), f"Unexpected timestamp for {info.filename}: {info.date_time}"
+            assert info.date_time == (
+                1980,
+                1,
+                1,
+                0,
+                0,
+                0,
+            ), f"Unexpected timestamp for {info.filename}: {info.date_time}"
 
 
 def test_cli_runs_from_unzipped_bundle(tmp_path, monkeypatch):
     pkg_path = ROOT / "tools" / "vectorscan" / "build_vectorscan_package.py"
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(pkg_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("build_vectorscan_package", pkg_path)
 
     bundle_name = "vectorscan-free-cli-smoke"
     monkeypatch.setattr(mod, "DIST", tmp_path)
@@ -231,17 +225,12 @@ def test_cli_runs_from_unzipped_bundle(tmp_path, monkeypatch):
         env=env,
     )
     assert result.returncode == 0, result.stderr
-    assert "\"status\": \"PASS\"" in result.stdout
+    assert '"status": "PASS"' in result.stdout
 
 
 def test_bundle_contains_no_hidden_mac_artifacts(tmp_path, monkeypatch):
     pkg_path = ROOT / "tools" / "vectorscan" / "build_vectorscan_package.py"
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(pkg_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("build_vectorscan_package", pkg_path)
 
     bundle_name = "vectorscan-free-hidden-guard"
     monkeypatch.setattr(mod, "DIST", tmp_path)
@@ -272,12 +261,7 @@ def test_bundle_contains_no_hidden_mac_artifacts(tmp_path, monkeypatch):
 
 def test_manifest_lists_expected_files(tmp_path, monkeypatch):
     pkg_path = ROOT / "tools" / "vectorscan" / "build_vectorscan_package.py"
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(pkg_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("build_vectorscan_package", pkg_path)
 
     bundle_name = "vectorscan-free-manifest"
     monkeypatch.setattr(mod, "DIST", tmp_path)
@@ -320,12 +304,7 @@ def test_manifest_lists_expected_files(tmp_path, monkeypatch):
 
 def test_sbom_matches_requirement_files(tmp_path, monkeypatch):
     pkg_path = ROOT / "tools" / "vectorscan" / "build_vectorscan_package.py"
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(pkg_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("build_vectorscan_package", pkg_path)
 
     bundle_name = "vectorscan-free-sbom"
     monkeypatch.setattr(mod, "DIST", tmp_path)
@@ -338,7 +317,7 @@ def test_sbom_matches_requirement_files(tmp_path, monkeypatch):
     sbom = json.loads(sbom_path.read_text())
     components = sbom["components"]
 
-    expected_entries = mod._collect_requirement_entries(mod.REQUIREMENT_FILES)  # type: ignore[attr-defined]
+    expected_entries = mod._collect_requirement_entries(mod.REQUIREMENT_FILES)
     expected_map = {entry["name"]: entry for entry in expected_entries}
     assert expected_map, "Expected to read requirement entries"
 
@@ -353,12 +332,7 @@ def test_sbom_matches_requirement_files(tmp_path, monkeypatch):
 
 def test_text_files_normalized_to_lf(tmp_path, monkeypatch):
     pkg_path = ROOT / "tools" / "vectorscan" / "build_vectorscan_package.py"
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(pkg_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("build_vectorscan_package", pkg_path)
 
     extra_dir = ROOT / f"tmp_crlf_{uuid.uuid4().hex}"
     extra_dir.mkdir(exist_ok=True)
@@ -367,7 +341,7 @@ def test_text_files_normalized_to_lf(tmp_path, monkeypatch):
 
     bundle_name = "vectorscan-free-crlf"
     monkeypatch.setattr(mod, "DIST", tmp_path)
-    monkeypatch.setattr(mod, "FILES", list(mod.FILES) + [extra_file])  # type: ignore[attr-defined]
+    monkeypatch.setattr(mod, "FILES", list(mod.FILES) + [extra_file])
     monkeypatch.setattr(mod, "load_vectorscan_module", lambda: None)
 
     try:
@@ -385,12 +359,7 @@ def test_text_files_normalized_to_lf(tmp_path, monkeypatch):
 
 def test_unicode_filename_is_preserved(tmp_path, monkeypatch):
     pkg_path = ROOT / "tools" / "vectorscan" / "build_vectorscan_package.py"
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(pkg_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("build_vectorscan_package", pkg_path)
 
     unicode_dir = ROOT / f"tmp_unicode_{uuid.uuid4().hex}"
     unicode_dir.mkdir(exist_ok=True)
@@ -399,7 +368,7 @@ def test_unicode_filename_is_preserved(tmp_path, monkeypatch):
 
     bundle_name = "vectorscan-free-unicode"
     monkeypatch.setattr(mod, "DIST", tmp_path)
-    monkeypatch.setattr(mod, "FILES", list(mod.FILES) + [unicode_file])  # type: ignore[attr-defined]
+    monkeypatch.setattr(mod, "FILES", list(mod.FILES) + [unicode_file])
     monkeypatch.setattr(mod, "load_vectorscan_module", lambda: None)
 
     try:
@@ -419,12 +388,7 @@ def test_unicode_filename_is_preserved(tmp_path, monkeypatch):
 
 def test_sensitive_files_are_blocked(tmp_path, monkeypatch):
     pkg_path = ROOT / "tools" / "vectorscan" / "build_vectorscan_package.py"
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("build_vectorscan_package", str(pkg_path))
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+    mod = _load_module("build_vectorscan_package", pkg_path)
 
     secrets_dir = ROOT / f"tmp_secret_{uuid.uuid4().hex}"
     secrets_dir.mkdir(exist_ok=True)
@@ -433,7 +397,7 @@ def test_sensitive_files_are_blocked(tmp_path, monkeypatch):
 
     bundle_name = "vectorscan-free-secrets"
     monkeypatch.setattr(mod, "DIST", tmp_path)
-    monkeypatch.setattr(mod, "FILES", list(mod.FILES) + [secret_file])  # type: ignore[attr-defined]
+    monkeypatch.setattr(mod, "FILES", list(mod.FILES) + [secret_file])
     monkeypatch.setattr(mod, "load_vectorscan_module", lambda: None)
 
     try:

@@ -1,16 +1,19 @@
 import importlib.util
 import sys
 from pathlib import Path
+from types import ModuleType
 
 
-def load_release_module():
+def load_release_module() -> ModuleType:
     repo_root = Path(__file__).resolve().parents[2]
     mod_path = repo_root / "scripts" / "automate_release.py"
     spec = importlib.util.spec_from_file_location("automate_release_for_tests", str(mod_path))
-    assert spec and spec.loader, "Failed to create module spec"
+    assert spec is not None, "Failed to create module spec"
     module = importlib.util.module_from_spec(spec)
+    loader = spec.loader
+    assert loader is not None, "Spec has no loader"
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)  # type: ignore[union-attr]
+    loader.exec_module(module)
     return module
 
 

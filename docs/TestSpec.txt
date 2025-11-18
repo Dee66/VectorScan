@@ -232,7 +232,7 @@ These tests run only if:
 
 Terraform CLI >= 1.13.5 is detected
 
-or VSCAN_TERRAFORM_AUTO_DOWNLOAD=1
+or VSCAN_ALLOW_TERRAFORM_DOWNLOAD=1 (legacy: VSCAN_TERRAFORM_AUTO_DOWNLOAD=1) with network access allowed
 
 Tests must:
 

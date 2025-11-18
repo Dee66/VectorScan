@@ -169,7 +169,9 @@ class _JSONStream:
                     break
                 buf.append(self.chars.read())
         literal = "".join(buf)
-        return float(literal) if ("." in literal or "e" in literal or "E" in literal) else int(literal)
+        return (
+            float(literal) if ("." in literal or "e" in literal or "E" in literal) else int(literal)
+        )
 
     def _expect_literal(self, literal: str, value: Any) -> Any:
         for ch in literal:
@@ -181,9 +183,9 @@ class _JSONStream:
         ch = self.chars.peek()
         if ch == "":
             raise PlanStreamError("Unexpected end of JSON data")
-        if ch == '{':
+        if ch == "{":
             return self.parse_object()
-        if ch == '[':
+        if ch == "[":
             return self.parse_array()
         if ch == '"':
             return self._scan_string()
@@ -209,55 +211,57 @@ class _JSONStream:
         if ch in "tfn":
             self.parse_value()
             return
-        if ch == '[':
-            self.chars.expect('[')
+        if ch == "[":
+            self.chars.expect("[")
             first = True
             while True:
                 self._skip_ws()
                 nxt = self.chars.peek()
-                if nxt == ']':
+                if nxt == "]":
                     self.chars.read()
                     break
                 if not first:
-                    self.chars.expect(',')
+                    self.chars.expect(",")
                     self._skip_ws()
                 self.discard_value()
                 first = False
             return
-        if ch == '{':
-            self.chars.expect('{')
+        if ch == "{":
+            self.chars.expect("{")
             first = True
             while True:
                 self._skip_ws()
                 nxt = self.chars.peek()
-                if nxt == '}':
+                if nxt == "}":
                     self.chars.read()
                     break
                 if not first:
-                    self.chars.expect(',')
+                    self.chars.expect(",")
                     self._skip_ws()
-                key = self._scan_string()
+                self._scan_string()
                 self._skip_ws()
-                self.chars.expect(':')
+                self.chars.expect(":")
                 self.discard_value()
                 first = False
             return
         raise PlanStreamError(f"Cannot discard value starting with {ch!r}")
 
-    def parse_array(self, item_handler: Optional[Callable[[int, "_JSONStream"], bool]] = None) -> List[Any]:
+    def parse_array(
+        self, item_handler: Optional[Callable[[int, "_JSONStream"], bool]] = None
+    ) -> List[Any]:
         items: List[Any] = []
         self._skip_ws()
-        self.chars.expect('[')
+        self.chars.expect("[")
         index = 0
         first = True
         while True:
             self._skip_ws()
             ch = self.chars.peek()
-            if ch == ']':
+            if ch == "]":
                 self.chars.read()
                 break
             if not first:
-                self.chars.expect(',')
+                self.chars.expect(",")
                 self._skip_ws()
             if item_handler and item_handler(index, self):
                 pass
@@ -273,20 +277,20 @@ class _JSONStream:
     ) -> Dict[str, Any]:
         obj: Dict[str, Any] = {}
         self._skip_ws()
-        self.chars.expect('{')
+        self.chars.expect("{")
         first = True
         while True:
             self._skip_ws()
             ch = self.chars.peek()
-            if ch == '}':
+            if ch == "}":
                 self.chars.read()
                 break
             if not first:
-                self.chars.expect(',')
+                self.chars.expect(",")
                 self._skip_ws()
             key = self._scan_string()
             self._skip_ws()
-            self.chars.expect(':')
+            self.chars.expect(":")
             if key_handler and key_handler(key, obj, self):
                 first = False
                 continue
@@ -408,10 +412,10 @@ class PlanStreamParser:
 
         parser._skip_ws()
         next_char = parser.chars.peek()
-        if next_char == 'n':
+        if next_char == "n":
             parser.parse_value()
             return False
-        if next_char != '[':
+        if next_char != "[":
             raise PlanSchemaError("resources must be a list under planned_values.root_module")
         parser.parse_array(resource_handler)
         return consumed_any
@@ -419,10 +423,10 @@ class PlanStreamParser:
     def _parse_child_modules(self, parser: _JSONStream, parent_address: str) -> None:
         parser._skip_ws()
         next_char = parser.chars.peek()
-        if next_char == 'n':
+        if next_char == "n":
             parser.parse_value()
             return
-        if next_char != '[':
+        if next_char != "[":
             raise PlanSchemaError("child_modules must be a list when present")
 
         def child_handler(index: int, stream: _JSONStream) -> bool:
@@ -448,7 +452,9 @@ def stream_plan(path: Path) -> PlanStreamResult:
     return parser.parse()
 
 
-def build_slo_metadata(resource_count: int, parse_duration_ms: int, file_size_bytes: int) -> Tuple[bool, Dict[str, Any]]:
+def build_slo_metadata(
+    resource_count: int, parse_duration_ms: int, file_size_bytes: int
+) -> Tuple[bool, Dict[str, Any]]:
     """Compute SLO/threshold metadata for plan parsing."""
 
     breach_reason: Optional[str] = None

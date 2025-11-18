@@ -1,7 +1,8 @@
 """Security policy plugin enforcing RDS encryption guardrail."""
+
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 from ..base_policy import BasePolicy, PolicyMetadata, register_policy
 
@@ -18,7 +19,7 @@ class EncryptionPolicy(BasePolicy):
 
     _TARGET_TYPES = {"aws_db_instance", "aws_rds_cluster"}
 
-    def evaluate(self, resources: List[Dict[str, Any]]) -> List[str]:
+    def evaluate(self, resources: Sequence[Dict[str, Any]]) -> List[str]:
         violations: List[str] = []
         for resource in resources:
             if resource.get("type") not in self._TARGET_TYPES:

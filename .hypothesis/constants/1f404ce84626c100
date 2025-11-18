@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/constants.py
+# hypothesis_version: 6.148.1
+
+['\x1b[0m', '\x1b[1m', '\x1b[31m', '\x1b[32m', '\x1b[33m', '*', '.terraform-bin', '1.13.5', ':*', 'ANSI_BOLD', 'ANSI_GREEN', 'ANSI_RED', 'ANSI_RESET', 'ANSI_YELLOW', 'EXIT_CONFIG_ERROR', 'EXIT_INVALID_INPUT', 'EXIT_POLICY_FAIL', 'EXIT_PREVIEW_MODE', 'EXIT_SUCCESS', 'EXIT_TERRAFORM_ERROR', 'EXIT_TERRAFORM_FAIL', 'P-FIN-001', 'P-SEC-001', 'REMEDIATION_DOCS', 'RISKY_ACTION_TERMS', 'ROOT_DIR', 'SEVERITY_LEVELS', 'critical', 'high', 'iam:*', 'iam:AttachRolePolicy', 'iam:AttachUserPolicy', 'iam:CreateAccessKey', 'iam:CreateUser', 'iam:PassRole', 'kms:DisableKey', 'kms:PutKeyPolicy', 'logs:DeleteLogGroup', 'low', 'medium', 'rds:*', 's3:DeleteObject', 's3:PutBucketPolicy', 's3:PutObject']

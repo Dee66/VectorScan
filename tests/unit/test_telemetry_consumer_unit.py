@@ -1,20 +1,20 @@
+# pyright: reportPrivateUsage=false
+# ruff: noqa: SLF001  # tests exercise internal helpers
 import csv
-import json
+import importlib.util
 import tempfile
 from pathlib import Path
-
-import importlib.util
-from importlib.machinery import ModuleSpec
-from typing import cast
+from types import ModuleType
 
 
-def load_module_from_path(name: str, path: Path):
+def load_module_from_path(name: str, path: Path) -> ModuleType:
     spec_opt = importlib.util.spec_from_file_location(name, str(path))
     assert spec_opt is not None, "Failed to create spec for module"
-    spec = cast(ModuleSpec, spec_opt)
-    module = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
-    assert spec.loader is not None, "Spec has no loader"
-    spec.loader.exec_module(module)  # type: ignore[union-attr]
+    spec = spec_opt
+    module = importlib.util.module_from_spec(spec)
+    loader = spec.loader
+    assert loader is not None, "Spec has no loader"
+    loader.exec_module(module)
     return module
 
 
@@ -57,7 +57,10 @@ def test_telemetry_consumer_idempotent_append():
         tc.write_csv(csv_path, updated_summary, updated_metrics, mode="append")
         rows3 = list(csv.reader(csv_path.open("r", encoding="utf-8")))
     assert len(rows3) == 3  # header + 2 data rows
-    assert rows3[1][-2:] == [tc.schema_header("summary")["schema_version"], tc.schema_header("summary")["schema_kind"]]
+    assert rows3[1][-2:] == [
+        tc.schema_header("summary")["schema_version"],
+        tc.schema_header("summary")["schema_kind"],
+    ]
 
 
 def test_telemetry_consumer_overwrite_mode():
@@ -93,4 +96,7 @@ def test_telemetry_consumer_overwrite_mode():
         rows2 = list(csv.reader(csv_path.open("r", encoding="utf-8")))
     assert len(rows2) == 2  # header + 1 data row
     assert rows2[1][0] == summary_b["generated_at"]
-    assert rows2[1][-2:] == [tc.schema_header("summary")["schema_version"], tc.schema_header("summary")["schema_kind"]]
+    assert rows2[1][-2:] == [
+        tc.schema_header("summary")["schema_version"],
+        tc.schema_header("summary")["schema_kind"],
+    ]

@@ -26,11 +26,14 @@ EXIT_INVALID_INPUT = 2
 EXIT_COSIGN_FAILURE = 3
 EXIT_LOG_ERROR = 4
 
+
 def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Verify old/new cosign keys during rotation and append to the rotation log"
     )
-    parser.add_argument("--bundle", required=True, type=Path, help="Path to the signed release bundle")
+    parser.add_argument(
+        "--bundle", required=True, type=Path, help="Path to the signed release bundle"
+    )
     parser.add_argument("--bundle-version", required=True, help="Semantic version for the bundle")
     parser.add_argument(
         "--new-key",
@@ -155,10 +158,16 @@ def main(argv: Optional[List[str]] = None) -> int:
         _require_file(args.new_key, "new key")
         _require_file(args.new_signature, "new signature")
         if args.old_key and not args.old_signature:
-            print("signing-key-rotation: provide --old-signature when --old-key is set", file=sys.stderr)
+            print(
+                "signing-key-rotation: provide --old-signature when --old-key is set",
+                file=sys.stderr,
+            )
             return EXIT_INVALID_INPUT
         if args.old_signature and not args.old_key:
-            print("signing-key-rotation: provide --old-key when --old-signature is set", file=sys.stderr)
+            print(
+                "signing-key-rotation: provide --old-key when --old-signature is set",
+                file=sys.stderr,
+            )
             return EXIT_INVALID_INPUT
         if args.old_key:
             _require_file(args.old_key, "old key")

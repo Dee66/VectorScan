@@ -12,6 +12,9 @@ from pathlib import Path
 from typing import Any, Dict, List
 from urllib import error, request
 
+# ruff: noqa: E402
+
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -39,13 +42,31 @@ def _now_iso() -> str:
 
 
 def parse_args(argv: List[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Retry Gumroad downloads and emit failure telemetry")
-    parser.add_argument("--download-url", required=True, help="Public Gumroad download URL or signed link")
-    parser.add_argument("--output", type=Path, default=Path("dist/gumroad-download.bin"), help="Path to save the downloaded bundle")
-    parser.add_argument("--retries", type=int, default=3, help="Number of download attempts before failing")
+    parser = argparse.ArgumentParser(
+        description="Retry Gumroad downloads and emit failure telemetry"
+    )
+    parser.add_argument(
+        "--download-url", required=True, help="Public Gumroad download URL or signed link"
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("dist/gumroad-download.bin"),
+        help="Path to save the downloaded bundle",
+    )
+    parser.add_argument(
+        "--retries", type=int, default=3, help="Number of download attempts before failing"
+    )
     parser.add_argument("--delay", type=float, default=2.0, help="Seconds to wait between retries")
-    parser.add_argument("--timeout", type=float, default=30.0, help="Per-request timeout in seconds")
-    parser.add_argument("--metrics-file", type=Path, default=Path("metrics/gumroad_download_guard.json"), help="Where to write the metrics summary")
+    parser.add_argument(
+        "--timeout", type=float, default=30.0, help="Per-request timeout in seconds"
+    )
+    parser.add_argument(
+        "--metrics-file",
+        type=Path,
+        default=Path("metrics/gumroad_download_guard.json"),
+        help="Where to write the metrics summary",
+    )
     parser.add_argument("--sha256", help="Expected SHA256 digest (hex) for the downloaded file")
     return parser.parse_args(argv)
 
@@ -87,7 +108,14 @@ def _write_metrics(path: Path, payload: Dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def download_with_retry(url: str, destination: Path, retries: int, delay: float, timeout: float, expected_sha: str | None) -> DownloadResult:
+def download_with_retry(
+    url: str,
+    destination: Path,
+    retries: int,
+    delay: float,
+    timeout: float,
+    expected_sha: str | None,
+) -> DownloadResult:
     errors: List[Dict[str, Any]] = []
     attempts = 0
     start_time = time.monotonic()

@@ -1,8 +1,9 @@
 """Plan smell analyzer heuristics for VectorScan outputs."""
+
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 _SMELL_LEVEL_RANK = {"low": 0, "moderate": 1, "high": 2}
 _KMS_REQUIRED_TYPES = {
@@ -175,7 +176,9 @@ def compute_smell_report(
         max_depth = max(max_depth, _module_depth(resource.get("address")))
     for_each_instances = _count_for_each_instances(resources)
     kms_missing = _collect_kms_gaps(resources)
-    iam_statements, iam_actions, iam_length = _analyze_iam_documents(resource_changes, resource_filter)
+    iam_statements, iam_actions, iam_length = _analyze_iam_documents(
+        resource_changes, resource_filter
+    )
 
     change_summary = plan_metadata.get("change_summary") or {}
     change_total = 0
@@ -188,73 +191,99 @@ def compute_smell_report(
     smells: List[Dict[str, Any]] = []
 
     if max_depth >= 4:
-        smells.append({
-            "id": "module_depth",
-            "level": "high",
-            "message": f"Module tree depth is {max_depth} levels (threshold 3).",
-            "evidence": {"max_depth": max_depth, "threshold": 3},
-        })
+        smells.append(
+            {
+                "id": "module_depth",
+                "level": "high",
+                "message": f"Module tree depth is {max_depth} levels (threshold 3).",
+                "evidence": {"max_depth": max_depth, "threshold": 3},
+            }
+        )
     elif max_depth >= 2:
-        smells.append({
-            "id": "module_depth",
-            "level": "moderate",
-            "message": f"Module tree depth is {max_depth} levels; consider flattening nested modules.",
-            "evidence": {"max_depth": max_depth, "threshold": 2},
-        })
+        smells.append(
+            {
+                "id": "module_depth",
+                "level": "moderate",
+                "message": f"Module tree depth is {max_depth} levels; consider flattening nested modules.",
+                "evidence": {"max_depth": max_depth, "threshold": 2},
+            }
+        )
 
     if for_each_instances >= 25:
-        smells.append({
-            "id": "for_each_bloat",
-            "level": "high",
-            "message": f"Plan expands {for_each_instances} for_each/loop instances (threshold 25).",
-            "evidence": {"for_each_instances": for_each_instances, "threshold": 25},
-        })
+        smells.append(
+            {
+                "id": "for_each_bloat",
+                "level": "high",
+                "message": f"Plan expands {for_each_instances} for_each/loop instances (threshold 25).",
+                "evidence": {"for_each_instances": for_each_instances, "threshold": 25},
+            }
+        )
     elif for_each_instances >= 10:
-        smells.append({
-            "id": "for_each_bloat",
-            "level": "moderate",
-            "message": f"Plan expands {for_each_instances} for_each or count instances; consider module consolidation.",
-            "evidence": {"for_each_instances": for_each_instances, "threshold": 10},
-        })
+        smells.append(
+            {
+                "id": "for_each_bloat",
+                "level": "moderate",
+                "message": f"Plan expands {for_each_instances} for_each or count instances; consider module consolidation.",
+                "evidence": {"for_each_instances": for_each_instances, "threshold": 10},
+            }
+        )
 
     if kms_missing:
         level = "high" if len(kms_missing) >= 3 else "moderate"
-        smells.append({
-            "id": "missing_kms_key",
-            "level": level,
-            "message": f"{len(kms_missing)} data store resource(s) missing kms_key_id encryption wiring.",
-            "evidence": {"missing_count": len(kms_missing), "sample": kms_missing[:5]},
-        })
+        smells.append(
+            {
+                "id": "missing_kms_key",
+                "level": level,
+                "message": f"{len(kms_missing)} data store resource(s) missing kms_key_id encryption wiring.",
+                "evidence": {"missing_count": len(kms_missing), "sample": kms_missing[:5]},
+            }
+        )
 
     if iam_statements >= 10 or iam_actions >= 50 or iam_length >= 4000:
-        smells.append({
-            "id": "iam_policy_bulk",
-            "level": "high",
-            "message": "IAM policy document is extremely large (≥10 statements or ≥50 actions).",
-            "evidence": {"statements": iam_statements, "actions": iam_actions, "length": iam_length},
-        })
+        smells.append(
+            {
+                "id": "iam_policy_bulk",
+                "level": "high",
+                "message": "IAM policy document is extremely large (≥10 statements or ≥50 actions).",
+                "evidence": {
+                    "statements": iam_statements,
+                    "actions": iam_actions,
+                    "length": iam_length,
+                },
+            }
+        )
     elif iam_statements >= 5 or iam_actions >= 25 or iam_length >= 2000:
-        smells.append({
-            "id": "iam_policy_bulk",
-            "level": "moderate",
-            "message": "IAM policy document is unusually large; consider modularizing permissions.",
-            "evidence": {"statements": iam_statements, "actions": iam_actions, "length": iam_length},
-        })
+        smells.append(
+            {
+                "id": "iam_policy_bulk",
+                "level": "moderate",
+                "message": "IAM policy document is unusually large; consider modularizing permissions.",
+                "evidence": {
+                    "statements": iam_statements,
+                    "actions": iam_actions,
+                    "length": iam_length,
+                },
+            }
+        )
 
     if change_total >= 50:
-        smells.append({
-            "id": "change_volume",
-            "level": "high",
-            "message": f"Plan contains {change_total} resource changes; review blast radius before apply.",
-            "evidence": {"change_total": change_total, "threshold": 50},
-        })
+        smells.append(
+            {
+                "id": "change_volume",
+                "level": "high",
+                "message": f"Plan contains {change_total} resource changes; review blast radius before apply.",
+                "evidence": {"change_total": change_total, "threshold": 50},
+            }
+        )
     elif change_total >= 15:
-        smells.append({
-            "id": "change_volume",
-            "level": "moderate",
-            "message": f"Plan contains {change_total} resource changes (adds+updates+destroys).",
-            "evidence": {"change_total": change_total, "threshold": 15},
-        })
+        smells.append(
+            {
+                "id": "change_volume",
+                "level": "moderate",
+                "message": f"Plan contains {change_total} resource changes (adds+updates+destroys).",
+                "evidence": {"change_total": change_total, "threshold": 15},
+            }
+        )
 
     def _sort_key(item: Dict[str, Any]) -> Tuple[int, str]:
         level = str(item.get("level") or "low")

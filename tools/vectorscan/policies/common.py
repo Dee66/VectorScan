@@ -1,8 +1,8 @@
 """Shared helpers/constants for VectorScan policies and metrics."""
+
 from __future__ import annotations
 
 from typing import Any, Set
-
 
 TAGGABLE_TYPES: Set[str] = {
     "aws_db_instance",

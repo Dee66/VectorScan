@@ -1,6 +1,6 @@
-import sys
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -34,9 +34,9 @@ def _extract_first_json(text: str) -> dict:
             if ch == '"':
                 in_string = True
                 continue
-            if ch == '{':
+            if ch == "{":
                 depth += 1
-            elif ch == '}':
+            elif ch == "}":
                 depth -= 1
                 if depth == 0:
                     end = i
@@ -48,7 +48,7 @@ def _extract_first_json(text: str) -> dict:
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("fixture", ["tfplan-pass.json", "tfplan-fail.json"]) 
+@pytest.mark.parametrize("fixture", ["tfplan-pass.json", "tfplan-fail.json"])
 def test_terraform_tests_gating_runs(fixture):
     repo_root = Path(__file__).resolve().parents[2]
     cli = repo_root / "tools" / "vectorscan" / "vectorscan.py"

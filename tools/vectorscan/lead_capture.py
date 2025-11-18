@@ -20,7 +20,9 @@ def write_local_capture(payload: dict) -> Path:
     """
 
     stamp = _now()
-    payload_hash = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()[:10]
+    payload_hash = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()[
+        :10
+    ]
     prefix = f"lead_{stamp}_{payload_hash}_"
     primary = Path(__file__).parent / "captures"
     fallback = Path(tempfile.gettempdir()) / "vectorscan-captures"
@@ -43,7 +45,9 @@ def maybe_post(endpoint: str, payload: dict, timeout: int = 5) -> Tuple[bool, st
 
     try:
         data = json.dumps(payload).encode("utf-8")
-        req = request.Request(endpoint, data=data, headers={"Content-Type": "application/json"}, method="POST")
+        req = request.Request(
+            endpoint, data=data, headers={"Content-Type": "application/json"}, method="POST"
+        )
         with request.urlopen(req, timeout=timeout) as resp:
             code = getattr(resp, "status", 200)
             return (200 <= code < 300), f"HTTP {code}"

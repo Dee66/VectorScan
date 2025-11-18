@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/python_compat.py
+# hypothesis_version: 6.148.1
+
+['MAX_SUPPORTED', 'MIN_SUPPORTED', 'PythonVersion', 'is_supported_python']

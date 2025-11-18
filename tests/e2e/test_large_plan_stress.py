@@ -11,7 +11,6 @@ if str(ROOT) not in sys.path:
 
 import tools.vectorscan.vectorscan as vectorscan  # noqa: E402
 
-
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 

@@ -7,26 +7,27 @@ import csv
 import json
 import socket
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional
 
 SEVERITY_LEVELS = ("critical", "high", "medium", "low")
 
 
 try:
-    from tools.vectorscan.secret_scrubber import scrub_structure
     from tools.vectorscan.env_flags import is_offline, is_statsd_disabled
+    from tools.vectorscan.secret_scrubber import scrub_structure
 except ModuleNotFoundError:  # pragma: no cover
     import sys
 
     repo_root = Path(__file__).resolve().parents[1]
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
-    from tools.vectorscan.secret_scrubber import scrub_structure
     from tools.vectorscan.env_flags import is_offline, is_statsd_disabled
+    from tools.vectorscan.secret_scrubber import scrub_structure
+
 
 def _schema_header_wrapper(target: str) -> Dict[str, str]:
     try:
-        from tools.vectorscan.telemetry_schema import schema_header as _schema_header  # type: ignore
+        from tools.vectorscan.telemetry_schema import schema_header as _schema_header
 
         return _schema_header(target)
     except (ModuleNotFoundError, ImportError):  # pragma: no cover - executed in tests
@@ -45,7 +46,9 @@ def schema_header(target: str) -> Dict[str, str]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Consume VectorScan telemetry summaries for dashboards or alerts.")
+    parser = argparse.ArgumentParser(
+        description="Consume VectorScan telemetry summaries for dashboards or alerts."
+    )
     parser.add_argument(
         "--summary-file",
         type=Path,
@@ -104,7 +107,9 @@ def _extract_metrics(summary: Dict[str, Any]) -> Dict[str, Optional[float]]:
         "network_exposure_score_avg": avg_block(summary.get("network_exposure_score", {})),
         "open_sg_count_avg": avg_block(summary.get("open_sg_count", {})),
         "iam_risky_actions_avg": avg_block(summary.get("iam_risky_actions", {})),
-        "iam_drift_risky_change_count_avg": avg_block(summary.get("iam_drift_risky_change_count", {})),
+        "iam_drift_risky_change_count_avg": avg_block(
+            summary.get("iam_drift_risky_change_count", {})
+        ),
         "resource_count_avg": avg_block(summary.get("resource_count", {})),
         "drift_failure_rate": summary.get("drift_failure_rate"),
     }
@@ -124,11 +129,15 @@ def _normalize_stat_component(component: str) -> str:
 
 
 def _stat_key(prefix: str, key: str) -> str:
-    parts = [part for part in (_normalize_stat_component(prefix), _normalize_stat_component(key)) if part]
+    parts = [
+        part for part in (_normalize_stat_component(prefix), _normalize_stat_component(key)) if part
+    ]
     return ".".join(parts)
 
 
-def build_statsd_packets(summary: Dict[str, Any], metrics: Dict[str, Optional[float]], prefix: str) -> List[str]:
+def build_statsd_packets(
+    summary: Dict[str, Any], metrics: Dict[str, Optional[float]], prefix: str
+) -> List[str]:
     packets: List[str] = []
 
     def add(metric_key: str, value: Optional[float], metric_type: str) -> None:
@@ -211,6 +220,7 @@ def _statsd_disable_reason(args: argparse.Namespace) -> Optional[str]:
         return "VSCAN_DISABLE_STATSD flag"
     return None
 
+
 def _last_generated_at_from_csv(target: Path) -> Optional[str]:
     """Return the last data row's generated_at from an existing CSV, or None if not available."""
     if not target.exists():
@@ -231,7 +241,9 @@ def _last_generated_at_from_csv(target: Path) -> Optional[str]:
         return None
 
 
-def write_csv(target: Path, summary: Dict[str, Any], metrics: Dict[str, Optional[float]], mode: str = "append") -> None:
+def write_csv(
+    target: Path, summary: Dict[str, Any], metrics: Dict[str, Optional[float]], mode: str = "append"
+) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     default_header = schema_header("summary")
     summary.setdefault("telemetry_schema_version", default_header["schema_version"])
@@ -268,8 +280,16 @@ def write_csv(target: Path, summary: Dict[str, Any], metrics: Dict[str, Optional
         metrics.get("compliance_score_avg"),
         metrics.get("network_exposure_score_avg"),
         metrics.get("drift_failure_rate"),
-        summary.get("scan_duration_ms", {}).get("avg") if isinstance(summary.get("scan_duration_ms"), dict) else None,
-        summary.get("resource_count", {}).get("avg") if isinstance(summary.get("resource_count"), dict) else None,
+        (
+            summary.get("scan_duration_ms", {}).get("avg")
+            if isinstance(summary.get("scan_duration_ms"), dict)
+            else None
+        ),
+        (
+            summary.get("resource_count", {}).get("avg")
+            if isinstance(summary.get("resource_count"), dict)
+            else None
+        ),
         summary.get("parser_mode_latest"),
         summary.get("policy_version"),
         summary.get("schema_version"),
@@ -350,7 +370,9 @@ def main() -> int:
                         f"metrics not sent ({exc})"
                     )
                 else:
-                    print(f"Telemetry consumer sent metrics to {args.statsd_host}:{args.statsd_port}")
+                    print(
+                        f"Telemetry consumer sent metrics to {args.statsd_host}:{args.statsd_port}"
+                    )
     return 0
 
 

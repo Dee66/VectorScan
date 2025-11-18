@@ -1,20 +1,19 @@
+import importlib.util
 import json
 import tempfile
 from pathlib import Path
-from types import SimpleNamespace
-from typing import List, Tuple, cast
-
-import importlib.util
-from importlib.machinery import ModuleSpec
+from types import ModuleType, SimpleNamespace
+from typing import List, Tuple
 
 
-def load_module_from_path(name: str, path: Path):
+def load_module_from_path(name: str, path: Path) -> ModuleType:
     spec_opt = importlib.util.spec_from_file_location(name, str(path))
     assert spec_opt is not None, "Failed to create spec for module"
-    spec = cast(ModuleSpec, spec_opt)
-    module = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
-    assert spec.loader is not None, "Spec has no loader"
-    spec.loader.exec_module(module)  # type: ignore[union-attr]
+    spec = spec_opt
+    module = importlib.util.module_from_spec(spec)
+    loader = spec.loader
+    assert loader is not None, "Spec has no loader"
+    loader.exec_module(module)
     return module
 
 
@@ -106,8 +105,18 @@ def test_full_telemetry_pipeline_statsd_toggle(monkeypatch):
         assert summary_obj["last_entry"]["parser_mode"] == "streaming"
         assert summary_obj["parser_mode_counts"] == {"streaming": 1}
         assert summary_obj["parser_mode_latest"] == "streaming"
-        assert summary_obj["violation_severity_totals"] == {"critical": 0, "high": 0, "medium": 0, "low": 0}
-        assert summary_obj["violation_severity_last"] == {"critical": 0, "high": 0, "medium": 0, "low": 0}
+        assert summary_obj["violation_severity_totals"] == {
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+        }
+        assert summary_obj["violation_severity_last"] == {
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+        }
 
         csv_path = metrics_dir / "vector_scan_metrics_summary.csv"
 

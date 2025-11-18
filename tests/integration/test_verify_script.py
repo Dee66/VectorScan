@@ -19,6 +19,7 @@ def _run_verify(args, env=None):
     )
     return result
 
+
 def _write_stub_cosign(directory: Path):
     script = directory / "cosign"
     lines = [
@@ -41,20 +42,20 @@ def _write_stub_cosign(directory: Path):
         'TARGET=""',
         'while [[ "$#" -gt 0 ]]; do',
         '  case "$1" in',
-        '    --key)',
+        "    --key)",
         '      KEY="$2"',
-        '      shift 2',
-        '      ;;',
-        '    --signature)',
+        "      shift 2",
+        "      ;;",
+        "    --signature)",
         '      SIG="$2"',
-        '      shift 2',
-        '      ;;',
-        '    *)',
+        "      shift 2",
+        "      ;;",
+        "    *)",
         '      TARGET="$1"',
-        '      shift',
-        '      ;;',
-        '  esac',
-        'done',
+        "      shift",
+        "      ;;",
+        "  esac",
+        "done",
         "",
         'if [[ -z "$TARGET" ]]; then',
         '  echo "cosign stub: missing target" >&2',

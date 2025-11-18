@@ -33,7 +33,7 @@ D. PYTEST SUITE (UNIT → E2E)
 [ ] test_audit_ledger.py: YAML schema validation, deterministic ordering, includes required keys.
 [ ] test_iam_drift.py: full drift report structure, severity maps, penalty application conditional on flag.
 [ ] test_end_to_end.py: run CLI against fixtures (pass/fail/iam), assert exit codes and outputs match golden.
-[ ] test_terraform_integration.py: gated tests that run only when Terraform available or when VSCAN_TERRAFORM_AUTO_DOWNLOAD=1; test auto-download, version detection, stdout/stderr capture, exit codes.
+[ ] test_terraform_integration.py: gated tests that run only when Terraform available or when `VSCAN_ALLOW_TERRAFORM_DOWNLOAD=1` (legacy: `VSCAN_TERRAFORM_AUTO_DOWNLOAD=1`) so auto-download, version detection, stdout/stderr capture, and exit codes are covered.
 [ ] test_error_handling.py: invalid JSON, missing files, permission errors (monkeypatch), no unhandled exceptions.
 [ ] test_lead_capture.py: local capture file creation tests and remote capture HTTP mock tests (200, 400, 500).
 [ ] test_performance.py: micro-benchmarks (100KB plan <200ms), tracemalloc checks, large plan tests (2–5MB).

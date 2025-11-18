@@ -7,13 +7,15 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from tools.vectorscan.time_utils import deterministic_isoformat
-from tools.vectorscan.telemetry_schema import schema_header
 from tools.vectorscan.env_flags import is_offline
+from tools.vectorscan.telemetry_schema import schema_header
+from tools.vectorscan.time_utils import deterministic_isoformat
 
 try:
     from tools.vectorscan.secret_scrubber import scrub_structure
-except ModuleNotFoundError:  # pragma: no cover - happens when script run standalone outside repo root
+except (
+    ModuleNotFoundError
+):  # pragma: no cover - happens when script run standalone outside repo root
     import sys
 
     repo_root = Path(__file__).resolve().parents[1]

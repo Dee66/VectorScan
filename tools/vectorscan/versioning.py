@@ -1,4 +1,5 @@
 """Centralized version metadata for VectorScan outputs."""
+
 from __future__ import annotations
 
 import os

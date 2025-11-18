@@ -1,16 +1,43 @@
+import importlib.util
 import json
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
-import importlib.util
+from tools.vectorscan.env_flags import is_offline
 
 
-def load_module_from_path(name: str, path: Path):
+def load_module_from_path(name: str, path: Path) -> ModuleType:
     spec = importlib.util.spec_from_file_location(name, str(path))
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
-    spec.loader.exec_module(module)  # type: ignore[union-attr]
+    assert spec is not None, "Failed to create module spec"
+    module = importlib.util.module_from_spec(spec)
+    loader = spec.loader
+    assert loader is not None, "Spec has no loader"
+    loader.exec_module(module)
     return module
+
+
+def test_is_offline_defaults_true(monkeypatch):
+    monkeypatch.delenv("VSCAN_OFFLINE", raising=False)
+    monkeypatch.delenv("VSCAN_ALLOW_NETWORK", raising=False)
+    assert is_offline() is True
+
+
+def test_is_offline_respects_overrides(monkeypatch):
+    monkeypatch.delenv("VSCAN_OFFLINE", raising=False)
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
+    assert is_offline() is False
+
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "0")
+    assert is_offline() is True
+
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    assert is_offline() is False
+
+    monkeypatch.setenv("VSCAN_OFFLINE", "1")
+    assert is_offline() is True
+
+    monkeypatch.delenv("VSCAN_ALLOW_NETWORK", raising=False)
+    monkeypatch.delenv("VSCAN_OFFLINE", raising=False)
 
 
 def test_collect_metrics_skips_when_offline(tmp_path, monkeypatch):

@@ -1,4 +1,5 @@
 """Deterministic clock helpers shared across VectorScan tooling."""
+
 from __future__ import annotations
 
 import os

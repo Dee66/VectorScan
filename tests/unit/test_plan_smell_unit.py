@@ -28,13 +28,15 @@ def test_smell_report_empty_plan_is_low():
 def test_smell_report_detects_module_depth_and_for_each():
     resources = [
         _resource("aws_s3_bucket.logs", "aws_s3_bucket"),
-        _resource("module.a.module.b.module.c.aws_s3_bucket.logs[\"0\"]", "aws_s3_bucket"),
+        _resource('module.a.module.b.module.c.aws_s3_bucket.logs["0"]', "aws_s3_bucket"),
     ]
     resources.extend(
-        _resource(f"module.a.aws_s3_bucket.dynamic[{idx}]", "aws_s3_bucket")
-        for idx in range(10)
+        _resource(f"module.a.aws_s3_bucket.dynamic[{idx}]", "aws_s3_bucket") for idx in range(10)
     )
-    metadata = {"resource_count": len(resources), "change_summary": {"adds": 0, "changes": 0, "destroys": 0}}
+    metadata = {
+        "resource_count": len(resources),
+        "change_summary": {"adds": 0, "changes": 0, "destroys": 0},
+    }
     report = compute_smell_report(plan_metadata=metadata, resources=resources, resource_changes=[])
     smell_ids = {smell["id"] for smell in report["smells"]}
     assert "module_depth" in smell_ids
@@ -68,7 +70,10 @@ def test_smell_report_detects_missing_kms_and_large_iam():
         }
     ]
     report = compute_smell_report(
-        plan_metadata={"resource_count": len(resources), "change_summary": {"adds": 0, "changes": 1, "destroys": 0}},
+        plan_metadata={
+            "resource_count": len(resources),
+            "change_summary": {"adds": 0, "changes": 1, "destroys": 0},
+        },
         resources=resources,
         resource_changes=resource_changes,
     )
@@ -83,6 +88,8 @@ def test_smell_report_flags_large_change_volume():
     report = compute_smell_report(plan_metadata=metadata, resources=[], resource_changes=[])
     smell_ids = {smell["id"] for smell in report["smells"]}
     assert "change_volume" in smell_ids
-    evidence = next(smell["evidence"] for smell in report["smells"] if smell["id"] == "change_volume")
+    evidence = next(
+        smell["evidence"] for smell in report["smells"] if smell["id"] == "change_volume"
+    )
     assert evidence["change_total"] == 55
     assert report["level"] == "high"

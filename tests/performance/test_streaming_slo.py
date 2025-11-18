@@ -30,7 +30,9 @@ def _make_env(overrides: dict[str, str] | None = None) -> dict[str, str]:
     return env
 
 
-def _run_cli(plan_path: Path, *, env_overrides: dict[str, str] | None = None) -> subprocess.CompletedProcess:
+def _run_cli(
+    plan_path: Path, *, env_overrides: dict[str, str] | None = None
+) -> subprocess.CompletedProcess:
     cmd = ["python3", str(CLI), str(plan_path), "--json"]
     env = _make_env(env_overrides)
     return subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True, check=False)
@@ -77,7 +79,9 @@ def _generate_plan(tmp_path: Path, resource_count: int) -> Path:
         (11000, 1500, "oversized", True, "resource_count"),
     ],
 )
-def test_streaming_plan_slo_windows(tmp_path, resource_count, forced_duration, expected_window, expect_exceeds, expected_reason):
+def test_streaming_plan_slo_windows(
+    tmp_path, resource_count, forced_duration, expected_window, expect_exceeds, expected_reason
+):
     plan_path = _generate_plan(tmp_path, resource_count)
     env_overrides = {
         "VSCAN_FORCE_PLAN_PARSE_MS": str(forced_duration),

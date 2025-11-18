@@ -1,4 +1,3 @@
-import os
 import json
 from pathlib import Path
 
@@ -12,6 +11,7 @@ def app_and_tmpdir(tmp_path, monkeypatch):
     monkeypatch.setenv("LEAD_API_OUTPUT_DIR", str(tmp_path / "captures_api"))
     # Import app after env is set
     from tools.vectorscan import lead_api as lead_api_mod
+
     return lead_api_mod.app, lead_api_mod
 
 
@@ -22,7 +22,7 @@ def test_post_lead_success_stores_file(app_and_tmpdir):
     payload = {
         "email": "user@example.com",
         "result": {"status": "PASS", "checks": ["P-SEC-001", "P-FIN-001"]},
-        "source": "integration-test"
+        "source": "integration-test",
     }
     resp = client.post("/lead", json=payload)
     assert resp.status_code == 200

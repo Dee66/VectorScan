@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/policies/common.py
+# hypothesis_version: 6.148.1
+
+['CostCenter', 'Project', 'aws_db_instance', 'aws_eks_cluster', 'aws_instance', 'aws_kms_key', 'aws_rds_cluster', 'aws_s3_bucket', 'aws_security_group', 'aws_subnet', 'aws_vpc']

@@ -1,9 +1,10 @@
 import json
-import sys
+import os
 import subprocess
+import sys
 from pathlib import Path
 
-import pytest
+os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
 
 
 def make_plan(tmp_path: Path, resources) -> Path:
@@ -23,7 +24,11 @@ def run_cli(plan_path: Path, extra_args=None):
 def test_cli_with_security_policy(tmp_path):
     # Unencrypted DB instance should FAIL with P-SEC-001
     resources = [
-        {"type": "aws_db_instance", "name": "db1", "values": {"storage_encrypted": False, "kms_key_id": None}},
+        {
+            "type": "aws_db_instance",
+            "name": "db1",
+            "values": {"storage_encrypted": False, "kms_key_id": None},
+        },
     ]
     plan_path = make_plan(tmp_path, resources)
     result = run_cli(plan_path)
@@ -34,7 +39,11 @@ def test_cli_with_security_policy(tmp_path):
 def test_cli_with_finops_policy(tmp_path):
     # Missing mandatory tags should trigger P-FIN-001
     resources = [
-        {"type": "aws_db_instance", "name": "db2", "values": {"storage_encrypted": True, "tags": {}}},
+        {
+            "type": "aws_db_instance",
+            "name": "db2",
+            "values": {"storage_encrypted": True, "tags": {}},
+        },
     ]
     plan_path = make_plan(tmp_path, resources)
     result = run_cli(plan_path)
@@ -53,7 +62,11 @@ def test_cli_with_audit_policy(tmp_path):
 def test_cli_with_multiple_policies(tmp_path):
     # Both encryption and tags violations should be aggregated
     resources = [
-        {"type": "aws_db_instance", "name": "db1", "values": {"storage_encrypted": False, "kms_key_id": None, "tags": {}}},
+        {
+            "type": "aws_db_instance",
+            "name": "db1",
+            "values": {"storage_encrypted": False, "kms_key_id": None, "tags": {}},
+        },
     ]
     plan_path = make_plan(tmp_path, resources)
     result = run_cli(plan_path)

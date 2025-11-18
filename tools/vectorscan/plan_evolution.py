@@ -1,12 +1,12 @@
 """Plan evolution diff helpers for VectorScan compare mode."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from tools.vectorscan.plan_utils import iter_resources
-
 
 ChangeSummary = Dict[str, int]
 ResourceMap = Dict[str, Dict[str, Any]]
@@ -113,20 +113,22 @@ def _detect_encryption_downgrades(
             reasons.append("kms_key_id removed")
         if not reasons:
             continue
-        entries.append({
-            "address": address,
-            "type": new_state.metadata.get("type") or old_state.metadata.get("type"),
-            "name": new_state.metadata.get("name") or old_state.metadata.get("name"),
-            "previous": {
-                "storage_encrypted": old_state.storage_encrypted,
-                "kms_key_id": old_state.kms_key_id,
-            },
-            "current": {
-                "storage_encrypted": new_state.storage_encrypted,
-                "kms_key_id": new_state.kms_key_id,
-            },
-            "reasons": reasons,
-        })
+        entries.append(
+            {
+                "address": address,
+                "type": new_state.metadata.get("type") or old_state.metadata.get("type"),
+                "name": new_state.metadata.get("name") or old_state.metadata.get("name"),
+                "previous": {
+                    "storage_encrypted": old_state.storage_encrypted,
+                    "kms_key_id": old_state.kms_key_id,
+                },
+                "current": {
+                    "storage_encrypted": new_state.storage_encrypted,
+                    "kms_key_id": new_state.kms_key_id,
+                },
+                "reasons": reasons,
+            }
+        )
     entries.sort(key=lambda item: item.get("address") or "")
     return entries
 

@@ -1,5 +1,4 @@
 import hashlib
-import hashlib
 import http.server
 import json
 import socketserver
@@ -68,18 +67,20 @@ def test_download_guard_success(tmp_path):
     with run_server(FlakyHandler) as url:
         output = tmp_path / "bundle.bin"
         metrics = tmp_path / "metrics.json"
-        result = _run([
-            "--download-url",
-            url,
-            "--output",
-            str(output),
-            "--metrics-file",
-            str(metrics),
-            "--sha256",
-            digest,
-            "--delay",
-            "0.1",
-        ])
+        result = _run(
+            [
+                "--download-url",
+                url,
+                "--output",
+                str(output),
+                "--metrics-file",
+                str(metrics),
+                "--sha256",
+                digest,
+                "--delay",
+                "0.1",
+            ]
+        )
     assert result.returncode == 0, result.stderr
     assert output.read_bytes() == FlakyHandler.body
     data = json.loads(metrics.read_text())
@@ -97,20 +98,22 @@ def test_download_guard_retries_then_succeeds(tmp_path):
     with run_server(FlakyHandler) as url:
         output = tmp_path / "bundle.bin"
         metrics = tmp_path / "metrics.json"
-        result = _run([
-            "--download-url",
-            url,
-            "--output",
-            str(output),
-            "--metrics-file",
-            str(metrics),
-            "--sha256",
-            digest,
-            "--retries",
-            "3",
-            "--delay",
-            "0.1",
-        ])
+        result = _run(
+            [
+                "--download-url",
+                url,
+                "--output",
+                str(output),
+                "--metrics-file",
+                str(metrics),
+                "--sha256",
+                digest,
+                "--retries",
+                "3",
+                "--delay",
+                "0.1",
+            ]
+        )
     assert result.returncode == 0, result.stderr
     data = json.loads(metrics.read_text())
     assert data["attempts"] == 2
@@ -126,18 +129,20 @@ def test_download_guard_reports_failure(tmp_path):
     with run_server(FlakyHandler) as url:
         output = tmp_path / "bundle.bin"
         metrics = tmp_path / "metrics.json"
-        result = _run([
-            "--download-url",
-            url,
-            "--output",
-            str(output),
-            "--metrics-file",
-            str(metrics),
-            "--retries",
-            "2",
-            "--delay",
-            "0.05",
-        ])
+        result = _run(
+            [
+                "--download-url",
+                url,
+                "--output",
+                str(output),
+                "--metrics-file",
+                str(metrics),
+                "--retries",
+                "2",
+                "--delay",
+                "0.05",
+            ]
+        )
     assert result.returncode == 6
     data = json.loads(metrics.read_text())
     assert data["status"] == "FAILURE"

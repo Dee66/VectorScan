@@ -63,7 +63,9 @@ def extract_compliance_score(summary: Dict[str, Any]) -> float:
     raise ValueError("Summary missing compliance_score data")
 
 
-def evaluate_drift(baseline: Dict[str, Any], current: Dict[str, Any], threshold: float) -> Tuple[bool, float, float, float]:
+def evaluate_drift(
+    baseline: Dict[str, Any], current: Dict[str, Any], threshold: float
+) -> Tuple[bool, float, float, float]:
     base_score = extract_compliance_score(baseline)
     curr_score = extract_compliance_score(current)
     delta = curr_score - base_score

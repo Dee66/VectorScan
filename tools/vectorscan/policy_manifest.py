@@ -1,4 +1,5 @@
 """Policy manifest helpers for VectorScan."""
+
 from __future__ import annotations
 
 import hashlib
@@ -121,11 +122,15 @@ def load_policy_manifest(path: os.PathLike[str] | str) -> Dict[str, Any]:
     except FileNotFoundError as exc:  # pragma: no cover - exercised via CLI tests
         raise PolicyManifestError(f"Policy manifest not found: {manifest_path}") from exc
     except OSError as exc:  # pragma: no cover - unexpected I/O errors
-        raise PolicyManifestError(f"Unable to read policy manifest: {manifest_path}: {exc}") from exc
+        raise PolicyManifestError(
+            f"Unable to read policy manifest: {manifest_path}: {exc}"
+        ) from exc
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as exc:
-        raise PolicyManifestError(f"Policy manifest is invalid JSON: {manifest_path}: {exc}") from exc
+        raise PolicyManifestError(
+            f"Policy manifest is invalid JSON: {manifest_path}: {exc}"
+        ) from exc
 
     required_fields = ("policy_version", "policy_pack_hash", "policy_source_url", "signature")
     for field in required_fields:

@@ -1,24 +1,31 @@
-from hypothesis import given, strategies as st, settings
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 # Property-based test: random plan with required structure
+
 
 @settings(deadline=None)
 @given(
     encrypted=st.booleans(),
     costcenter=st.one_of(st.none(), st.text()),
-    project=st.one_of(st.none(), st.text())
+    project=st.one_of(st.none(), st.text()),
 )
 def test_vectorscan_property(encrypted, costcenter, project):
     import tempfile
+
     plan = {
         "planned_values": {
             "root_module": {
                 "resources": [
-                    {"type": "aws_db_instance", "name": "db1", "values": {
-                        "storage_encrypted": encrypted,
-                        "kms_key_id": "abc" if encrypted else None,
-                        "tags": {"CostCenter": costcenter, "Project": project}
-                    }}
+                    {
+                        "type": "aws_db_instance",
+                        "name": "db1",
+                        "values": {
+                            "storage_encrypted": encrypted,
+                            "kms_key_id": "abc" if encrypted else None,
+                            "tags": {"CostCenter": costcenter, "Project": project},
+                        },
+                    }
                 ]
             }
         }
@@ -31,14 +38,30 @@ def test_vectorscan_property(encrypted, costcenter, project):
     data = json.loads(out)
     assert data["status"] in ("PASS", "FAIL")
 
+
 # Combinatorial test: multiple resources with mixed states
 def test_vectorscan_combinatorial_resources(tmp_path):
     plan = {
         "planned_values": {
             "root_module": {
                 "resources": [
-                    {"type": "aws_db_instance", "name": "db1", "values": {"storage_encrypted": True, "kms_key_id": "abc", "tags": {"CostCenter": "A", "Project": "B"}}},
-                    {"type": "aws_db_instance", "name": "db2", "values": {"storage_encrypted": False, "tags": {"CostCenter": "", "Project": "B"}}},
+                    {
+                        "type": "aws_db_instance",
+                        "name": "db1",
+                        "values": {
+                            "storage_encrypted": True,
+                            "kms_key_id": "abc",
+                            "tags": {"CostCenter": "A", "Project": "B"},
+                        },
+                    },
+                    {
+                        "type": "aws_db_instance",
+                        "name": "db2",
+                        "values": {
+                            "storage_encrypted": False,
+                            "tags": {"CostCenter": "", "Project": "B"},
+                        },
+                    },
                     {"type": "aws_s3_bucket", "name": "b1", "values": {"tags": {}}},
                 ]
             }
@@ -52,14 +75,13 @@ def test_vectorscan_combinatorial_resources(tmp_path):
     assert data["status"] == "FAIL"
     assert len(data["violations"]) >= 1
 
+
 # Negative test: malformed resource structure
 def test_vectorscan_malformed_resource(tmp_path):
     plan = {
         "planned_values": {
             "root_module": {
-                "resources": [
-                    {"type": "aws_db_instance", "name": "db1"}  # missing 'values'
-                ]
+                "resources": [{"type": "aws_db_instance", "name": "db1"}]  # missing 'values'
             }
         }
     }
@@ -70,41 +92,51 @@ def test_vectorscan_malformed_resource(tmp_path):
     data = json.loads(out)
     assert data["status"] == "FAIL"
 
+
 # CLI flag test: --lead-capture and --email
 def test_vectorscan_lead_capture_flags(tmp_path):
-    plan = {
-        "planned_values": {
-            "root_module": {
-                "resources": []
-            }
-        }
-    }
+    plan = {"planned_values": {"root_module": {"resources": []}}}
     p = tmp_path / "lead-capture-plan.json"
     p.write_text(json.dumps(plan))
-    code, out, err = run([sys.executable, str(CLI), str(p), "--lead-capture", "--email", "test@example.com", "--json"])
+    code, out, err = run(
+        [
+            sys.executable,
+            str(CLI),
+            str(p),
+            "--lead-capture",
+            "--email",
+            "test@example.com",
+            "--json",
+        ]
+    )
     assert code == 0
     data = json.loads(out)
     assert data["status"] == "PASS"
 
+
 # Large plan file test
 def test_vectorscan_large_plan(tmp_path):
     resources = [
-        {"type": "aws_db_instance", "name": f"db{i}", "values": {"storage_encrypted": True, "kms_key_id": "abc", "tags": {"CostCenter": "A", "Project": "B"}}}
+        {
+            "type": "aws_db_instance",
+            "name": f"db{i}",
+            "values": {
+                "storage_encrypted": True,
+                "kms_key_id": "abc",
+                "tags": {"CostCenter": "A", "Project": "B"},
+            },
+        }
         for i in range(100)
     ]
-    plan = {
-        "planned_values": {
-            "root_module": {
-                "resources": resources
-            }
-        }
-    }
+    plan = {"planned_values": {"root_module": {"resources": resources}}}
     p = tmp_path / "large-plan.json"
     p.write_text(json.dumps(plan))
     code, out, err = run([sys.executable, str(CLI), str(p), "--json"])
     assert code == 0
     data = json.loads(out)
     assert data["status"] == "PASS"
+
+
 import json
 import os
 import subprocess
@@ -122,6 +154,7 @@ segments = [str(ROOT)]
 if env_pythonpath:
     segments.append(env_pythonpath)
 ENV["PYTHONPATH"] = os.pathsep.join(segments)
+ENV.setdefault("VSCAN_ALLOW_NETWORK", "1")
 
 
 def run(cmd):
@@ -137,18 +170,23 @@ def run(cmd):
     return p.returncode, p.stdout.strip(), p.stderr.strip()
 
 
-
 import pytest
 
-@pytest.mark.parametrize("plan_path,expected_code,expected_status,violation_count", [
-    (PASS, 0, "PASS", 0),
-    (FAIL, 3, "FAIL", 1),
-    (PASS, 0, "PASS", 0),
-    (FAIL, 3, "FAIL", 1),
-])
+
+@pytest.mark.parametrize(
+    "plan_path,expected_code,expected_status,violation_count",
+    [
+        (PASS, 0, "PASS", 0),
+        (FAIL, 3, "FAIL", 1),
+        (PASS, 0, "PASS", 0),
+        (FAIL, 3, "FAIL", 1),
+    ],
+)
 def test_vectorscan_json_param(plan_path, expected_code, expected_status, violation_count):
     code, out, err = run([sys.executable, str(CLI), str(plan_path), "--json"])
-    assert code == expected_code, f"expected {expected_code}, got {code}\nstdout={out}\nstderr={err}"
+    assert (
+        code == expected_code
+    ), f"expected {expected_code}, got {code}\nstdout={out}\nstderr={err}"
     data = json.loads(out)
     assert data["status"] == expected_status
     assert data["counts"]["violations"] >= violation_count
@@ -158,14 +196,15 @@ def test_vectorscan_json_param(plan_path, expected_code, expected_status, violat
         assert isinstance(data["violations"], list) and data["violations"]
 
 
-
 # Edge/unhappy path: missing plan file
 def test_vectorscan_missing_plan():
     import tempfile
+
     missing = tempfile.gettempdir() + "/no-such-plan.json"
     code, out, err = run([sys.executable, str(CLI), missing, "--json"])
     assert code == 2
     assert "file not found" in err
+
 
 # Edge/unhappy path: invalid JSON
 def test_vectorscan_invalid_json(tmp_path):
@@ -175,13 +214,22 @@ def test_vectorscan_invalid_json(tmp_path):
     assert code == 2
     assert "invalid JSON" in err
 
+
 # Edge: plan with missing tags
 def test_vectorscan_missing_tags(tmp_path):
     plan = {
         "planned_values": {
             "root_module": {
                 "resources": [
-                    {"type": "aws_db_instance", "name": "db1", "values": {"storage_encrypted": True, "kms_key_id": "abc", "tags": {"CostCenter": "", "Project": "B"}}}
+                    {
+                        "type": "aws_db_instance",
+                        "name": "db1",
+                        "values": {
+                            "storage_encrypted": True,
+                            "kms_key_id": "abc",
+                            "tags": {"CostCenter": "", "Project": "B"},
+                        },
+                    }
                 ]
             }
         }
@@ -306,13 +354,22 @@ def test_vectorscan_human_explain_block(tmp_path):
     assert "VectorScan Explain Report" in out
     assert "High-risk resources" in out
 
+
 # Edge: human-readable output
 def test_vectorscan_human_output(tmp_path):
     plan = {
         "planned_values": {
             "root_module": {
                 "resources": [
-                    {"type": "aws_db_instance", "name": "db1", "values": {"storage_encrypted": True, "kms_key_id": "abc", "tags": {"CostCenter": "A", "Project": "B"}}}
+                    {
+                        "type": "aws_db_instance",
+                        "name": "db1",
+                        "values": {
+                            "storage_encrypted": True,
+                            "kms_key_id": "abc",
+                            "tags": {"CostCenter": "A", "Project": "B"},
+                        },
+                    }
                 ]
             }
         }
@@ -322,5 +379,3 @@ def test_vectorscan_human_output(tmp_path):
     code, out, err = run([sys.executable, str(CLI), str(p)])
     assert code == 0
     assert "PASS" in out
-
-

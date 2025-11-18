@@ -16,12 +16,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import os
+import hashlib
 import subprocess
 import sys
 from pathlib import Path
-from zipfile import ZipFile, ZIP_DEFLATED
-import hashlib
+from zipfile import ZIP_DEFLATED, ZipFile
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PKG_ROOT = REPO_ROOT  # vectorguard project directory
@@ -102,8 +101,8 @@ def add_path(z: ZipFile, base_dir: Path, rel_path: Path) -> None:
 
 def write_sha256(path: Path) -> Path:
     h = hashlib.sha256()
-    with path.open('rb') as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b''):
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
             h.update(chunk)
     out = path.with_suffix(path.suffix + ".sha256")
     out.write_text(f"{h.hexdigest()}  {path.name}\n", encoding="utf-8")
@@ -116,9 +115,9 @@ def gpg_sign(zip_path: Path) -> Path | None:
     Returns the signature path or None if signing failed/unavailable.
     """
     try:
-        subprocess.run([
-            "gpg", "--batch", "--yes", "--armor", "--detach-sign", str(zip_path)
-        ], check=True)
+        subprocess.run(
+            ["gpg", "--batch", "--yes", "--armor", "--detach-sign", str(zip_path)], check=True
+        )
     except Exception as e:  # noqa: BLE001
         print(f"Warning: GPG signing skipped ({e})", file=sys.stderr)
         return None
@@ -133,13 +132,22 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Create release bundle zip")
     ap.add_argument("--version", required=True, help="Version string, e.g., 1.0.0")
     ap.add_argument("--no-git-check", action="store_true", help="Skip clean git state check")
-    ap.add_argument("--gpg-sign", action="store_true", help="Attempt to create a detached GPG signature (.asc)")
-    ap.add_argument("--strict", action="store_true", help="Fail the build if requested signing cannot be completed")
+    ap.add_argument(
+        "--gpg-sign", action="store_true", help="Attempt to create a detached GPG signature (.asc)"
+    )
+    ap.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail the build if requested signing cannot be completed",
+    )
     args = ap.parse_args(argv)
 
     if not args.no_git_check:
         if not is_clean_git_tree(REPO_ROOT):
-            print("Error: Git working tree is not clean. Commit or stash changes, or pass --no-git-check.", file=sys.stderr)
+            print(
+                "Error: Git working tree is not clean. Commit or stash changes, or pass --no-git-check.",
+                file=sys.stderr,
+            )
             return 1
 
     dist_dir = REPO_ROOT / "dist"
@@ -180,7 +188,10 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print("(No .asc signature produced)")
             if args.strict:
-                print("Error: --gpg-sign requested but signature not produced; failing due to --strict.", file=sys.stderr)
+                print(
+                    "Error: --gpg-sign requested but signature not produced; failing due to --strict.",
+                    file=sys.stderr,
+                )
                 return 2
     return 0
 

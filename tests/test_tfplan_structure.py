@@ -29,26 +29,18 @@ def test_cli_handles_missing_planned_values(tmp_path):
 
 
 def test_cli_handles_missing_root_module(tmp_path):
-    payload = {
-        "planned_values": {
-            "root_module": {}
-        }
-    }
+    payload = {"planned_values": {"root_module": {}}}
     res = _run_plan(tmp_path, payload)
     assert res.returncode == 0, res.stderr
     data = json.loads(res.stdout)
     assert data["status"] == "PASS"
 
+
 def test_cli_handles_empty_child_modules(tmp_path):
     payload = {
         "planned_values": {
             "root_module": {
-                "resources": [
-                    {
-                        "type": "aws_db_instance",
-                        "values": {"storage_encrypted": True}
-                    }
-                ],
+                "resources": [{"type": "aws_db_instance", "values": {"storage_encrypted": True}}],
                 "child_modules": None,
             }
         }

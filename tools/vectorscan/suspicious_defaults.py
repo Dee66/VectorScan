@@ -1,4 +1,5 @@
 """Heuristics for flagging suspicious Terraform defaults before policy evaluation."""
+
 from __future__ import annotations
 
 import json
@@ -111,7 +112,9 @@ def _iam_wildcard_actions(values: Dict[str, Any]) -> Sequence[str]:
         if not isinstance(actions, list):
             continue
         for action in actions:
-            if isinstance(action, str) and (action == "*" or action.endswith(":*") or "*" in action):
+            if isinstance(action, str) and (
+                action == "*" or action.endswith(":*") or "*" in action
+            ):
                 return ["IAM inline policy contains wildcard action"]
     return []
 
@@ -158,7 +161,9 @@ def _evaluate_resource(resource: Dict[str, Any]) -> List[str]:
     return findings
 
 
-def detect_suspicious_defaults(plan: Dict[str, Any], resources: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def detect_suspicious_defaults(
+    plan: Dict[str, Any], resources: Sequence[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
     """Return advisory findings that highlight insecure defaults."""
 
     detections: List[Dict[str, Any]] = []
@@ -169,15 +174,15 @@ def detect_suspicious_defaults(plan: Dict[str, Any], resources: Sequence[Dict[st
         if key in seen:
             return
         seen.add(key)
-        detections.append({
-            "address": address,
-            "resource_type": resource_type,
-            "reason": reason,
-        })
+        detections.append(
+            {
+                "address": address,
+                "resource_type": resource_type,
+                "reason": reason,
+            }
+        )
 
     for resource in resources:
-        if not isinstance(resource, dict):
-            continue
         r_type = resource.get("type")
         if not isinstance(r_type, str):
             continue

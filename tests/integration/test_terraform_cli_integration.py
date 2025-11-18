@@ -1,11 +1,7 @@
-import os
-import sys
 import json
-from pathlib import Path
 import subprocess
-
-import pytest
-
+import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CLI = ROOT / "tools" / "vectorscan" / "vectorscan.py"
@@ -45,7 +41,7 @@ def test_terraform_tests_error_no_download(capsys, monkeypatch):
         }
 
     monkeypatch.setattr(vs, "run_terraform_tests", fake_run_terraform_tests)
-    code = vs.main([str(PASS_PLAN), "--json", "--terraform-tests"])  # type: ignore
+    code = vs.main([str(PASS_PLAN), "--json", "--terraform-tests"])
     captured = capsys.readouterr()
     data = json.loads(captured.out)
     assert data["terraform_tests"]["status"] == "ERROR"
@@ -73,7 +69,7 @@ def test_terraform_tests_fail_integration(capsys, monkeypatch):
         }
 
     monkeypatch.setattr(vs, "run_terraform_tests", fake_run_terraform_tests)
-    code = vs.main([str(PASS_PLAN), "--json", "--terraform-tests"])  # type: ignore
+    code = vs.main([str(PASS_PLAN), "--json", "--terraform-tests"])
     captured = capsys.readouterr()
     data = json.loads(captured.out)
     assert data["terraform_tests"]["status"] == "FAIL"
@@ -98,7 +94,7 @@ def test_terraform_tests_skip_legacy(capsys, monkeypatch):
         }
 
     monkeypatch.setattr(vs, "run_terraform_tests", fake_run_terraform_tests)
-    code = vs.main([str(PASS_PLAN), "--json", "--terraform-tests"])  # type: ignore
+    code = vs.main([str(PASS_PLAN), "--json", "--terraform-tests"])
     captured = capsys.readouterr()
     data = json.loads(captured.out)
     assert data["terraform_tests"]["status"] == "SKIP"
@@ -112,10 +108,12 @@ def test_terraform_tests_skip_when_missing_binary(capsys, monkeypatch):
     import tools.vectorscan.vectorscan as vs
 
     def fake_ensure(self, override_bin):  # pragma: no cover - monkeypatched helper
-        raise vs.TerraformNotFoundError("Terraform CLI not found and auto-download disabled. Set VSCAN_TERRAFORM_BIN or enable downloads.")
+        raise vs.TerraformNotFoundError(
+            "Terraform CLI not found and auto-download disabled. Set VSCAN_TERRAFORM_BIN or enable downloads."
+        )
 
     monkeypatch.setattr(vs.TerraformManager, "ensure", fake_ensure)
-    code = vs.main([str(PASS_PLAN), "--terraform-tests", "--no-terraform-download", "--json"])  # type: ignore
+    code = vs.main([str(PASS_PLAN), "--terraform-tests", "--no-terraform-download", "--json"])
     captured = capsys.readouterr()
     data = json.loads(captured.out)
     assert data["terraform_tests"]["status"] == "SKIP"

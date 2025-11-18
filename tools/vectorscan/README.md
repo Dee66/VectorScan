@@ -36,8 +36,11 @@ python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.jso
 # Or via env var
 VSCAN_IAM_DRIFT_PENALTY=35 python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --json
 
-# Run Terraform module tests first (auto-downloads CLI >= 1.13.5 if needed)
-python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json --terraform-tests
+# Run Terraform module tests first (set VSCAN_ALLOW_TERRAFORM_DOWNLOAD=1 to enable downloads)
+VSCAN_ALLOW_TERRAFORM_DOWNLOAD=1 \
+python3 tools/vectorscan/vectorscan.py \
+  examples/aws-pgvector-rag/tfplan-pass.json \
+  --allow-network --terraform-tests
 # Or via env vars
 VSCAN_TERRAFORM_TESTS=1 python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-pass.json
 
@@ -71,9 +74,9 @@ Exit codes:
 - Air-gapped workflows can export `VSCAN_OFFLINE=1` to disable lead capture, telemetry helpers, Terraform auto-downloads, and StatsD/HTTP touches without changing the CLI output. You can also leave telemetry enabled but silence StatsD specifically via `scripts/telemetry_consumer.py --disable-statsd`, `VSCAN_DISABLE_STATSD=1`, or force-enable emission with `VSCAN_ENABLE_STATSD=1` in shared CI environments.
 
 ### Terraform Version Automation
-- Passing `--terraform-tests` (or setting `VSCAN_TERRAFORM_TESTS=1`) makes VectorScan detect the local Terraform CLI, download v1.13.5 into `tools/vectorscan/.terraform-bin/` when necessary, and run `terraform test` using the modern harness.
-- Use `--terraform-bin /path/to/terraform` or `VSCAN_TERRAFORM_BIN` to point at a custom binary.
-- Set `--no-terraform-download` or `VSCAN_TERRAFORM_AUTO_DOWNLOAD=0` to disable auto-download and fall back to whichever Terraform version is already installed (legacy mode skips module tests on unsupported versions).
+- Passing `--terraform-tests` (or setting `VSCAN_TERRAFORM_TESTS=1`) makes VectorScan detect the local Terraform CLI. Downloads stay disabled until you opt in with `VSCAN_ALLOW_TERRAFORM_DOWNLOAD=1` (or legacy `VSCAN_TERRAFORM_AUTO_DOWNLOAD=1`) and permit network access via `--allow-network` / `VSCAN_ALLOW_NETWORK=1`. When enabled, VectorScan caches v1.13.5 under `tools/vectorscan/.terraform-bin/` and runs `terraform test` with the modern harness.
+- Use `--terraform-bin /path/to/terraform` or `VSCAN_TERRAFORM_BIN` to point at a custom binary when you prefer to manage installation yourself.
+- Set `--no-terraform-download`, `VSCAN_ALLOW_TERRAFORM_DOWNLOAD=0`, or `VSCAN_TERRAFORM_AUTO_DOWNLOAD=0` to force the legacy behavior even when the allow flag is present, ensuring downloads never occur.
 - The JSON output adds a `terraform_tests` block covering status, CLI version, binary source, and truncated stdout/stderr so automation can enforce test gates.
 
 ### IAM Drift Report and Score Penalty

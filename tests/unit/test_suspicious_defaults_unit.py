@@ -77,11 +77,7 @@ def test_resource_changes_are_evaluated():
             {
                 "type": "aws_elasticsearch_domain",
                 "name": "legacy",
-                "change": {
-                    "after": {
-                        "encrypt_at_rest": {"enabled": False}
-                    }
-                },
+                "change": {"after": {"encrypt_at_rest": {"enabled": False}}},
             }
         ]
     }

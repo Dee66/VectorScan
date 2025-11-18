@@ -11,7 +11,7 @@ class SchemaInfo:
     version: str
 
 
-_BASE_VERSION = "2025-11-14.3"
+_BASE_VERSION = "2025-11-14.4"
 _SCHEMA_MAP: Dict[str, SchemaInfo] = {
     "log_entry": SchemaInfo(kind="vectorscan.telemetry.log_entry", version=_BASE_VERSION),
     "summary": SchemaInfo(kind="vectorscan.telemetry.summary", version=_BASE_VERSION),

@@ -1,0 +1,79 @@
+{
+  "mode": "compare",
+  "status": "ALERT",
+  "plan_evolution": {
+    "old_plan": {
+      "file": "tests/fixtures/tfplan_compare_old.json",
+      "resource_count": 3,
+      "change_summary": {
+        "adds": 1,
+        "changes": 1,
+        "destroys": 1
+      }
+    },
+    "new_plan": {
+      "file": "tests/fixtures/tfplan_compare_new.json",
+      "resource_count": 4,
+      "change_summary": {
+        "adds": 2,
+        "changes": 2,
+        "destroys": 2
+      }
+    },
+    "delta": {
+      "resource_count": 1,
+      "adds": 1,
+      "changes": 1,
+      "destroys": 1
+    },
+    "downgraded_encryption": {
+      "count": 2,
+      "resources": [
+        {
+          "address": "aws_rds_cluster.analytics",
+          "type": "aws_rds_cluster",
+          "name": "analytics",
+          "previous": {
+            "storage_encrypted": true,
+            "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/analytics"
+          },
+          "current": {
+            "storage_encrypted": true,
+            "kms_key_id": null
+          },
+          "reasons": [
+            "kms_key_id removed"
+          ]
+        },
+        {
+          "address": "aws_rds_cluster.vector_db",
+          "type": "aws_rds_cluster",
+          "name": "vector_db",
+          "previous": {
+            "storage_encrypted": true,
+            "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/vector"
+          },
+          "current": {
+            "storage_encrypted": false,
+            "kms_key_id": null
+          },
+          "reasons": [
+            "storage_encrypted flipped to false",
+            "kms_key_id removed"
+          ]
+        }
+      ]
+    },
+    "summary": {
+      "lines": [
+        "+1 resources (3 → 4)",
+        "+1 planned adds (1 → 2)",
+        "~1 changed resources (1 → 2)",
+        "-1 destroyed resources (1 → 2)",
+        "!2 downgraded encryption settings"
+      ]
+    }
+  },
+  "vectorscan_version": "0.1.0",
+  "schema_version": "1.2.0"
+}

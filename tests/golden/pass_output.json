@@ -21,6 +21,33 @@
     "medium": 0,
     "low": 0
   },
+  "policy_source_url": "https://github.com/Dee66/VectorScan/tree/main/tools/vectorscan/policies",
+  "policy_manifest": {
+    "policy_version": "1.0.0",
+    "policy_pack_hash": "126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c",
+    "policy_source_url": "https://github.com/Dee66/VectorScan/tree/main/tools/vectorscan/policies",
+    "policy_count": 2,
+    "policies": [
+      {
+        "id": "P-FIN-001",
+        "name": "Mandatory Tagging",
+        "severity": "high",
+        "category": "finops",
+        "description": "Taggable AWS resources must include CostCenter and Project tags."
+      },
+      {
+        "id": "P-SEC-001",
+        "name": "Encryption Mandate",
+        "severity": "critical",
+        "category": "security",
+        "description": "RDS resources must enable storage encryption and reference a kms_key_id."
+      }
+    ],
+    "signature": "sha256:bdd7820ee169f78660c992e699d108b992b5b067aa459e25873e0ecca8503cea",
+    "signed": true,
+    "verified": true,
+    "path": "embedded"
+  },
   "violation_count_by_severity": {
     "critical": 0,
     "high": 0,
@@ -68,6 +95,7 @@
       }
     },
     "file_size_mb": 0.000549,
+    "parser_mode": "streaming",
     "file_size_bytes": 549,
     "parse_duration_ms": 123,
     "plan_slo": {
@@ -91,6 +119,22 @@
       "breach_reason": null
     }
   },
+  "suspicious_defaults": [],
+  "smell_report": {
+    "level": "low",
+    "summary": "No structural smells detected.",
+    "stats": {
+      "resource_count": 1,
+      "max_module_depth": 0,
+      "for_each_instances": 0,
+      "kms_missing": 0,
+      "iam_policy_statements": 0,
+      "iam_policy_actions": 0,
+      "iam_policy_length": 0,
+      "change_total": 0
+    },
+    "smells": []
+  },
   "iam_drift_report": {
     "status": "PASS",
     "counts": {
@@ -113,13 +157,17 @@
     "iam_risky_actions": 0,
     "notes": {
       "open_security_groups": [],
-      "iam_risky_details": []
+      "iam_risky_details": [],
+      "violation_count": 0
     },
     "iam_drift": {
       "status": "PASS",
       "risky_change_count": 0
     },
-    "scan_duration_ms": 123
+    "scan_duration_ms": 123,
+    "parser_mode": "streaming",
+    "resource_count": 1
   },
+  "plan_risk_profile": "low",
   "security_grade": "A"
 }

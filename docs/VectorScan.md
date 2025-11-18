@@ -85,6 +85,15 @@ VectorScan downloads a compatible Terraform binary on demand. Use `VSCAN_TERRAFO
 
 Passing `--diff` switches the CLI into change-only mode: JSON payloads add a `plan_diff` block containing `{adds, changes, destroys}` counts and per-resource attribute deltas, while the human output prints a deterministic “Plan Diff Summary.” The flag stacks with `--json` and `--explain`, so stakeholders can read the narrative focused on only the changed attributes.
 
+Need to compare two separate plan snapshots (e.g., yesterday’s vs. today’s CI run) without re-running policy evaluation? Use `vectorscan --compare old.json new.json`. The compare run emits a dedicated `plan_evolution` object with:
+
+- Old vs. new resource counts + change summaries
+- Delta math for adds/changes/destroys
+- A deterministic `summary.lines` array formatted as the familiar `+/-/~/!` Terraform shorthand
+- A downgraded-encryption report that lists every resource where `storage_encrypted` flipped or `kms_key_id` disappeared (with before/after evidence)
+
+Human output prints the same lines plus a “Downgraded encryption” section so reviewers can paste the summary into change reviews. Exit codes stay at `0`/`2` just like normal runs, and no paid policy logic executes.
+
 ### Interpreting Policy Output
 
 - A `PASS` for `P-SEC-001` indicates encryption is enforced on every RDS or vector database resource.
@@ -170,7 +179,7 @@ VectorGuard_Audit_Ledger:
   tagging: PASS (CostCenter=RAG-FinOps)
   audit_status: COMPLIANT ✅
   overall_score: 94/100
-  CISO_Mandate: COMPLIANT — Proceed with immediate deployment.
+  CISO_Mandate: COMPLIANT  -  Proceed with immediate deployment.
 ```
 
 VectorScan mirrors this style by generating compliance-ready evidence that leadership can consume during incident or audit reviews.

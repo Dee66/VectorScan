@@ -1,12 +1,15 @@
 # VectorScan Output Schema
 
-_Generated on 2025-11-17 09:24:45 UTC via `scripts/generate_schema_docs.py`. Run the script again after schema changes to keep this document accurate._
+_Generated on 2025-11-18 08:10:55 UTC via `scripts/generate_schema_docs.py`. Run the script again after schema changes to keep this document accurate._
 
 ## Sample Coverage
 
 This schema is derived from the union of these fixture runs:
 - `examples/aws-pgvector-rag/tfplan-pass.json`
 - `examples/aws-pgvector-rag/tfplan-fail.json`
+
+Compare samples:
+- `tests/fixtures/tfplan_compare_old.json` → `tests/fixtures/tfplan_compare_new.json`
 
 ## Top-Level Fields
 
@@ -21,16 +24,26 @@ This schema is derived from the union of these fixture runs:
 | `policy_errors` | `array` | Structured errors raised while evaluating a policy (rare). |
 | `violation_severity_summary` | `object` | Map of severity → violation counts. |
 | `metrics` | `object` | Machine-readable scoring + exposure metrics for dashboards. |
+| `security_grade` | `string` | Letter-grade security rating derived from compliance score and severity mix. |
 | `iam_drift_report` | `object` | IAM drift analysis output with risky additions and severities. |
 | `terraform_tests` | `object` | Optional Terraform test run metadata (present when --terraform-tests is used). |
 | `environment` | `object` | Runtime metadata (platform, Python, Terraform, VectorScan, strict/offline flags). |
 | `plan_metadata` | `object` | Terraform plan inventory summary (resource/module counts, providers, types). |
 | `plan_diff` | `object` | Change-only diff summary emitted when --diff is provided. |
 | `explanation` | `object` | Narrative explain block emitted when --explain is provided. |
+| `violation_count_by_severity` | `object` | Legacy severity count map kept for backwards compatibility. |
 | `vectorscan_version` | `string` | Semantic version of the CLI binary producing the output. |
 | `policy_version` | `string` | Policy pack SemVer string for auditors. |
 | `schema_version` | `string` | Version tag for this JSON schema contract. |
 | `policy_pack_hash` | `string` | SHA-256 hash of the shipped policy bundle. |
+| `policy_source_url` | `string` | Canonical repository or URL describing the policy source. |
+| `policy_manifest` | `object` | Signed manifest metadata describing the active policy pack. |
+| `preview_generated` | `boolean` | Boolean indicating VectorGuard preview metadata was emitted. |
+| `preview_policies` | `array<object>` | Array of teaser policies surfaced by preview mode. |
+| `preview_manifest` | `object` | Signed manifest metadata describing the preview payload. |
+| `resource_filter` | `object` | Resource scope metadata emitted when --resource is provided. |
+| `smell_report` | `object` | Plan smell heuristics summarizing structural risk indicators. |
+| `plan_evolution` | `object` | Plan comparison summary emitted when --compare is used. |
 
 ## Counts
 
@@ -90,6 +103,15 @@ This schema is derived from the union of these fixture runs:
 | `violation_severity_summary.medium` | `integer` | Medium-level violation count. |
 | `violation_severity_summary.low` | `integer` | Low-level violation count. |
 
+## Violation Count by Severity
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `violation_count_by_severity.critical` | `integer` | Critical-level violation count mirrored for backwards compatibility. |
+| `violation_count_by_severity.high` | `integer` | High-level violation count mirrored for backwards compatibility. |
+| `violation_count_by_severity.medium` | `integer` | Medium-level violation count mirrored for backwards compatibility. |
+| `violation_count_by_severity.low` | `integer` | Low-level violation count mirrored for backwards compatibility. |
+
 ## Policy Errors
 
 | Field | Type | Description |
@@ -111,6 +133,8 @@ This schema is derived from the union of these fixture runs:
 | `metrics.iam_drift.risky_change_count` | `integer` | Number of IAM drift findings mirrored into metrics. |
 | `metrics.notes` | `object` | Additional context for open security groups and IAM risk analysis. |
 | `metrics.scan_duration_ms` | `integer` | CLI runtime duration in milliseconds. |
+| `metrics.parser_mode` | `string` | Parser implementation used for the scan (streaming vs legacy). |
+| `metrics.resource_count` | `integer` | Resource count echoed into metrics for quick filters. |
 
 <details><summary>Example</summary>
 
@@ -125,11 +149,10 @@ This schema is derived from the union of these fixture runs:
   "iam_risky_actions": 0,
   "notes": {
     "open_security_groups": [],
-    "iam_risky_details": []
+    "iam_risky_details": [],
+    "violation_count": 0
   },
-  "iam_drift": {
-    "status": "PASS",
-    "ri…
+  "iam_drift": {…
 ```
 
 </details>
@@ -155,6 +178,17 @@ This schema is derived from the union of these fixture runs:
 | `environment.strict_mode` | `boolean` | Boolean indicating VSCAN_STRICT enforcement. |
 | `environment.offline_mode` | `boolean` | Boolean indicating offline/air-gapped execution. |
 
+## Resource Filter (--resource)
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `resource_filter.input` | `string` | Original --resource input string. |
+| `resource_filter.address` | `string` | Fully-qualified Terraform resource address that matched the selector. |
+| `resource_filter.type` | `string` | Terraform resource type for the scoped result. |
+| `resource_filter.name` | `string` | Resource name component from the scoped address. |
+| `resource_filter.module_path` | `string` | Module path derived from the scoped address. |
+| `resource_filter.match` | `string` | Indicates whether the selector resolved via exact or suffix match. |
+
 ## Plan Metadata
 
 | Field | Type | Description |
@@ -175,8 +209,75 @@ This schema is derived from the union of these fixture runs:
 | `plan_metadata.plan_slo.active_window` | `string` | SLO tier label (fast_path/large_plan/oversized). |
 | `plan_metadata.plan_slo.observed` | `object` | Observed metrics (resource_count, parse_duration_ms, file_size_bytes). |
 | `plan_metadata.plan_slo.thresholds` | `object` | Threshold metadata for each SLO tier. |
-| `plan_metadata.plan_slo.breach_reason` | `null` | Reason provided when the plan breaches the active SLO. |
+| `plan_metadata.plan_slo.breach_reason` | `string` | Reason provided when the plan breaches the active SLO. |
 | `plan_metadata.exceeds_threshold` | `boolean` | Boolean recording whether the plan exceeded the SLO thresholds. |
+
+## Plan Smell Report
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `smell_report.level` | `string` | Aggregated smell severity level (low/moderate/high). |
+| `smell_report.summary` | `string` | One-line summary of detected plan smells. |
+| `smell_report.stats.resource_count` | `integer` | Resource count snapshot used during smell analysis. |
+| `smell_report.stats.max_module_depth` | `integer` | Deepest module nesting level observed. |
+| `smell_report.stats.for_each_instances` | `integer` | Number of expanded for_each/count instances. |
+| `smell_report.stats.kms_missing` | `integer` | Count of KMS-required resources lacking kms_key_id. |
+| `smell_report.stats.iam_policy_statements` | `integer` | Max IAM statements observed in plan changes. |
+| `smell_report.stats.iam_policy_actions` | `integer` | Max IAM actions observed in plan changes. |
+| `smell_report.stats.iam_policy_length` | `integer` | Largest IAM policy document size (bytes). |
+| `smell_report.stats.change_total` | `integer` | Adds+changes+destroys aggregated across the plan. |
+| `smell_report.smells` | `array<object>` | Array of detected smell findings with evidence. |
+
+## Plan Smell Entries
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `smell_report.smells[].id` | `string` | Smell identifier (e.g., module_depth). |
+| `smell_report.smells[].level` | `string` | Severity level for the smell finding. |
+| `smell_report.smells[].message` | `string` | Human-readable explanation of the smell. |
+| `smell_report.smells[].evidence` | `object` | Structured evidence backing the smell detection. |
+
+## Plan Evolution (Compare Mode)
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `plan_evolution.old_plan.file` | `string` | Filesystem path to the previous plan used in --compare. |
+| `plan_evolution.old_plan.resource_count` | `integer` | Resource count for the previous plan. |
+| `plan_evolution.old_plan.change_summary` | `object` | Adds/changes/destroys summary for the previous plan. |
+| `plan_evolution.new_plan.file` | `string` | Filesystem path to the newer plan used in --compare. |
+| `plan_evolution.new_plan.resource_count` | `integer` | Resource count for the newer plan. |
+| `plan_evolution.new_plan.change_summary` | `object` | Adds/changes/destroys summary for the newer plan. |
+
+## Plan Evolution Delta
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `plan_evolution.delta.resource_count` | `integer` | Difference in total resources between the compared plans. |
+| `plan_evolution.delta.adds` | `integer` | Difference in adds between the plans. |
+| `plan_evolution.delta.changes` | `integer` | Difference in changes between the plans. |
+| `plan_evolution.delta.destroys` | `integer` | Difference in destroy counts between the plans. |
+
+## Plan Evolution Summary
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `plan_evolution.summary.lines` | `array<string>` | Human-readable +/-/~/! summary lines describing the comparison. |
+
+## Plan Evolution Downgraded Encryption
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `plan_evolution.downgraded_encryption.count` | `integer` | Number of resources where encryption was downgraded. |
+| `plan_evolution.downgraded_encryption.resources` | `array<object>` | Details for each downgraded resource. |
+
+## Plan Evolution Downgraded Entries
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `plan_evolution.downgraded_encryption.resources[].address` | `string` | Resource address that experienced a downgrade. |
+| `plan_evolution.downgraded_encryption.resources[].reasons` | `array<string>` | List of downgrade reasons (storage_encrypted flip, kms removal). |
+| `plan_evolution.downgraded_encryption.resources[].previous` | `object` | Previous encryption state snapshot. |
+| `plan_evolution.downgraded_encryption.resources[].current` | `object` | Current encryption state snapshot. |
 
 ## Plan Diff (--diff)
 
@@ -263,7 +364,41 @@ This schema is derived from the union of these fixture runs:
 | --- | --- | --- |
 | `terraform_tests.status` | `string` | PASS/FAIL/SKIP from 'terraform test'. |
 | `terraform_tests.version` | `string` | Terraform CLI version used for tests. |
+| `terraform_tests.binary` | `string` | Path to the Terraform binary used for tests. |
 | `terraform_tests.source` | `string` | Where the CLI was resolved (system/download/override). |
 | `terraform_tests.strategy` | `string` | Named test harness that executed (modern, legacy, etc.). |
+| `terraform_tests.message` | `string` | Contextual status or error message from Terraform test orchestration. |
 | `terraform_tests.stdout` | `string` | Truncated stdout from Terraform tests. |
 | `terraform_tests.stderr` | `string` | Truncated stderr from Terraform tests. |
+| `terraform_tests.returncode` | `integer` | Return code emitted by the executed Terraform command (null when skipped). |
+
+## VectorGuard Preview
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `preview_generated` | `boolean` | Boolean flag indicating preview mode is active. |
+| `preview_policies[].id` | `string` | Preview policy identifier surfaced from the manifest. |
+| `preview_policies[].summary` | `string` | One-line description of the teaser policy. |
+| `preview_manifest.version` | `string` | Preview manifest version tag. |
+| `preview_manifest.generated_at` | `string` | ISO8601 timestamp describing when the manifest was produced. |
+| `preview_manifest.signature` | `string` | sha256-prefixed signature verifying the preview manifest contents. |
+| `preview_manifest.verified` | `boolean` | Boolean indicating whether the manifest signature verification succeeded or was skipped via env overrides. |
+
+## Policy Manifest
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `policy_manifest.policy_version` | `string` | Policy version captured inside the manifest. |
+| `policy_manifest.policy_pack_hash` | `string` | Hash of the bundled policy files asserted by the manifest. |
+| `policy_manifest.policy_source_url` | `string` | Reference URL for the policy pack source. |
+| `policy_manifest.policy_count` | `integer` | Number of policies described by the manifest. |
+| `policy_manifest.policies` | `array<object>` | List of policy metadata entries covered by the manifest. |
+| `policy_manifest.policies[].id` | `string` | Policy identifier in the manifest entry. |
+| `policy_manifest.policies[].name` | `string` | Human-readable policy name. |
+| `policy_manifest.policies[].category` | `string` | Policy category such as security or finops. |
+| `policy_manifest.policies[].severity` | `string` | Policy severity rating. |
+| `policy_manifest.policies[].description` | `string` | Human-readable description for the policy. |
+| `policy_manifest.signature` | `string` | sha256-prefixed signature over the manifest payload. |
+| `policy_manifest.signed` | `boolean` | Boolean indicating a signature is attached. |
+| `policy_manifest.verified` | `boolean` | Boolean indicating signature verification succeeded. |
+| `policy_manifest.path` | `string` | Filesystem path for the manifest file (embedded or overridden). |

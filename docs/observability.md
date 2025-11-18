@@ -12,6 +12,9 @@ VectorScan emits structured evidence you can ship into dashboards, alerting rule
 | `metrics.iam_risky_actions` | CLI `metrics` block | Number of IAM entities with wildcard or high-risk actions heuristically detected in inline policies.
 | `metrics.iam_drift.status` | `iam_drift_report` | `PASS` / `FAIL` depending on whether risky IAM additions were found in the plan.
 | `metrics.iam_drift.risky_change_count` | CLI `metrics` block | Numeric indicator of how many IAM changes were flagged; correlate it with change review gates.
+| `metrics.scan_duration_ms` | CLI `metrics` block | Total CLI runtime in milliseconds so you can track performance regressions and enforce latency SLOs.
+| `metrics.parser_mode` | CLI `plan_metadata` + `metrics` | Indicates whether the streaming parser or legacy fallback handled the plan; alert when you drop out of streaming mode to catch large-plan regressions.
+| `metrics.resource_count` | CLI `plan_metadata` + `metrics` | Echo of the plan’s resource count inside the metrics block for quick filtering or dashboards that don’t want to parse nested metadata.
 | `violations` | CLI `violations` list | Policy violation strings you can attach to incident tickets or compliance logs.
 | `violations_struct` | CLI `violations_struct` list | Structured remediation metadata (docs, HCL snippets, data_taint + taint_explanation) for every violation; feed this into ticket templates or knowledge bases.
 | `terraform_tests.status` | CLI `terraform_tests` block (when `--terraform-tests` enabled) | Mirror of the Terraform smoke test outcome so you can graph the reliability of the bundled Terraform binary.
@@ -26,6 +29,9 @@ VectorScan emits structured evidence you can ship into dashboards, alerting rule
 | `plan_metadata.file_size_mb` | CLI `plan_metadata` block | File size (MB) companion to `file_size_bytes`; graph it to detect plan bloat trends. |
 | `plan_metadata.file_size_bytes` / `plan_metadata.parse_duration_ms` | CLI `plan_metadata` block | Streaming parser telemetry proving how large the incoming plan was and how long parsing took (respecting `VSCAN_FORCE_PLAN_PARSE_MS` for deterministic goldens). |
 | `plan_metadata.plan_slo.active_window` / `plan_metadata.exceeds_threshold` | CLI `plan_metadata.plan_slo` block | Indicates whether the plan stayed within the fast-path (<1k resources / <200 ms) or large-plan (<10k resources / <2 s) SLO; flag when `exceeds_threshold=true` to catch oversized plans before they melt CI agents. |
+| `smell_report.level` / `smell_report.summary` | CLI `smell_report` block | Structural smell analyzer output describing module depth, for_each expansion, kms gaps, IAM bulk, and change volume; trend the level over time to spot risky plan shapes even when guardrails pass. |
+| `smell_report.stats.*` | CLI `smell_report` block | Numeric heuristics (max module depth, for_each instances, kms_missing, IAM statement/action counts, change_total) supporting the smell summary; forward to dashboards for structural drift tracking. |
+| `plan_evolution.summary.lines[]` | CLI `plan_evolution` block (`--compare` mode) | Deterministic `+/-/~/!` summary lines (resource deltas, adds/changes/destroys, downgraded encryption counts). Capture alongside build metadata so reviewers can diff two plans without parsing Terraform output. |
 | `plan_diff.summary` | CLI `plan_diff` block (when `--diff` enabled) | `{adds, changes, destroys}` counters scoped to changed resources. Analyze in dashboards to spot unusually destructive plans without parsing the full diff. |
 | `plan_diff.resources[].attributes[].field` | CLI `plan_diff` block (when `--diff` enabled) | Structured before/after pairs for each changed attribute. Feed into incident tickets or attach to pull-request bots so reviewers see exactly what values shifted. |
 | `security_grade` | CLI top-level field | Letter grade (A–F) derived from compliance score + severity impact so leadership has an at-a-glance quality badge. |
@@ -33,7 +39,11 @@ VectorScan emits structured evidence you can ship into dashboards, alerting rule
 
 When you run `scripts/run_scan.sh`, it replays the CLI JSON output into the `VectorGuard_Audit_Ledger` YAML (`overall_score`, `audit_status`, `CISO_Mandate`). Treat that ledger as the canonical artifact you persist for auditors and supply to any SIEM that understands YAML time series.
 
-Set `VSCAN_ENV_PLATFORM`, `VSCAN_ENV_PLATFORM_RELEASE`, `VSCAN_ENV_PYTHON_VERSION`, `VSCAN_ENV_PYTHON_IMPL`, `VSCAN_ENV_TERRAFORM_VERSION`, `VSCAN_ENV_TERRAFORM_SOURCE`, and `VSCAN_ENV_VECTORSCAN_VERSION` when you need deterministic metadata for CI snapshots or forensic replay; otherwise the CLI populates the fields automatically and `run_scan.sh` mirrors them under `environment_metadata`. The new `plan_metadata` block piggybacks on the same CLI output and requires no flags—just parse the resource/module/provider stats whenever you need a quick plan census for dashboards.
+Set `VSCAN_ENV_PLATFORM`, `VSCAN_ENV_PLATFORM_RELEASE`, `VSCAN_ENV_PYTHON_VERSION`, `VSCAN_ENV_PYTHON_IMPL`, `VSCAN_ENV_TERRAFORM_VERSION`, `VSCAN_ENV_TERRAFORM_SOURCE`, and `VSCAN_ENV_VECTORSCAN_VERSION` when you need deterministic metadata for CI snapshots or forensic replay; otherwise the CLI populates the fields automatically and `run_scan.sh` mirrors them under `environment_metadata`. The new `plan_metadata` block piggybacks on the same CLI output and requires no flags - just parse the resource/module/provider stats whenever you need a quick plan census for dashboards.
+
+Plan smell telemetry lives under `smell_report`, which includes high-level heuristics (`smell_report.stats.*`) plus concrete evidence (`smell_report.entries[].*`). Ship the stats to time-series dashboards to watch long-term drift (e.g., module depth growth) and persist the entries alongside audit ledgers so security can trace why a smell triggered.
+
+When you run `vectorscan --compare old.json new.json`, capture `plan_evolution.summary.lines` for dashboards (the strings already encode net resources, adds, changes, destroys, and degraded encryption counts) and persist `plan_evolution.downgraded_encryption.resources` so security reviewers can correlate enforcement downgrades with the corresponding pull requests.
 
 ### Streaming parser SLO windows
 
@@ -101,9 +111,10 @@ observability_payload = {
 When StatsD is enabled, expect rich packets such as:
 
 - Gauges for compliance/network exposure averages, IAM risky actions, drift failure rate, open security group counts, and policy error counts.
-- Timers for `scan_duration_ms` (avg/p95/max/latest) so you can plot runtime SLOs.
+- Timers for `scan_duration_ms` (avg/p95/max/latest) plus gauges for average/max `resource_count` so you can correlate runtime with plan size without parsing JSON.
 - Counters for PASS/FAIL status deltas and `policy_error_events` so alerting can key off sudden spikes.
 - Histograms per violation severity (critical/high/medium/low) to highlight how noisy plans are across builds.
+- Parser-mode gauges (`parser_mode.streaming.count`, `parser_mode.legacy.count`, and the `parser_mode.latest.*` marker) so you can alert when CI drops out of the streaming parser.
 
 Flip telemetry on/off with the new `--disable-statsd` CLI flag or environment overrides: export `VSCAN_DISABLE_STATSD=1` to force a skip (even if a host is configured) or `VSCAN_ENABLE_STATSD=1` to explicitly allow emission when higher-level automation injects defaults. Offline mode continues to short‑circuit everything.
 

@@ -6,6 +6,7 @@
 - Deterministic `plan_metadata` with resource counts, module inventory, resource-type tallies, and inferred providers so auditors can see plan scope at a glance.
 - Policy statuses for encryption, tagging, network exposure, IAM risk, and IAM drift.
 - `overall_score` (0-100) pulled from `metrics.compliance_score`.
+- Runtime metrics mirrored from the CLI (`scan_duration_ms`, `parser_mode`, `resource_count`) so auditors can see both latency and plan size next to the PASS/FAIL status.
 - `iam_drift_evidence` entries describing risky additions.
 - `audit_status` (`COMPLIANT` when every gate passes).
 

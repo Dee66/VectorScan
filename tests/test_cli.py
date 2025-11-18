@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import subprocess
@@ -6,6 +7,21 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CLI = REPO_ROOT / "tools" / "vectorscan" / "vectorscan.py"
 FIXTURES = REPO_ROOT / "tests" / "fixtures"
+
+
+def _write_preview_manifest(tmp_path: Path, *, signature: str | None = None) -> Path:
+    policies = [{"id": "P-SEC-999", "summary": "Paid zero-trust guardrail"}]
+    canonical = json.dumps(policies, sort_keys=True, separators=(",", ":")).encode()
+    sig = signature or f"sha256:{hashlib.sha256(canonical).hexdigest()}"
+    payload = {
+        "version": "test",
+        "generated_at": "2025-11-18T00:00:00Z",
+        "policies": policies,
+        "signature": sig,
+    }
+    manifest_path = tmp_path / "preview_manifest.json"
+    manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+    return manifest_path
 
 
 def _run_cli(args: list[str], *, env: dict[str, str] | None = None):
@@ -73,3 +89,106 @@ def test_cli_includes_policy_pack_hash():
     hash_value = payload.get("policy_pack_hash")
     assert isinstance(hash_value, str)
     assert len(hash_value) == 64
+
+
+def test_cli_includes_policy_manifest_metadata():
+    res = run_cli(FIXTURES / "tfplan_pass.json")
+    payload = json.loads(res.stdout)
+    assert "policy_source_url" in payload
+    manifest = payload.get("policy_manifest")
+    assert isinstance(manifest, dict)
+    assert manifest.get("policy_version") == payload.get("policy_version")
+    assert manifest.get("policy_pack_hash") == payload.get("policy_pack_hash")
+    assert manifest.get("signature", "").startswith("sha256:")
+
+
+def test_cli_policy_manifest_print_command():
+    res = _run_cli(["--policy-manifest"])
+    assert res.returncode == 0, res.stderr
+    manifest = json.loads(res.stdout)
+    assert manifest.get("policy_version")
+    assert manifest.get("policy_pack_hash")
+    assert manifest.get("signature", "").startswith("sha256:")
+
+
+def test_cli_policy_filter_limits_checks():
+    res = _run_cli([
+        str(FIXTURES / "tfplan_fail.json"),
+        "--json",
+        "--policy",
+        "P-FIN-001",
+    ])
+    assert res.returncode == 3, res.stdout + "\n" + res.stderr
+    payload = json.loads(res.stdout)
+    assert payload["checks"] == ["P-FIN-001"]
+    assert all(v.startswith("P-FIN-001") for v in payload["violations"])
+
+
+def test_cli_policy_preset_works():
+    res = _run_cli([
+        str(FIXTURES / "tfplan_pass.json"),
+        "--json",
+        "--policies",
+        "finops",
+    ])
+    assert res.returncode == 0, res.stderr
+    payload = json.loads(res.stdout)
+    assert payload["checks"] == ["P-FIN-001"]
+
+
+def test_cli_policy_selection_invalid_option():
+    res = _run_cli([
+        str(FIXTURES / "tfplan_pass.json"),
+        "--json",
+        "--policies",
+        "unknown-pack",
+    ])
+    assert res.returncode == 2
+    assert "unknown-pack" in res.stderr.lower()
+
+
+def test_cli_github_action_mode_forces_json_sorted_output():
+    plan = FIXTURES / "tfplan_fail.json"
+    res = _run_cli([
+        str(plan),
+        "--gha",
+    ])
+    assert res.returncode == 3, res.stderr
+    assert "\x1b" not in res.stdout
+    assert not res.stderr.strip()
+    raw = res.stdout.rstrip("\n")
+    payload = json.loads(raw)
+    assert payload["status"] == "FAIL"
+    expected = json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True)
+    assert raw == expected
+
+
+def test_cli_preview_manifest_override_requires_valid_signature(tmp_path):
+    manifest = _write_preview_manifest(tmp_path, signature="sha256:deadbeef")
+    env = {"VSCAN_PREVIEW_MANIFEST": str(manifest)}
+    res = _run_cli([
+        str(FIXTURES / "tfplan_pass.json"),
+        "--json",
+        "--preview-vectorguard",
+    ], env=env)
+    assert res.returncode == 6
+    assert "signature mismatch" in res.stderr.lower()
+
+
+def test_cli_preview_manifest_skip_verify_allows_override(tmp_path):
+    manifest = _write_preview_manifest(tmp_path, signature="sha256:deadbeef")
+    env = {
+        "VSCAN_PREVIEW_MANIFEST": str(manifest),
+        "VSCAN_PREVIEW_SKIP_VERIFY": "1",
+    }
+    res = _run_cli([
+        str(FIXTURES / "tfplan_pass.json"),
+        "--json",
+        "--preview-vectorguard",
+    ], env=env)
+    assert res.returncode == 10, res.stderr
+    payload = json.loads(res.stdout)
+    assert payload["preview_generated"] is True
+    assert payload["preview_manifest"]["signature"] == "sha256:deadbeef"
+    assert payload["preview_manifest"]["verified"] is True
+    assert payload["preview_policies"][0]["id"] == "P-SEC-999"

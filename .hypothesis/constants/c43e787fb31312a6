@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/plan_evolution.py
+# hypothesis_version: 6.147.0
+
+['!0', '(unchanged)', '+', '-', '0', '1', 'actions', 'address', 'adds', 'change', 'change_summary', 'changed resources', 'changes', 'count', 'create', 'current', 'delete', 'delta', 'destroyed resources', 'destroys', 'false', 'file', 'kms_key_id', 'kms_key_id removed', 'lines', 'name', 'new_plan', 'no', 'off', 'old_plan', 'on', 'planned adds', 'previous', 'reasons', 'resource_changes', 'resource_count', 'resources', 'storage_encrypted', 'summary', 'true', 'type', 'update', 'values', 'yes', '~']

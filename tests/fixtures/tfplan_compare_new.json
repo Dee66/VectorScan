@@ -1,0 +1,129 @@
+{
+  "format_version": "1.0",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_rds_cluster.vector_db",
+          "mode": "managed",
+          "type": "aws_rds_cluster",
+          "name": "vector_db",
+          "values": {
+            "storage_encrypted": false,
+            "kms_key_id": null
+          }
+        },
+        {
+          "address": "aws_rds_cluster.analytics",
+          "mode": "managed",
+          "type": "aws_rds_cluster",
+          "name": "analytics",
+          "values": {
+            "storage_encrypted": true,
+            "kms_key_id": null
+          }
+        },
+        {
+          "address": "aws_lambda_function.worker",
+          "mode": "managed",
+          "type": "aws_lambda_function",
+          "name": "worker",
+          "values": {
+            "kms_key_id": null
+          }
+        },
+        {
+          "address": "aws_security_group.web",
+          "mode": "managed",
+          "type": "aws_security_group",
+          "name": "web",
+          "values": {
+            "name": "web"
+          }
+        }
+      ]
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "aws_rds_cluster.vector_db",
+      "type": "aws_rds_cluster",
+      "name": "vector_db",
+      "change": {
+        "actions": ["update"],
+        "before": {
+          "storage_encrypted": true,
+          "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/vector"
+        },
+        "after": {
+          "storage_encrypted": false,
+          "kms_key_id": null
+        }
+      }
+    },
+    {
+      "address": "aws_rds_cluster.analytics",
+      "type": "aws_rds_cluster",
+      "name": "analytics",
+      "change": {
+        "actions": ["update"],
+        "before": {
+          "storage_encrypted": true,
+          "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/analytics"
+        },
+        "after": {
+          "storage_encrypted": true,
+          "kms_key_id": null
+        }
+      }
+    },
+    {
+      "address": "aws_lambda_function.worker",
+      "type": "aws_lambda_function",
+      "name": "worker",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "kms_key_id": null
+        }
+      }
+    },
+    {
+      "address": "aws_iam_role.chatbot",
+      "type": "aws_iam_role",
+      "name": "chatbot",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "name": "chatbot"
+        }
+      }
+    },
+    {
+      "address": "aws_security_group.legacy",
+      "type": "aws_security_group",
+      "name": "legacy",
+      "change": {
+        "actions": ["delete"],
+        "before": {
+          "name": "legacy"
+        },
+        "after": null
+      }
+    },
+    {
+      "address": "aws_security_group.old_admin",
+      "type": "aws_security_group",
+      "name": "old_admin",
+      "change": {
+        "actions": ["delete"],
+        "before": {
+          "name": "old_admin"
+        },
+        "after": null
+      }
+    }
+  ]
+}

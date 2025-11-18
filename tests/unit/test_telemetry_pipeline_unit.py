@@ -68,6 +68,8 @@ def test_full_telemetry_pipeline_statsd_toggle(monkeypatch):
             "open_sg_count": 0,
             "iam_risky_actions": 0,
             "scan_duration_ms": 123,
+            "parser_mode": "streaming",
+            "resource_count": 42,
             "iam_drift": {"status": "PASS", "risky_change_count": 0},
         },
         "terraform_tests": {"status": "PASS", "source": "tests/tf-tests"},
@@ -99,6 +101,11 @@ def test_full_telemetry_pipeline_statsd_toggle(monkeypatch):
         assert summary_obj["policy_error_events"] == 1
         assert summary_obj["scan_duration_ms"]["avg"] >= 0
         assert summary_obj["last_entry"]["scan_duration_ms"] == 123
+        assert summary_obj["resource_count"]["avg"] == 42
+        assert summary_obj["last_entry"]["resource_count"] == 42
+        assert summary_obj["last_entry"]["parser_mode"] == "streaming"
+        assert summary_obj["parser_mode_counts"] == {"streaming": 1}
+        assert summary_obj["parser_mode_latest"] == "streaming"
         assert summary_obj["violation_severity_totals"] == {"critical": 0, "high": 0, "medium": 0, "low": 0}
         assert summary_obj["violation_severity_last"] == {"critical": 0, "high": 0, "medium": 0, "low": 0}
 

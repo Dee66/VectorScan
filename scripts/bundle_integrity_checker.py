@@ -104,6 +104,34 @@ def _validate_manifest_structure(manifest: Manifest, strict_file_count: bool) ->
         )
 
 
+def _validate_metadata_consistency(manifest: Manifest) -> None:
+    preview_meta = manifest.get("preview_manifest")
+    if not isinstance(preview_meta, dict):
+        raise ValueError("bundle integrity: preview_manifest metadata missing")
+    preview_path = preview_meta.get("path")
+    preview_sha = preview_meta.get("sha256")
+    if not preview_path or not preview_sha:
+        raise ValueError("bundle integrity: preview_manifest metadata missing path/sha256")
+    file_lookup = {entry["path"]: entry for entry in manifest["files"]}
+    preview_entry = file_lookup.get(preview_path)
+    if preview_entry is None:
+        raise ValueError("bundle integrity: preview_manifest path not listed in files block")
+    if preview_entry.get("sha256") != preview_sha:
+        raise ValueError("bundle integrity: preview_manifest sha256 mismatch with files block")
+
+    policy_meta = manifest.get("policy_manifest")
+    if not isinstance(policy_meta, dict):
+        raise ValueError("bundle integrity: policy_manifest metadata missing")
+    if policy_meta.get("policy_pack_hash") != manifest.get("policy_pack_hash"):
+        raise ValueError("bundle integrity: policy_manifest policy_pack_hash mismatch")
+    if not isinstance(policy_meta.get("signature"), str):
+        raise ValueError("bundle integrity: policy_manifest signature missing")
+
+    signers = manifest.get("signers")
+    if not isinstance(signers, list) or not signers:
+        raise ValueError("bundle integrity: signers metadata missing")
+
+
 def _hash_bytes(data: bytes) -> str:
     digest = hashlib.sha256()
     digest.update(data)
@@ -183,6 +211,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         manifest = _load_manifest(bundle, manifest_override)
         _validate_manifest_structure(manifest, args.strict_file_count)
+        _validate_metadata_consistency(manifest)
     except FileNotFoundError as exc:
         print(str(exc), file=sys.stderr)
         return EXIT_MANIFEST_ERROR

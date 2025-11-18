@@ -32,6 +32,7 @@ Walk through `scripts/check_github_release.py` to automate the validation of you
 - Produces zip bundles with reproducible metadata (ZIP_DEFLATED, fixed timestamps & permissions).
 - If `vectorscan.py` exports `TerraformManager`, the script downloads the required Terraform version into `tools/vectorscan/.terraform-bin/` and embeds it inside the zip. Legacy bundles can use `-legacy` suffix to force Terraform 1.6.0.
 - Always writes `LICENSE_FREE.txt` inside the bundle referencing the repo’s main `LICENSE` and writes a `<bundle>.sha256` manifest.
+- Validates and ships `tools/vectorscan/preview_manifest.json`, adds a `preview_manifest` summary (path + sha256 + signature), embeds the signed `policy_manifest`, and records the cosign `signers` metadata directly inside `manifest.json` so release automation can diff policy/preview metadata without re-running the CLI.
 
 ### `scripts/automate_release.py`
 - Orchestrates local releases (version prompts, optional SBOM with `syft`, GPG signing, cosign verification, Git tagging, GH release drafts).
@@ -60,4 +61,5 @@ Walk through `scripts/check_github_release.py` to automate the validation of you
 - Confirm `metrics/vector_scan_metrics.log` is generated alongside each audit ledger run (e.g., `./run_scan.sh`). The log is produced by `scripts/collect_metrics.py` and can be archived with the release evidence when you need historical compliance trends.
 - Confirm `metrics/vector_scan_metrics_summary.json` is also produced (via `scripts/metrics_summary.py`) and bundle it with release artifacts so downstream monitoring teams can immediately consume aggregated scores without parsing the raw log.
 - After the metrics summary exists, run `scripts/telemetry_consumer.py --csv metrics/vector_scan_metrics_summary.csv --statsd-host=${STATSD_HOST}` (append `--disable-statsd` or export `VSCAN_DISABLE_STATSD=1` when you need to silence emission). This now streams full-fidelity StatsD series (compliance/network gauges, PASS/FAIL counters, scan-duration timers, violation histograms) alongside the CSV rows so downstream dashboards ingest the richer signal set under the `vectorscan.telemetry.*` prefix.
+- `scripts/bundle_integrity_checker.py` enforces the richer manifest metadata (preview checksum, policy manifest signature, signer list) so CI fails immediately if the published manifest drifts from the bundle contents.
 - When preparing a release, rerun `scripts/check_github_release.py` (see `.github/workflows/validate-release.yml`) to ensure the workflow artifacts, checksums, and cosign signatures exist for each platform bundle.

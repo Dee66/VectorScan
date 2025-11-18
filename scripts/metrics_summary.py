@@ -87,6 +87,25 @@ def status_counts(entries: List[Dict[str, Any]]) -> Dict[str, int]:
     return counts
 
 
+def _normalize_parser_mode(value: Any) -> str:
+    if isinstance(value, str):
+        token = value.strip().lower()
+        if token:
+            return token
+    return "unknown"
+
+
+def _parser_mode_counts(entries: List[Dict[str, Any]]) -> Tuple[Dict[str, int], str]:
+    counts: Dict[str, int] = {}
+    latest_mode = "unknown"
+    for entry in entries:
+        mode = _normalize_parser_mode(entry.get("parser_mode"))
+        counts[mode] = counts.get(mode, 0) + 1
+    if entries:
+        latest_mode = _normalize_parser_mode(entries[-1].get("parser_mode"))
+    return counts, latest_mode
+
+
 def _aggregate_policy_errors(entries: List[Dict[str, Any]]) -> Tuple[Dict[str, int], int]:
     counts: Dict[str, int] = {}
     total = 0
@@ -132,6 +151,9 @@ def build_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
             "violation_severity_totals": {level: 0 for level in SEVERITY_LEVELS},
             "violation_severity_last": {level: 0 for level in SEVERITY_LEVELS},
             "scan_duration_ms": summarize([]),
+            "resource_count": summarize([]),
+            "parser_mode_counts": {},
+            "parser_mode_latest": None,
         }
         header = schema_header("summary")
         summary["telemetry_schema_version"] = header["schema_version"]
@@ -143,7 +165,9 @@ def build_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
     iam_risky = [safe_float(entry.get("iam_risky_actions")) for entry in entries]
     drift_counts = [safe_float(entry.get("iam_drift_risky_change_count")) for entry in entries]
     scan_durations = [safe_float(entry.get("scan_duration_ms")) for entry in entries]
+    resource_counts = [safe_float(entry.get("resource_count")) for entry in entries]
     policy_error_counts, total_policy_errors = _aggregate_policy_errors(entries)
+    parser_mode_counts, parser_mode_latest = _parser_mode_counts(entries)
 
     last_entry = entries[-1]
     latest_policy_errors = last_entry.get("policy_errors") or []
@@ -158,6 +182,7 @@ def build_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
         "iam_risky_actions": summarize(iam_risky),
         "iam_drift_risky_change_count": summarize(drift_counts),
         "scan_duration_ms": summarize(scan_durations),
+        "resource_count": summarize(resource_counts),
         "last_entry": {
             "timestamp": last_entry.get("timestamp"),
             "plan": last_entry.get("plan"),
@@ -171,12 +196,16 @@ def build_summary(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
             "policy_error_count": len(latest_policy_errors),
             "violation_severity_summary": severity_last,
             "scan_duration_ms": safe_float(last_entry.get("scan_duration_ms")),
+            "resource_count": safe_float(last_entry.get("resource_count")),
+            "parser_mode": parser_mode_latest,
         },
         "policy_error_counts": policy_error_counts,
         "policy_error_events": total_policy_errors,
         "policy_errors_latest": latest_policy_errors,
         "violation_severity_totals": severity_totals,
         "violation_severity_last": severity_last,
+        "parser_mode_counts": parser_mode_counts,
+        "parser_mode_latest": parser_mode_latest,
     }
     summary["policy_version"] = last_entry.get("policy_version")
     summary["schema_version"] = last_entry.get("schema_version")

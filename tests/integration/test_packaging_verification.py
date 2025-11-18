@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -10,6 +11,11 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+from tools.vectorscan.policy_manifest import build_policy_manifest
+from tools.vectorscan.policies import get_policies
+from tools.vectorscan.policy_pack import policy_pack_hash
+from tools.vectorscan.preview import load_preview_manifest
 
 
 def test_build_vectorscan_package_smoke(tmp_path, monkeypatch):
@@ -57,10 +63,22 @@ def test_build_vectorscan_package_smoke(tmp_path, monkeypatch):
     assert manifest["bundle_name"] == "vectorscan-free-test"
     assert manifest["bundle_version"] == "dev"
     paths = {entry["path"] for entry in manifest["files"]}
+    entry_map = {entry["path"]: entry for entry in manifest["files"]}
     assert "tools/vectorscan/vectorscan.py" in paths
     assert "LICENSE_FREE.txt" in paths
     assert "sbom.json" in paths
     assert all(len(entry["sha256"]) == 64 for entry in manifest["files"])
+    preview_meta = manifest["preview_manifest"]
+    assert preview_meta["path"] == "tools/vectorscan/preview_manifest.json"
+    assert preview_meta["signature"].startswith("sha256:")
+    assert preview_meta["sha256"] == entry_map[preview_meta["path"]]["sha256"]
+    assert preview_meta["policy_count"] >= 1
+    policy_meta = manifest["policy_manifest"]
+    assert policy_meta["policy_version"] == manifest["policy_version"]
+    assert policy_meta["policy_pack_hash"] == manifest["policy_pack_hash"]
+    assert policy_meta["signature"].startswith("sha256:")
+    assert manifest["signers"]
+    assert manifest["signers"][0]["tool"] == "cosign"
 
     sbom = json.loads(sbom_path.read_text())
     assert sbom["bomFormat"] == "CycloneDX"
@@ -201,11 +219,16 @@ def test_cli_runs_from_unzipped_bundle(tmp_path, monkeypatch):
     assert cli_path.exists()
 
     plan_path = ROOT / "examples" / "aws-pgvector-rag" / "tfplan-pass.json"
+    env = os.environ.copy()
+    existing = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = f"{extract_dir}{os.pathsep}{existing}" if existing else str(extract_dir)
     result = subprocess.run(
         [sys.executable, str(cli_path), str(plan_path), "--json"],
         capture_output=True,
         text=True,
         check=False,
+        cwd=extract_dir,
+        env=env,
     )
     assert result.returncode == 0, result.stderr
     assert "\"status\": \"PASS\"" in result.stdout
@@ -274,7 +297,19 @@ def test_manifest_lists_expected_files(tmp_path, monkeypatch):
     assert "tools/vectorscan/vectorscan.py" in paths
     assert "LICENSE_FREE.txt" in paths
     assert "sbom.json" in paths
+    assert "tools/vectorscan/preview_manifest.json" in paths
     assert not any(path.startswith("__MACOSX") for path in paths)
+    assert manifest["preview_manifest"]["sha256"]
+    assert manifest["policy_manifest"]["policies"]
+    expected_policy_manifest = build_policy_manifest(
+        [policy.metadata for policy in get_policies()],
+        policy_pack_hash_value=policy_pack_hash(),
+        path="embedded",
+    )
+    assert manifest["policy_manifest"]["signature"] == expected_policy_manifest["signature"]
+    preview_expected = load_preview_manifest()
+    assert manifest["preview_manifest"]["signature"] == preview_expected["signature"]
+    assert manifest["preview_manifest"]["policy_count"] == len(preview_expected["policies"])
 
     # Manifest embedded inside the zip should match the dist copy
     bundle_path = tmp_path / f"{bundle_name}.zip"

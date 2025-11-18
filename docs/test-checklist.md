@@ -1,9 +1,10 @@
-SECTION 1 — FOUNDATIONS (before writing any tests)
+SECTION 1  -  FOUNDATIONS (before writing any tests)
 
 - [ ] Ensure project supports Python 3.9–3.12
 - [ ] Confirm CLI entry point: vectorscan.py is importable and executable
 - [ ] Ensure output modes: human, JSON, YAML ledger
-- [ ] Confirm exit codes match spec (0, 2, 3, 4, 5, 6)
+- [ ] Validate streaming plan parser feature flag: fast-path iterator enabled by default with automatic fallback to legacy loader when `VSCAN_STREAMING_DISABLE=1` or parser errors occur.
+- [ ] Confirm exit codes match spec (0, 2, 3, 4, 5, 6, 10)
 - [ ] Ensure internal functions accept JSON-loaded plans
 - [ ] Prepare mechanism for deterministic timestamps (injectable clock)
 - [ ] Disable network calls by default
@@ -11,7 +12,7 @@ SECTION 1 — FOUNDATIONS (before writing any tests)
 
 These must be done first so that tests do not break later.
 
-SECTION 2 — TEST DIRECTORY & BOILERPLATE CREATION
+SECTION 2  -  TEST DIRECTORY & BOILERPLATE CREATION
 
  - [ ] Create tests/
  - [ ] Create tests/fixtures/
@@ -25,12 +26,15 @@ Fixtures
 - [ ] tfplan_iam_drift.json
 - [ ] tfplan_missing_tags.json
 - [ ] tfplan_no_encryption.json
+- [ ] tfplan_compare_old.json
+- [ ] tfplan_compare_new.json
 
 Golden files
  - [ ] pass_output.json
  - [ ] fail_output.json
  - [ ] iam_drift_output.json
  - [ ] audit_ledger.yaml
+ - [ ] plan_compare_output.json (captures `plan_evolution` snapshot from `vectorscan --compare`)
 
 Test files
  - [ ] test_cli.py
@@ -42,14 +46,20 @@ Test files
  - [ ] test_lead_capture.py
  - [ ] test_terraform_integration.py
 
-SECTION 3 — CLI ENTRY TESTS
+SECTION 3  -  CLI ENTRY TESTS
 
  - [ ] Implement argument parser smoke tests
  - [ ] Test missing file
  - [ ] Test invalid file
  - [ ] Test invalid JSON fixture
  - [ ] Test default mode (human output)
- - [ ] Test JSON mode and YAML ledger output flags
+- [ ] Test JSON mode and YAML ledger output flags
+- [ ] Test `--diff` plan diff output
+- [ ] Test `--explain` narrative block
+- [ ] Test `--resource` scoped execution (exact, suffix, ambiguous suggestions)
+- [ ] Test `--preview-vectorguard` preview banner + exit code 10 even when scan would otherwise PASS/FAIL
+- [ ] Test `--gha` mode forces JSON + disables color + sorts keys for Actions logs
+- [ ] Test `--compare old.json new.json` emits `plan_evolution` JSON + human summary and returns exit code 0/2 with downgraded encryption detection
  - [ ] Assert correct exit codes:
  - [ ] Valid plan → 0
  - [ ] Violations → 3
@@ -57,8 +67,9 @@ SECTION 3 — CLI ENTRY TESTS
  - [ ] Policy pack load error (corrupted/missing Rego bundle) → 4
  - [ ] Terraform test failure (tests execute but fail) → 5
  - [ ] Terraform automation error (download/execution failure) → 6
+ - [ ] Preview mode (`--preview-vectorguard`) enforces exit code 10 and prints the deterministic VectorGuard preview banner even when the underlying scan would PASS/FAIL.
 
-SECTION 4 — FUNCTIONAL POLICY TESTS
+SECTION 4  -  FUNCTIONAL POLICY TESTS
 
 4.1 Encryption Mandate
  - [ ] Load tfplan_no_encryption.json
@@ -73,8 +84,9 @@ SECTION 4 — FUNCTIONAL POLICY TESTS
  - [ ] Missing Project triggers violation
  - [ ] JSON output lists resource addresses
  - [ ] JSON output counts affected resources
+- [ ] JSON `violations_struct` include remediation blocks (summary, docs, HCL examples, completeness score) for both policies
 
-SECTION 5 — IAM DRIFT TESTS
+SECTION 5  -  IAM DRIFT TESTS
 
  - [ ] Load tfplan_iam_drift.json
  - [ ] Generate drift report
@@ -91,7 +103,7 @@ compliance_score: float
 }
 }
 
-SECTION 6 — AUDIT LEDGER TESTS
+SECTION 6  -  AUDIT LEDGER TESTS
 
 Using same iam drift fixture and golden ledger.
 
@@ -108,9 +120,14 @@ terraform_test_results (optional)
 
 - [ ]  Validate YAML structure
 - [ ] Validate file creation and directory auto-creation
-- [ ] Compare ledger to golden YAML
+- [x] Compare ledger to golden YAML
+- [ ] Assert `smell_report` block exists in the ledger with level/summary/finding_count mirrors of the CLI payload
+ - [x]  Validate YAML structure
+ - [x] Validate file creation and directory auto-creation
+ - [x] Assert `smell_report` block exists in the ledger with level/summary/finding_count mirrors of the CLI payload
+- [x] Ensure the ledger mirrors `scan_duration_ms`, `parser_mode`, and `resource_count` exactly as emitted by the CLI metrics block so runtime evidence stays audit-ready.
 
-SECTION 7 — JSON OUTPUT TESTS
+SECTION 7  -  JSON OUTPUT TESTS
 
 - [ ]  Validate JSON syntax
 - [x] Validate presence of keys:
@@ -125,9 +142,15 @@ environment (platform/platform_release/python_version/python_implementation/terr
 - [ ] Compare fail output to fail_output.json
 - [ ] Compare iam drift output to iam_drift_output.json
 - [ ] Enforce schema stability (no extra keys without versioning)
+- [ ] Validate `smell_report` presence, smell stats (module depth, for_each count, kms gaps, IAM bulk metrics, change totals), and at least one smell entry in FAIL fixtures
+- [ ] Validate `plan_evolution` block (old/new summaries, delta math, downgraded_encryption evidence, summary lines) via the compare-mode golden snapshot
 - [x] Validate `VSCAN_ENV_*` overrides (platform, release, python, terraform, vectorscan_version) surface in the `environment` block for deterministic CI fixtures
+- [ ] Preview snapshots cover `preview_generated`, `preview_policies`, and `preview_manifest.signature/verified` plus exit code 10.
+- [ ] GHA snapshots cover `gha_mode=true` payload expectations (color disabled, JSON flagged, sort_keys) when `--gha` is used.
+- [x] Validate `policy_manifest` block includes `policy_version`, `policy_pack_hash`, `policy_source_url`, `policy_count`, and signed/verified flags across PASS/FAIL fixtures.
+- [x] Runtime metrics block asserts presence of `scan_duration_ms`, `parser_mode`, and `resource_count` so streaming vs legacy parsing remains observable in golden snapshots.
 
-SECTION 8 — ERROR HANDLING TESTS
+SECTION 8  -  ERROR HANDLING TESTS
 
 Fixtures: invalid JSON, nonexistent file.
 
@@ -135,7 +158,9 @@ Fixtures: invalid JSON, nonexistent file.
  Invalid JSON → exit code 2
  Policy pack load failure (tampered bundle) → exit code 4
 - Offline mode (VSCAN_OFFLINE=1) → disables telemetry scripts, lead capture, Terraform auto-downloads, and StatsD without changing CLI output
+- Offline strict errors (VSCAN_OFFLINE=1 + missing deterministic clock) return exit code 6 when strict requirements are violated (e.g., Terraform auto-download blocked, policy errors under strict mode)
 - [x] StatsD toggle validation (`--disable-statsd`, `VSCAN_DISABLE_STATSD`, `VSCAN_ENABLE_STATSD`) → telemetry consumer respects explicit toggles even when a host is configured, emitting rich packets only when enabled
+- [x] Preview manifest overrides: `VSCAN_PREVIEW_MANIFEST` loads alternate teaser manifests; `VSCAN_PREVIEW_SKIP_VERIFY=1` bypasses signature verification for dev/tests but prod bundles must fail on mismatches.
  Permission denied (monkeypatch open)
  CLI prints safe error message
  No unhandled exceptions
@@ -145,7 +170,7 @@ Fixtures: invalid JSON, nonexistent file.
   - [ ] Any `policy_errors` cause strict failure even when other policies pass
   - [ ] Clean runs under strict mode remain deterministic (no truncation, JSON stable)
 
-SECTION 9 — LEAD CAPTURE TESTS
+SECTION 9  -  LEAD CAPTURE TESTS
 
 Local Capture
 - [ ]  Ensure capture directory exists
@@ -159,7 +184,7 @@ Remote Capture (mocked)
  - [ ] 400/500 error → graceful degradation
  - [ ] Remote capture only triggers when endpoint provided
 
-SECTION 10 — TERRAFORM INTEGRATION TESTS
+SECTION 10  -  TERRAFORM INTEGRATION TESTS
 
 Condition: Terraform >= 1.13.5 OR auto-download flag set.
 
@@ -177,36 +202,36 @@ stderr
 - [ ] Handle Terraform test failures → exit code 5
 - [ ] Handle Terraform automation errors (download/version/exec) → exit code 6
 
-SECTION 11 — END-TO-END SCENARIOS
+SECTION 11  -  END-TO-END SCENARIOS
 
-- [ ] Scenario A — PASS
+- [ ] Scenario A  -  PASS
  Run CLI on pass fixture
  Expect exit code 0
  Human output template correct
  JSON output matches golden pass file
 
-- [ ] Scenario B — FAIL
+- [ ] Scenario B  -  FAIL
  Run CLI on failing fixture
  Expect exit code 3
  Violations enumerated
  JSON output matches golden fail file
 
-- [ ] Scenario C — IAM Drift + Penalty
+- [ ] Scenario C  -  IAM Drift + Penalty
  Run CLI with penalty flag
  Score reduced accordingly
 
-- [ ] Scenario D — Audit Ledger
+- [ ] Scenario D  -  Audit Ledger
  Run CLI with -o output.yaml
  Output matches golden ledger
 
-SECTION 12 — PERFORMANCE TESTS
+SECTION 12  -  PERFORMANCE TESTS
 
 - [ ]  Ensure processing time < 200ms for 100 KB plan
 - [ ] Ensure no memory leakage (tracemalloc)
 - [ ] Validate large plans up to 5 MB
 - [ ] Ensure stable performance across Python versions
 
-SECTION 13 — STATIC ANALYSIS & LINTING
+SECTION 13  -  STATIC ANALYSIS & LINTING
 
 - [ ]  Add mypy config
  - [ ] Add flake8 or ruff
@@ -214,7 +239,7 @@ SECTION 13 — STATIC ANALYSIS & LINTING
  - [ ] Add isort (optional)
  - [ ] Ensure static checks run in CI pipeline
 
-SECTION 14 — CI/CD PIPELINE CHECKLIST
+SECTION 14  -  CI/CD PIPELINE CHECKLIST
 
  - [ ] Run pytest full suite
  - [ ] Run Terraform tests when enabled
@@ -225,7 +250,7 @@ SECTION 14 — CI/CD PIPELINE CHECKLIST
  - [ ] Fail build if schemas diverge
  - [ ] Validate reproducible outputs (no timestamp drift)
 
-SECTION 15 — COPILOT GENERATION CHECKLIST
+SECTION 15  -  COPILOT GENERATION CHECKLIST
 
 When invoking Copilot, ensure it:
 
@@ -239,7 +264,7 @@ When invoking Copilot, ensure it:
  - [ ] Produces CI workflow YAML
   
 
-  SECTION 16 — INVESTIGATION PHASE VALIDATION
+  SECTION 16  -  INVESTIGATION PHASE VALIDATION
 
 [ ] Validate resource traversal logic identifies all resource types, not just the ones in policies
 [ ] Test behavior when tfplan.json contains unknown or new Terraform resource types
@@ -250,7 +275,7 @@ When invoking Copilot, ensure it:
 [ ] Validate defaults in resources (e.g., missing encryption field that Terraform would fill at apply time)
 [ ] Validate normalization logic for plan structures (sometimes Terraform outputs fields in different shapes)
 
-SECTION 17 — POLICY ENGINE ROBUSTNESS TESTS
+SECTION 17  -  POLICY ENGINE ROBUSTNESS TESTS
 
 [ ] Test behavior when the policy returns malformed results
 [ ] Test behavior when a policy raises an internal exception
@@ -262,7 +287,7 @@ SECTION 17 — POLICY ENGINE ROBUSTNESS TESTS
 [ ] Ensure compliance score cannot go below zero
 [ ] Ensure compliance score cannot exceed 100
 
-SECTION 18 — HUMAN OUTPUT QUALITY TESTS
+SECTION 18  -  HUMAN OUTPUT QUALITY TESTS
 
 [ ] Validate success message formatting
 [ ] Validate alignment and indentation are stable
@@ -272,7 +297,7 @@ SECTION 18 — HUMAN OUTPUT QUALITY TESTS
 [ ] Validate that human-readable mode never prints stack traces
 [ ] Validate that human output is always consistent (no random ordering)
 
-SECTION 19 — DOCUMENTATION & HELP COMMAND TESTS
+SECTION 19  -  DOCUMENTATION & HELP COMMAND TESTS
 
 [ ] Validate --help displays all flags
 [ ] Ensure descriptions for each flag are accurate
@@ -280,7 +305,7 @@ SECTION 19 — DOCUMENTATION & HELP COMMAND TESTS
 [ ] Validate no dependency on network for help text
 [ ] Validate help output matches README instructions
 
-SECTION 20 — CONFIGURATION & ENVIRONMENT TESTS
+SECTION 20  -  CONFIGURATION & ENVIRONMENT TESTS
 
 [ ] Validate behavior when HOME is unset
 [ ] Validate behavior when temp directory is unwritable
@@ -288,7 +313,7 @@ SECTION 20 — CONFIGURATION & ENVIRONMENT TESTS
 [ ] Validate VSCAN_NO_COLOR disables ANSI codes
 [ ] Validate config file loading if you later introduce configuration (reserved for future)
 
-SECTION 21 — CROSS-PLATFORM COMPATIBILITY TESTS
+SECTION 21  -  CROSS-PLATFORM COMPATIBILITY TESTS
 
 [ ] Run tests on Linux
 [ ] Run tests on macOS
@@ -296,7 +321,7 @@ SECTION 21 — CROSS-PLATFORM COMPATIBILITY TESTS
 [ ] Validate correct handling of CRLF vs LF files
 [ ] Validate Unicode paths in input files
 
-SECTION 22 — SECURITY TESTS
+SECTION 22  -  SECURITY TESTS
 
 [ ] Validate scanner never executes arbitrary code inside plan JSON
 [ ] Validate no network calls occur unless explicitly opted in
@@ -306,7 +331,7 @@ SECTION 22 — SECURITY TESTS
 [ ] Validate all temporary files use secure naming (mkstemp)
 [ ] Validate audit ledger cannot overwrite arbitrary system paths
 
-SECTION 23 — REPRODUCIBILITY TESTS
+SECTION 23  -  REPRODUCIBILITY TESTS
 
 [ ] Validate timestamp injection produces identical runs when fixed time is set
 [ ] Validate golden file comparisons remain stable over time
@@ -315,7 +340,7 @@ SECTION 23 — REPRODUCIBILITY TESTS
 [ ] Validate that two identical scans produce identical JSON
 [ ] Validate that ledger YAML sorting produces deterministic output
 
-SECTION 24 — ERROR-INJECTION & CHAOS TESTING
+SECTION 24  -  ERROR-INJECTION & CHAOS TESTING
 
 [ ] Simulate partial tfplan files
 [ ] Simulate truncated JSON
@@ -325,7 +350,7 @@ SECTION 24 — ERROR-INJECTION & CHAOS TESTING
 [ ] Simulate disk-full condition when writing ledger
 [ ] Simulate slow filesystem to ensure no timeouts or bad assumptions
 
-SECTION 25 — LARGE-SCALE & STRESS TESTS
+SECTION 25  -  LARGE-SCALE & STRESS TESTS
 
 [ ] Test plan with 10,000+ resources
 [ ] Test plan that is 10MB+
@@ -333,7 +358,7 @@ SECTION 25 — LARGE-SCALE & STRESS TESTS
 [ ] Benchmark average investigation duration
 [ ] Confirm no quadratic or exponential performance patterns
 
-SECTION 26 — INTERNAL UTILITIES TESTS
+SECTION 26  -  INTERNAL UTILITIES TESTS
 
 [ ] Test file loading utility with Unicode, long paths, and odd characters
 [ ] Test JSON dump helper (stable formatting)
@@ -343,16 +368,17 @@ SECTION 26 — INTERNAL UTILITIES TESTS
 [ ] Test encryption detection utility
 [ ] Test IAM drift score normalization
 
-SECTION 27 — RELEASE VALIDATION TESTS
+SECTION 27  -  RELEASE VALIDATION TESTS
 
 [ ] Validate release bundles contain required files
 [ ] Validate checksum presence
 [ ] Validate signature presence
+[x] Ensure signed `tools/vectorscan/preview_manifest.json` ships in the bundle and is referenced in manifest.json / release docs. *(Covered by `tests/integration/test_packaging_verification.py` + bundle integrity checker metadata validation.)*
 [ ] Validate bundle extraction on Linux
 [ ] Validate bundle extraction on macOS
 [ ] Validate that bundle works without repo source (true distribution validation)
 
-SECTION 28 — FUTURE-PROOFING TESTS (OPTIONAL BUT RECOMMENDED)
+SECTION 28  -  FUTURE-PROOFING TESTS (OPTIONAL BUT RECOMMENDED)
 
 [ ] Add test for new policy addition flow
 [ ] Add test ensuring backward compatible JSON schemas
@@ -364,7 +390,7 @@ SECTION 28 — FUTURE-PROOFING TESTS (OPTIONAL BUT RECOMMENDED)
 
 Additional
 
-PART 2 — Improvements to the Test Checklist
+PART 2  -  Improvements to the Test Checklist
 
 Your test checklist is absolutely insane (in a good way).
 But here are the final 3 enhancements for true “industry-grade” coverage.

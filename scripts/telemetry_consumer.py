@@ -105,6 +105,7 @@ def _extract_metrics(summary: Dict[str, Any]) -> Dict[str, Optional[float]]:
         "open_sg_count_avg": avg_block(summary.get("open_sg_count", {})),
         "iam_risky_actions_avg": avg_block(summary.get("iam_risky_actions", {})),
         "iam_drift_risky_change_count_avg": avg_block(summary.get("iam_drift_risky_change_count", {})),
+        "resource_count_avg": avg_block(summary.get("resource_count", {})),
         "drift_failure_rate": summary.get("drift_failure_rate"),
     }
 
@@ -151,6 +152,9 @@ def build_statsd_packets(summary: Dict[str, Any], metrics: Dict[str, Optional[fl
         latest_duration = last_entry.get("scan_duration_ms")
         if isinstance(latest_duration, (int, float)):
             add("scan_duration_ms.latest", float(latest_duration), "ms")
+        latest_resource_count = last_entry.get("resource_count")
+        if isinstance(latest_resource_count, (int, float)):
+            add("resource_count.latest", float(latest_resource_count), "g")
 
     add("entries", summary.get("entries"), "g")
 
@@ -181,6 +185,21 @@ def build_statsd_packets(summary: Dict[str, Any], metrics: Dict[str, Optional[fl
     open_sg_block = summary.get("open_sg_count")
     if isinstance(open_sg_block, dict):
         add("open_sg_count.max", open_sg_block.get("max"), "g")
+
+    resource_count_block = summary.get("resource_count")
+    if isinstance(resource_count_block, dict):
+        add("resource_count.avg", resource_count_block.get("avg"), "g")
+        add("resource_count.max", resource_count_block.get("max"), "g")
+
+    parser_mode_counts = summary.get("parser_mode_counts")
+    if isinstance(parser_mode_counts, dict):
+        for mode, count in parser_mode_counts.items():
+            metric_name = f"parser_mode.{mode}.count"
+            add(metric_name, count, "g")
+
+    latest_mode = summary.get("parser_mode_latest")
+    if isinstance(latest_mode, str) and latest_mode:
+        add(f"parser_mode.latest.{latest_mode}", 1, "g")
 
     return packets
 
@@ -226,11 +245,14 @@ def write_csv(target: Path, summary: Dict[str, Any], metrics: Dict[str, Optional
         "network_exposure_score_avg",
         "drift_failure_rate",
         "scan_duration_ms_avg",
+        "resource_count_avg",
+        "parser_mode_latest",
         "policy_version",
         "schema_version",
         "policy_pack_hash",
         "policy_error_events",
         "policy_errors_latest",
+        "parser_mode_counts",
     ]
     severity_totals = summary.get("violation_severity_totals") or {}
     latest_errors = summary.get("policy_errors_latest") or []
@@ -247,11 +269,14 @@ def write_csv(target: Path, summary: Dict[str, Any], metrics: Dict[str, Optional
         metrics.get("network_exposure_score_avg"),
         metrics.get("drift_failure_rate"),
         summary.get("scan_duration_ms", {}).get("avg") if isinstance(summary.get("scan_duration_ms"), dict) else None,
+        summary.get("resource_count", {}).get("avg") if isinstance(summary.get("resource_count"), dict) else None,
+        summary.get("parser_mode_latest"),
         summary.get("policy_version"),
         summary.get("schema_version"),
         summary.get("policy_pack_hash"),
         summary.get("policy_error_events"),
         latest_errors_serialized,
+        json.dumps(summary.get("parser_mode_counts", {}), ensure_ascii=False),
     ]
     for level in SEVERITY_LEVELS:
         header.append(f"{level}_violations_total")

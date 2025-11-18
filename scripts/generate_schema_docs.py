@@ -17,7 +17,12 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "docs" / "output_schema.md"
 DEFAULT_PASS_PLAN = ROOT / "examples" / "aws-pgvector-rag" / "tfplan-pass.json"
 DEFAULT_FAIL_PLAN = ROOT / "examples" / "aws-pgvector-rag" / "tfplan-fail.json"
+DEFAULT_COMPARE_PAIR = (
+    ROOT / "tests" / "fixtures" / "tfplan_compare_old.json",
+    ROOT / "tests" / "fixtures" / "tfplan_compare_new.json",
+)
 CLI_PATH = ROOT / "tools" / "vectorscan" / "vectorscan.py"
+PREVIEW_EXIT_CODE = 10
 
 
 @dataclass(frozen=True)
@@ -38,16 +43,78 @@ TOP_LEVEL_FIELDS: List[FieldSpec] = [
     FieldSpec(("policy_errors",), "policy_errors", "Structured errors raised while evaluating a policy (rare)."),
     FieldSpec(("violation_severity_summary",), "violation_severity_summary", "Map of severity → violation counts."),
     FieldSpec(("metrics",), "metrics", "Machine-readable scoring + exposure metrics for dashboards."),
+    FieldSpec(("security_grade",), "security_grade", "Letter-grade security rating derived from compliance score and severity mix."),
     FieldSpec(("iam_drift_report",), "iam_drift_report", "IAM drift analysis output with risky additions and severities."),
     FieldSpec(("terraform_tests",), "terraform_tests", "Optional Terraform test run metadata (present when --terraform-tests is used).", expected_type="object"),
     FieldSpec(("environment",), "environment", "Runtime metadata (platform, Python, Terraform, VectorScan, strict/offline flags).", expected_type="object"),
     FieldSpec(("plan_metadata",), "plan_metadata", "Terraform plan inventory summary (resource/module counts, providers, types).", expected_type="object"),
     FieldSpec(("plan_diff",), "plan_diff", "Change-only diff summary emitted when --diff is provided.", expected_type="object"),
     FieldSpec(("explanation",), "explanation", "Narrative explain block emitted when --explain is provided.", expected_type="object"),
+    FieldSpec(("violation_count_by_severity",), "violation_count_by_severity", "Legacy severity count map kept for backwards compatibility.", expected_type="object"),
     FieldSpec(("vectorscan_version",), "vectorscan_version", "Semantic version of the CLI binary producing the output."),
     FieldSpec(("policy_version",), "policy_version", "Policy pack SemVer string for auditors."),
     FieldSpec(("schema_version",), "schema_version", "Version tag for this JSON schema contract."),
     FieldSpec(("policy_pack_hash",), "policy_pack_hash", "SHA-256 hash of the shipped policy bundle."),
+    FieldSpec(("policy_source_url",), "policy_source_url", "Canonical repository or URL describing the policy source."),
+    FieldSpec(("policy_manifest",), "policy_manifest", "Signed manifest metadata describing the active policy pack.", expected_type="object"),
+    FieldSpec(("preview_generated",), "preview_generated", "Boolean indicating VectorGuard preview metadata was emitted.", expected_type="boolean"),
+    FieldSpec(("preview_policies",), "preview_policies", "Array of teaser policies surfaced by preview mode.", expected_type="array"),
+    FieldSpec(("preview_manifest",), "preview_manifest", "Signed manifest metadata describing the preview payload.", expected_type="object"),
+    FieldSpec(("resource_filter",), "resource_filter", "Resource scope metadata emitted when --resource is provided.", expected_type="object"),
+    FieldSpec(("smell_report",), "smell_report", "Plan smell heuristics summarizing structural risk indicators.", expected_type="object"),
+    FieldSpec(("plan_evolution",), "plan_evolution", "Plan comparison summary emitted when --compare is used.", expected_type="object"),
+]
+SMELL_REPORT_FIELDS = [
+    FieldSpec(("smell_report", "level"), "smell_report.level", "Aggregated smell severity level (low/moderate/high)."),
+    FieldSpec(("smell_report", "summary"), "smell_report.summary", "One-line summary of detected plan smells."),
+    FieldSpec(("smell_report", "stats", "resource_count"), "smell_report.stats.resource_count", "Resource count snapshot used during smell analysis."),
+    FieldSpec(("smell_report", "stats", "max_module_depth"), "smell_report.stats.max_module_depth", "Deepest module nesting level observed."),
+    FieldSpec(("smell_report", "stats", "for_each_instances"), "smell_report.stats.for_each_instances", "Number of expanded for_each/count instances."),
+    FieldSpec(("smell_report", "stats", "kms_missing"), "smell_report.stats.kms_missing", "Count of KMS-required resources lacking kms_key_id."),
+    FieldSpec(("smell_report", "stats", "iam_policy_statements"), "smell_report.stats.iam_policy_statements", "Max IAM statements observed in plan changes."),
+    FieldSpec(("smell_report", "stats", "iam_policy_actions"), "smell_report.stats.iam_policy_actions", "Max IAM actions observed in plan changes."),
+    FieldSpec(("smell_report", "stats", "iam_policy_length"), "smell_report.stats.iam_policy_length", "Largest IAM policy document size (bytes)."),
+    FieldSpec(("smell_report", "stats", "change_total"), "smell_report.stats.change_total", "Adds+changes+destroys aggregated across the plan."),
+    FieldSpec(("smell_report", "smells"), "smell_report.smells", "Array of detected smell findings with evidence.", expected_type="array"),
+]
+
+SMELL_ITEM_FIELDS = [
+    FieldSpec(("smell_report", "smells", "[]", "id"), "smell_report.smells[].id", "Smell identifier (e.g., module_depth)."),
+    FieldSpec(("smell_report", "smells", "[]", "level"), "smell_report.smells[].level", "Severity level for the smell finding."),
+    FieldSpec(("smell_report", "smells", "[]", "message"), "smell_report.smells[].message", "Human-readable explanation of the smell."),
+    FieldSpec(("smell_report", "smells", "[]", "evidence"), "smell_report.smells[].evidence", "Structured evidence backing the smell detection.", expected_type="object"),
+]
+
+PLAN_EVOLUTION_PLAN_FIELDS = [
+    FieldSpec(("plan_evolution", "old_plan", "file"), "plan_evolution.old_plan.file", "Filesystem path to the previous plan used in --compare.", expected_type="string"),
+    FieldSpec(("plan_evolution", "old_plan", "resource_count"), "plan_evolution.old_plan.resource_count", "Resource count for the previous plan."),
+    FieldSpec(("plan_evolution", "old_plan", "change_summary"), "plan_evolution.old_plan.change_summary", "Adds/changes/destroys summary for the previous plan.", expected_type="object"),
+    FieldSpec(("plan_evolution", "new_plan", "file"), "plan_evolution.new_plan.file", "Filesystem path to the newer plan used in --compare.", expected_type="string"),
+    FieldSpec(("plan_evolution", "new_plan", "resource_count"), "plan_evolution.new_plan.resource_count", "Resource count for the newer plan."),
+    FieldSpec(("plan_evolution", "new_plan", "change_summary"), "plan_evolution.new_plan.change_summary", "Adds/changes/destroys summary for the newer plan.", expected_type="object"),
+]
+
+PLAN_EVOLUTION_DELTA_FIELDS = [
+    FieldSpec(("plan_evolution", "delta", "resource_count"), "plan_evolution.delta.resource_count", "Difference in total resources between the compared plans."),
+    FieldSpec(("plan_evolution", "delta", "adds"), "plan_evolution.delta.adds", "Difference in adds between the plans."),
+    FieldSpec(("plan_evolution", "delta", "changes"), "plan_evolution.delta.changes", "Difference in changes between the plans."),
+    FieldSpec(("plan_evolution", "delta", "destroys"), "plan_evolution.delta.destroys", "Difference in destroy counts between the plans."),
+]
+
+PLAN_EVOLUTION_SUMMARY_FIELDS = [
+    FieldSpec(("plan_evolution", "summary", "lines"), "plan_evolution.summary.lines", "Human-readable +/-/~/! summary lines describing the comparison.", expected_type="array"),
+]
+
+PLAN_EVOLUTION_DOWNGRADED_FIELDS = [
+    FieldSpec(("plan_evolution", "downgraded_encryption", "count"), "plan_evolution.downgraded_encryption.count", "Number of resources where encryption was downgraded."),
+    FieldSpec(("plan_evolution", "downgraded_encryption", "resources"), "plan_evolution.downgraded_encryption.resources", "Details for each downgraded resource.", expected_type="array"),
+]
+
+PLAN_EVOLUTION_DOWNGRADED_ENTRY_FIELDS = [
+    FieldSpec(("plan_evolution", "downgraded_encryption", "resources", "[]", "address"), "plan_evolution.downgraded_encryption.resources[].address", "Resource address that experienced a downgrade.", expected_type="string"),
+    FieldSpec(("plan_evolution", "downgraded_encryption", "resources", "[]", "reasons"), "plan_evolution.downgraded_encryption.resources[].reasons", "List of downgrade reasons (storage_encrypted flip, kms removal).", expected_type="array"),
+    FieldSpec(("plan_evolution", "downgraded_encryption", "resources", "[]", "previous"), "plan_evolution.downgraded_encryption.resources[].previous", "Previous encryption state snapshot.", expected_type="object"),
+    FieldSpec(("plan_evolution", "downgraded_encryption", "resources", "[]", "current"), "plan_evolution.downgraded_encryption.resources[].current", "Current encryption state snapshot.", expected_type="object"),
 ]
 
 COUNTS_FIELDS = [
@@ -92,6 +159,13 @@ SEVERITY_FIELDS = [
     FieldSpec(("violation_severity_summary", "low"), "violation_severity_summary.low", "Low-level violation count."),
 ]
 
+VIOLATION_COUNT_FIELDS = [
+    FieldSpec(("violation_count_by_severity", "critical"), "violation_count_by_severity.critical", "Critical-level violation count mirrored for backwards compatibility."),
+    FieldSpec(("violation_count_by_severity", "high"), "violation_count_by_severity.high", "High-level violation count mirrored for backwards compatibility."),
+    FieldSpec(("violation_count_by_severity", "medium"), "violation_count_by_severity.medium", "Medium-level violation count mirrored for backwards compatibility."),
+    FieldSpec(("violation_count_by_severity", "low"), "violation_count_by_severity.low", "Low-level violation count mirrored for backwards compatibility."),
+]
+
 METRICS_FIELDS = [
     FieldSpec(("metrics", "eligible_checks"), "metrics.eligible_checks", "Total number of encryption + tagging resources evaluated."),
     FieldSpec(("metrics", "passed_checks"), "metrics.passed_checks", "Resources that satisfied the enforced guardrails."),
@@ -103,6 +177,8 @@ METRICS_FIELDS = [
     FieldSpec(("metrics", "iam_drift", "risky_change_count"), "metrics.iam_drift.risky_change_count", "Number of IAM drift findings mirrored into metrics."),
     FieldSpec(("metrics", "notes"), "metrics.notes", "Additional context for open security groups and IAM risk analysis."),
     FieldSpec(("metrics", "scan_duration_ms"), "metrics.scan_duration_ms", "CLI runtime duration in milliseconds."),
+    FieldSpec(("metrics", "parser_mode"), "metrics.parser_mode", "Parser implementation used for the scan (streaming vs legacy)."),
+    FieldSpec(("metrics", "resource_count"), "metrics.resource_count", "Resource count echoed into metrics for quick filters."),
 ]
 
 METRIC_NOTES_FIELDS = [
@@ -120,6 +196,15 @@ ENVIRONMENT_FIELDS = [
     FieldSpec(("environment", "vectorscan_version"), "environment.vectorscan_version", "VectorScan version reported inside the metadata block (overridable via VSCAN_ENV_VECTORSCAN_VERSION)."),
     FieldSpec(("environment", "strict_mode"), "environment.strict_mode", "Boolean indicating VSCAN_STRICT enforcement.", expected_type="boolean"),
     FieldSpec(("environment", "offline_mode"), "environment.offline_mode", "Boolean indicating offline/air-gapped execution.", expected_type="boolean"),
+]
+
+RESOURCE_FILTER_FIELDS = [
+    FieldSpec(("resource_filter", "input"), "resource_filter.input", "Original --resource input string.", expected_type="string"),
+    FieldSpec(("resource_filter", "address"), "resource_filter.address", "Fully-qualified Terraform resource address that matched the selector.", expected_type="string"),
+    FieldSpec(("resource_filter", "type"), "resource_filter.type", "Terraform resource type for the scoped result.", expected_type="string"),
+    FieldSpec(("resource_filter", "name"), "resource_filter.name", "Resource name component from the scoped address.", expected_type="string"),
+    FieldSpec(("resource_filter", "module_path"), "resource_filter.module_path", "Module path derived from the scoped address.", expected_type="string"),
+    FieldSpec(("resource_filter", "match"), "resource_filter.match", "Indicates whether the selector resolved via exact or suffix match.", expected_type="string"),
 ]
 
 PLAN_METADATA_FIELDS = [
@@ -192,10 +277,40 @@ IAM_DRIFT_ITEM_FIELDS = [
 TERRAFORM_FIELDS = [
     FieldSpec(("terraform_tests", "status"), "terraform_tests.status", "PASS/FAIL/SKIP from 'terraform test'.", expected_type="string"),
     FieldSpec(("terraform_tests", "version"), "terraform_tests.version", "Terraform CLI version used for tests.", expected_type="string"),
+    FieldSpec(("terraform_tests", "binary"), "terraform_tests.binary", "Path to the Terraform binary used for tests.", expected_type="string"),
     FieldSpec(("terraform_tests", "source"), "terraform_tests.source", "Where the CLI was resolved (system/download/override).", expected_type="string"),
     FieldSpec(("terraform_tests", "strategy"), "terraform_tests.strategy", "Named test harness that executed (modern, legacy, etc.).", expected_type="string"),
+    FieldSpec(("terraform_tests", "message"), "terraform_tests.message", "Contextual status or error message from Terraform test orchestration.", expected_type="string"),
     FieldSpec(("terraform_tests", "stdout"), "terraform_tests.stdout", "Truncated stdout from Terraform tests.", expected_type="string"),
     FieldSpec(("terraform_tests", "stderr"), "terraform_tests.stderr", "Truncated stderr from Terraform tests.", expected_type="string"),
+    FieldSpec(("terraform_tests", "returncode"), "terraform_tests.returncode", "Return code emitted by the executed Terraform command (null when skipped).", expected_type="integer"),
+]
+
+PREVIEW_FIELDS = [
+    FieldSpec(("preview_generated",), "preview_generated", "Boolean flag indicating preview mode is active.", expected_type="boolean"),
+    FieldSpec(("preview_policies", "[]", "id"), "preview_policies[].id", "Preview policy identifier surfaced from the manifest.", expected_type="string"),
+    FieldSpec(("preview_policies", "[]", "summary"), "preview_policies[].summary", "One-line description of the teaser policy.", expected_type="string"),
+    FieldSpec(("preview_manifest", "version"), "preview_manifest.version", "Preview manifest version tag.", expected_type="string"),
+    FieldSpec(("preview_manifest", "generated_at"), "preview_manifest.generated_at", "ISO8601 timestamp describing when the manifest was produced.", expected_type="string"),
+    FieldSpec(("preview_manifest", "signature"), "preview_manifest.signature", "sha256-prefixed signature verifying the preview manifest contents.", expected_type="string"),
+    FieldSpec(("preview_manifest", "verified"), "preview_manifest.verified", "Boolean indicating whether the manifest signature verification succeeded or was skipped via env overrides.", expected_type="boolean"),
+]
+
+POLICY_MANIFEST_FIELDS = [
+    FieldSpec(("policy_manifest", "policy_version"), "policy_manifest.policy_version", "Policy version captured inside the manifest.", expected_type="string"),
+    FieldSpec(("policy_manifest", "policy_pack_hash"), "policy_manifest.policy_pack_hash", "Hash of the bundled policy files asserted by the manifest.", expected_type="string"),
+    FieldSpec(("policy_manifest", "policy_source_url"), "policy_manifest.policy_source_url", "Reference URL for the policy pack source.", expected_type="string"),
+    FieldSpec(("policy_manifest", "policy_count"), "policy_manifest.policy_count", "Number of policies described by the manifest.", expected_type="integer"),
+    FieldSpec(("policy_manifest", "policies"), "policy_manifest.policies", "List of policy metadata entries covered by the manifest.", expected_type="array"),
+    FieldSpec(("policy_manifest", "policies", "[]", "id"), "policy_manifest.policies[].id", "Policy identifier in the manifest entry.", expected_type="string"),
+    FieldSpec(("policy_manifest", "policies", "[]", "name"), "policy_manifest.policies[].name", "Human-readable policy name.", expected_type="string"),
+    FieldSpec(("policy_manifest", "policies", "[]", "category"), "policy_manifest.policies[].category", "Policy category such as security or finops.", expected_type="string"),
+    FieldSpec(("policy_manifest", "policies", "[]", "severity"), "policy_manifest.policies[].severity", "Policy severity rating.", expected_type="string"),
+    FieldSpec(("policy_manifest", "policies", "[]", "description"), "policy_manifest.policies[].description", "Human-readable description for the policy.", expected_type="string"),
+    FieldSpec(("policy_manifest", "signature"), "policy_manifest.signature", "sha256-prefixed signature over the manifest payload.", expected_type="string"),
+    FieldSpec(("policy_manifest", "signed"), "policy_manifest.signed", "Boolean indicating a signature is attached.", expected_type="boolean"),
+    FieldSpec(("policy_manifest", "verified"), "policy_manifest.verified", "Boolean indicating signature verification succeeded.", expected_type="boolean"),
+    FieldSpec(("policy_manifest", "path"), "policy_manifest.path", "Filesystem path for the manifest file (embedded or overridden).", expected_type="string"),
 ]
 
 ALL_SECTIONS = [
@@ -205,11 +320,20 @@ ALL_SECTIONS = [
     ("Violation Resource Details", VIOLATION_RESOURCE_FIELDS),
     ("Violation Remediation", VIOLATION_REMEDIATION_FIELDS),
     ("Violation Severity Summary", SEVERITY_FIELDS),
+    ("Violation Count by Severity", VIOLATION_COUNT_FIELDS),
     ("Policy Errors", POLICY_ERROR_FIELDS),
     ("Metrics", METRICS_FIELDS),
     ("Metric Notes", METRIC_NOTES_FIELDS),
     ("Environment Metadata", ENVIRONMENT_FIELDS),
+    ("Resource Filter (--resource)", RESOURCE_FILTER_FIELDS),
     ("Plan Metadata", PLAN_METADATA_FIELDS),
+    ("Plan Smell Report", SMELL_REPORT_FIELDS),
+    ("Plan Smell Entries", SMELL_ITEM_FIELDS),
+    ("Plan Evolution (Compare Mode)", PLAN_EVOLUTION_PLAN_FIELDS),
+    ("Plan Evolution Delta", PLAN_EVOLUTION_DELTA_FIELDS),
+    ("Plan Evolution Summary", PLAN_EVOLUTION_SUMMARY_FIELDS),
+    ("Plan Evolution Downgraded Encryption", PLAN_EVOLUTION_DOWNGRADED_FIELDS),
+    ("Plan Evolution Downgraded Entries", PLAN_EVOLUTION_DOWNGRADED_ENTRY_FIELDS),
     ("Plan Diff (--diff)", PLAN_DIFF_FIELDS),
     ("Plan Diff Resources", PLAN_DIFF_RESOURCE_FIELDS),
     ("Plan Diff Attributes", PLAN_DIFF_ATTRIBUTE_FIELDS),
@@ -217,6 +341,8 @@ ALL_SECTIONS = [
     ("IAM Drift Report", IAM_DRIFT_FIELDS),
     ("IAM Drift Items", IAM_DRIFT_ITEM_FIELDS),
     ("Terraform Tests", TERRAFORM_FIELDS),
+    ("VectorGuard Preview", PREVIEW_FIELDS),
+    ("Policy Manifest", POLICY_MANIFEST_FIELDS),
 ]
 
 
@@ -303,14 +429,21 @@ def _format_excerpt(value: Any, *, limit: int = 280) -> str:
     return snippet
 
 
-def _build_samples(plan_paths: Sequence[Path], cli_path: Path, *, env: Dict[str, str]) -> List[Dict[str, Any]]:
+def _build_samples(
+    plan_paths: Sequence[Path],
+    cli_path: Path,
+    *,
+    env: Dict[str, str],
+    compare_pairs: Sequence[Tuple[Path, Path]] | None = None,
+) -> List[Dict[str, Any]]:
     samples: List[Dict[str, Any]] = []
     for plan in plan_paths:
         cmd = [sys.executable, str(cli_path), str(plan), "--json"]
         cmd.append("--explain")
         cmd.append("--diff")
+        cmd.append("--preview-vectorguard")
         result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-        if result.returncode not in {0, 3}:
+        if result.returncode not in {0, 3, PREVIEW_EXIT_CODE}:
             raise SchemaDocError(
                 f"VectorScan exited with code {result.returncode} for {plan}. stderr={result.stderr.strip()}"
             )
@@ -319,22 +452,47 @@ def _build_samples(plan_paths: Sequence[Path], cli_path: Path, *, env: Dict[str,
         except json.JSONDecodeError as exc:
             raise SchemaDocError(f"Failed to parse JSON output for {plan}: {exc}") from exc
         samples.append(payload)
+    for old_path, new_path in compare_pairs or []:
+        cmd = [
+            sys.executable,
+            str(cli_path),
+            "--json",
+            "--compare",
+            str(old_path),
+            str(new_path),
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        if result.returncode != 0:
+            raise SchemaDocError(
+                f"VectorScan compare mode exited with code {result.returncode} for {old_path} vs {new_path}. stderr={result.stderr.strip()}"
+            )
+        try:
+            payload = json.loads(result.stdout)
+        except json.JSONDecodeError as exc:
+            raise SchemaDocError(
+                f"Failed to parse JSON output for compare pair {old_path} vs {new_path}: {exc}"
+            ) from exc
+        samples.append(payload)
     return samples
 
 
 def generate_schema_markdown(
     *,
     plan_paths: Sequence[Path] | None = None,
+    compare_pairs: Sequence[Tuple[Path, Path]] | None = None,
     cli_path: Path = CLI_PATH,
     output_path: Path = DEFAULT_OUTPUT,
 ) -> str:
     plan_paths = list(plan_paths or (DEFAULT_PASS_PLAN, DEFAULT_FAIL_PLAN))
+    compare_pairs = list(compare_pairs or (DEFAULT_COMPARE_PAIR,))
     env = os.environ.copy()
     env.setdefault("PYTHONPATH", str(ROOT))
     env.setdefault("VSCAN_OFFLINE", "1")
     env.setdefault("VSCAN_CLOCK_EPOCH", "1730000000")
     env.setdefault("VSCAN_CLOCK_ISO", "2024-11-16T00:00:00Z")
-    samples = _build_samples(plan_paths, cli_path, env=env)
+    env.setdefault("VSCAN_FORCE_DURATION_MS", "250")
+    env.setdefault("VSCAN_FORCE_PLAN_PARSE_MS", "250")
+    samples = _build_samples(plan_paths, cli_path, env=env, compare_pairs=compare_pairs)
 
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")
     header = textwrap.dedent(
@@ -347,7 +505,8 @@ def generate_schema_markdown(
 
     summary_lines = [
         "## Sample Coverage",
-        "", "This schema is derived from the union of these fixture runs:",
+        "",
+        "This schema is derived from the union of these fixture runs:",
     ]
     for plan in plan_paths:
         try:
@@ -355,8 +514,22 @@ def generate_schema_markdown(
         except ValueError:
             display = plan
         summary_lines.append(f"- `{display}`")
+    if compare_pairs:
+        summary_lines.append("")
+        summary_lines.append("Compare samples:")
+        for old_path, new_path in compare_pairs:
+            try:
+                old_display = old_path.relative_to(ROOT)
+            except ValueError:
+                old_display = old_path
+            try:
+                new_display = new_path.relative_to(ROOT)
+            except ValueError:
+                new_display = new_path
+            summary_lines.append(f"- `{old_display}` → `{new_display}`")
 
     body_sections = [header, "", *summary_lines, ""]
+
     def _section_example_path(field: FieldSpec) -> Tuple[str, ...]:
         path = field.path[:-1]
         while path and path[-1] == "[]":
@@ -401,12 +574,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         help="Optional tfplan fixture path. Defaults to bundled pass/fail fixtures (repeat flag for multiples).",
     )
+    parser.add_argument(
+        "--compare",
+        action="append",
+        nargs=2,
+        metavar=("OLD_PLAN", "NEW_PLAN"),
+        help="Optional pair of tfplan fixtures to run via --compare for documenting plan_evolution.",
+    )
     parser.add_argument("--cli", type=Path, default=CLI_PATH, help="Path to vectorscan.py (default tools/vectorscan/vectorscan.py)")
     args = parser.parse_args(argv)
 
     plan_paths = args.plan or None
+    compare_pairs = None
+    if args.compare:
+        compare_pairs = [(Path(old), Path(new)) for old, new in args.compare]
     try:
-        generate_schema_markdown(plan_paths=plan_paths, cli_path=args.cli, output_path=args.output)
+        generate_schema_markdown(
+            plan_paths=plan_paths,
+            compare_pairs=compare_pairs,
+            cli_path=args.cli,
+            output_path=args.output,
+        )
     except SchemaDocError as exc:
         print(f"Schema doc generation failed: {exc}", file=sys.stderr)
         return 1

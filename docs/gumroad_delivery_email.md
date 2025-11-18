@@ -35,4 +35,4 @@ https://gumroad.com/l/vectorguard-blueprint?utm_source=vectorscan&utm_medium=cta
 
 Reply to this email or ping support@vectorguard.com if you have any trouble verifying the bundle.
 
-— VectorScan Team
+ -  VectorScan Team

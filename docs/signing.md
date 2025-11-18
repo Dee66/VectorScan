@@ -98,7 +98,7 @@ python3 scripts/signing_key_revocation.py \
    --note "revoked via pagerduty #INC-1234"
 ```
 
-The helper requires `cosign` on `PATH`, verifies the new signature, captures SHA256 fingerprints for both keys, stores the bundle hash, and appends everything to `docs/signing_key_revocations.json` (which ships with the repo for auditability). Treat the log as append-only—never rewrite history. If the helper exits with code 3, the signature verification failed; fix the signing inputs before publishing incident comms.
+The helper requires `cosign` on `PATH`, verifies the new signature, captures SHA256 fingerprints for both keys, stores the bundle hash, and appends everything to `docs/signing_key_revocations.json` (which ships with the repo for auditability). Treat the log as append-only - never rewrite history. If the helper exits with code 3, the signature verification failed; fix the signing inputs before publishing incident comms.
 
 ## Testing the Rotation Workflow
 

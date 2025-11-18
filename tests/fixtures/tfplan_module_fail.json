@@ -1,0 +1,44 @@
+{
+  "format_version": "1.0",
+  "planned_values": {
+    "root_module": {
+      "child_modules": [
+        {
+          "address": "module.db",
+          "resources": [
+            {
+              "address": "module.db.aws_rds_cluster.vector_db",
+              "mode": "managed",
+              "type": "aws_rds_cluster",
+              "name": "vector_db",
+              "values": {
+                "storage_encrypted": false,
+                "tags": {
+                  "Project": "vectorguard"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "module.db.aws_rds_cluster.vector_db",
+      "type": "aws_rds_cluster",
+      "name": "vector_db",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "storage_encrypted": true
+        },
+        "after": {
+          "storage_encrypted": false
+        }
+      }
+    }
+  ]
+}

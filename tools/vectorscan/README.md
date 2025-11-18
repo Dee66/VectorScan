@@ -27,6 +27,9 @@ python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.jso
 python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --explain
 python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --json --explain
 
+# Resource drilldown (scopes output to a single Terraform address; module prefixes optional when unique)
+python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json --json --resource aws_rds_cluster.vector_db
+
 # Optional: adjustable IAM drift penalty (default 20; range 0–100)
 python3 tools/vectorscan/vectorscan.py examples/aws-pgvector-rag/tfplan-fail.json \
   --json --iam-drift-penalty 35
@@ -96,10 +99,11 @@ See: `docs/iam_drift.md` for details.
 - The YAML audit ledger, telemetry logs, summaries, CSV exports, and lead-capture payloads preserve the same map so CI dashboards, StatsD, and analytics tools can rank findings without scraping strings.
 - Aggregate helpers (for example `tools/vectorscan/aggregate_metrics.py`) roll these counts up automatically, powering weekly scorecards or executive summaries with zero extra parsing.
 
-### Runtime Telemetry (`scan_duration_ms`)
-- Each CLI run records its elapsed time in milliseconds and exposes it under `metrics.scan_duration_ms`.
-- `run_scan.sh`, telemetry collectors, CSV/summary exports, and the lead capture API all persist the same value so dashboards can detect performance regressions.
-- Set `VSCAN_FORCE_DURATION_MS` when regenerating fixtures to keep goldens stable or to simulate SLA breaches in tests.
+### Runtime Telemetry (`scan_duration_ms`, `parser_mode`, `resource_count`)
+- `metrics.scan_duration_ms` captures elapsed runtime in milliseconds and is mirrored across telemetry logs, CSV exports, the audit ledger, and StatsD timers so dashboards can flag regressions.
+- `metrics.parser_mode` documents whether the streaming parser handled the plan or if the legacy loader ran, making it easy to detect degraded coverage in telemetry summaries.
+- `metrics.resource_count` mirrors the plan’s total resources, enabling run ledgers and aggregate scripts to trend scan volume alongside performance data.
+- Override `metrics.scan_duration_ms` via `VSCAN_FORCE_DURATION_MS` for deterministic fixtures; parser mode and resource counts always reflect the actual plan metadata.
 
 ### Lead Capture Privacy
 - No network calls are made unless you provide an endpoint via `--endpoint` or `VSCAN_LEAD_ENDPOINT`.

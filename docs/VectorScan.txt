@@ -1,8 +1,8 @@
-VectorScan — Source of Truth & Final Specification (v1.0.0)
+VectorScan  -  Source of Truth & Final Specification (v1.0.0)
 
 Document Type: Canonical Product + Architecture Specification
 Status: FINAL
-Owner: ShieldCraft AI — GuardSuite
+Owner: ShieldCraft AI  -  GuardSuite
 Scope: Full CLI contract, schema, remediation, data integrity, I/O guarantees, policy update rules, test strategy, enterprise behaviors
 
 I. Overview
@@ -20,11 +20,11 @@ II. Free Policy Bundle
 
 VectorScan ships with two high-value, universal policies:
 
-P-SEC-001 — Encryption Mandate
+P-SEC-001  -  Encryption Mandate
 
 Enforces encryption + KMS key for data services.
 
-P-FIN-001 — Mandatory Tagging
+P-FIN-001  -  Mandatory Tagging
 
 Requires CostCenter, Project, and other org-specific cost attribution tags.
 
@@ -104,6 +104,8 @@ vectorscan --resource aws_db_instance.prod tfplan.json
 
 Filters violations & metadata to a single resource.
 
+Implementation Note: When `--resource` is provided, VectorScan resolves the selector against every Terraform address (module prefixes optional as long as the suffix is unique), scopes policy evaluation + plan metadata to the matched resource, and emits a `resource_filter` block so downstream automation knows which address was evaluated and whether a suffix match was used. Missing or ambiguous selectors exit with code 2 and print deterministic suggestions.
+
 D. Interactive TUI (Future)
 
 vectorscan --tui tfplan.json
@@ -168,6 +170,12 @@ vectorscan --preview-vectorguard tfplan.json
   {"id": "P-SEC-002", "summary": "IAM roles would fail due to excessive permissions"},
   {"id": "P-AUD-001", "summary": "CloudTrail encryption enforcement would fail"}
 ]
+"preview_manifest": {
+  "version": "2025.11.17",
+  "generated_at": "2025-11-17T12:00:00Z",
+  "signature": "sha256:<hash>",
+  "verified": true
+}
 
 Preview Mode Contract
 
@@ -177,9 +185,21 @@ Uses the preview manifest bundled with VectorScan.
 
 Includes "preview_generated": true.
 
+Adds "preview_manifest" with version/timestamp/signature + verification status so automation can prove the manifest hasn’t been tampered with.
+
 Exit code 10.
 
 Preview manifest is signed.
+
+Env overrides:
+- `VSCAN_PREVIEW_MANIFEST` points at an alternate manifest file (enterprise bundles).
+- `VSCAN_PREVIEW_SKIP_VERIFY=1` skips signature verification during local development or CI smoke tests. Production bundles MUST leave verification enabled.
+
+Signature logic:
+- SHA-256 is computed over the canonical (sorted) policy list, prefixed with `sha256:`.
+- CLI refuses to enter preview mode when the signature mismatches unless `VSCAN_PREVIEW_SKIP_VERIFY` is set.
+
+Human output prints a "VectorGuard preview" section listing each teaser policy and the manifest path/verification state so demo videos have deterministic copy.
 
 VII. Enterprise & CI/CD Controls
 GitHub Action Mode
@@ -195,6 +215,12 @@ deterministic formatting
 no color
 
 stable keys
+
+Implementation details:
+- Flag aliases `--json --no-color` automatically.
+- JSON uses `indent=2`, UTF-8, and `sort_keys=True` for canonical ordering.
+- Human banners, emojis, and policy summaries stay suppressed so CI logs remain machine-readable.
+- Exit codes are identical to normal runs (0/3/5/10/etc.) so workflows don’t need special handling.
 
 Offline Mode
 
@@ -419,6 +445,61 @@ HCL reverse module mapping
 AI-enhanced remediation
 
 Policy Pack Marketplace
+
+XVI. Intelligence & Telemetry Enhancements
+
+1. Plan Risk Profile (Top-Level Metadata)
+
+Adds an immediate-at-a-glance indicator under the root payload:
+
+"plan_risk_profile": "HIGH — 2 unencrypted data stores, 1 public subnet detected"
+
+This is metadata-only (no new enforcement) and must synthesize existing findings into a narrative string that is screenshot-friendly and deterministic.
+
+Implementation Note: The heuristic must merge policy failures (P-SEC-001 / P-FIN-001) with non-blocking heuristic warnings (e.g., public subnet from the Suspicious Defaults Detector) so the summary clearly states what is enforced vs. advisory.
+Implementation Note (Determinism & Evidence): plan_risk_profile becomes a required top-level schema field (update schema.json + output_schema.md generator), and PASS/FAIL golden snapshots must assert the exact narrative text so CI proves the summary stays stable.
+
+2. Suspicious Defaults Detector
+
+Runs lightweight heuristics for known Terraform footguns (unencrypted defaults, public=true, missing S3 encryption, implicit 0.0.0.0/0 ingress, IAM inline policy merges). Findings are advisory, never policy violations, ensuring zero overlap with paid packs while showcasing CLI intelligence.
+
+Implementation Note: Implement as a dedicated detector module that scans resource_changes before policy evaluation, emitting a `suspicious_defaults` list that never increments violation counts or alters exit codes.
+
+3. Plan Smell Analyzer (ESLint for Terraform Plans)
+
+Produces a "plan_smells" block describing complexity indicators such as deep module nesting, excessive for_each expansions, pervasive default inheritance, massive IAM blobs, missing kms_key usage, and unusually large change sets. Output is descriptive, not blocking, and must plug into explain/diff narratives.
+
+Implementation Note: Reuse the existing `plan_metadata` inventory to compute smells so this feature remains deterministic and side-effect free; serialize results under a top-level `smell_report` structure.
+
+4. Plan Evolution Summary (Two-Plan Diff)
+
+New flag: `vectorscan --compare old.json new.json`
+
+Outputs a "plan_evolution" summary:
+
+Plan Evolution:
+  +12 resources
+  -3 destroyed
+  ~18 changed
+  !2 downgraded encryption settings
+
+Optimized for CI/CD, exits with the same codes as single-plan scans, and never evaluates paid policies.
+
+Implementation Note: The new `--compare old.json new.json` mode must detect downgraded encryption (storage_encrypted flips) and emit a structured `plan_evolution` object alongside the human summary, backed by golden fixtures.
+Implementation Reality: The shipping CLI now produces `plan_evolution.old_plan`, `.new_plan`, `.delta`, `.summary.lines`, and `.downgraded_encryption` blocks, with `status=ALERT` when any encryption downgrade is detected plus a human-readable compare report. Snapshot tests (`plan_compare_output.json`) lock the JSON payload so regressions surface in CI.
+
+5. Performance Metrics Block
+
+Extends the `metrics` object with runtime transparency:
+
+metrics:
+  scan_duration_ms: 142
+  parser_mode: "streaming"
+  resource_count: 4821
+
+Every run must emit these fields, reflecting actual execution data to reinforce competence and determinism.
+
+Implementation Note: CLI now captures real parser timings + parser mode (streaming vs legacy fallback) and mirrors the plan resource count directly into the metrics block. The telemetry pipeline (metrics log, summary, StatsD) consumes the same fields so dashboards instantly reflect runtime regressions or legacy-parser fallbacks without parsing nested metadata.
 
 Final Statement
 

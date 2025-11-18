@@ -177,3 +177,41 @@ def test_checker_detects_unlisted_extra_file(tmp_path, monkeypatch):
     result = _run_checker(["--bundle", str(extra)])
     assert result.returncode == 4
     assert "files not listed in manifest" in result.stderr
+
+
+@pytest.mark.integration
+def test_checker_detects_preview_metadata_mismatch(tmp_path, monkeypatch):
+    bundle, _ = _build_bundle(tmp_path, monkeypatch)
+    broken = tmp_path / "preview-mismatch.zip"
+
+    def mutate(info, data):
+        if info.filename == "manifest.json":
+            manifest = json.loads(data.decode("utf-8"))
+            manifest["preview_manifest"]["sha256"] = "0" * 64
+            return info.filename, json.dumps(manifest).encode("utf-8")
+        return None
+
+    _rewrite_zip(bundle, broken, mutate)
+
+    result = _run_checker(["--bundle", str(broken)])
+    assert result.returncode == 2
+    assert "preview_manifest sha256 mismatch" in result.stderr
+
+
+@pytest.mark.integration
+def test_checker_requires_signer_metadata(tmp_path, monkeypatch):
+    bundle, _ = _build_bundle(tmp_path, monkeypatch)
+    broken = tmp_path / "no-signers.zip"
+
+    def mutate(info, data):
+        if info.filename == "manifest.json":
+            manifest = json.loads(data.decode("utf-8"))
+            manifest["signers"] = []
+            return info.filename, json.dumps(manifest).encode("utf-8")
+        return None
+
+    _rewrite_zip(bundle, broken, mutate)
+
+    result = _run_checker(["--bundle", str(broken)])
+    assert result.returncode == 2
+    assert "signers metadata missing" in result.stderr

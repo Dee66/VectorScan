@@ -91,17 +91,21 @@ fi
 
 # Use embedded Python to parse JSON (avoid jq dependency)
 PY_PARSE=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
-import sys, json
-import os
+import sys, json, os, shlex
 with open(os.environ['JSON_FILE']) as fh:
   data = json.load(fh)
 violations = data.get("violations", []) or []
 metrics = data.get("metrics", {}) or {}
 drift = data.get("iam_drift_report", {}) or {}
+suspicious_defaults = data.get("suspicious_defaults", []) or []
 vector_version = data.get("vectorscan_version", "unknown")
 policy_version = data.get("policy_version", "unknown")
 schema_version = data.get("schema_version", "unknown")
 policy_pack_hash = data.get("policy_pack_hash", "unknown")
+smell_report = data.get("smell_report", {}) or {}
+smell_level = smell_report.get("level", "low")
+smell_summary = (smell_report.get("summary") or "No structural smells detected.").replace("\n", " ")
+smell_count = len(smell_report.get("smells") or [])
 env_meta = data.get("environment", {}) or {}
 platform_name = env_meta.get("platform", "unknown")
 platform_release = env_meta.get("platform_release", "unknown")
@@ -122,27 +126,37 @@ iam = "FAIL" if iam_risky > 0 else "PASS"
 iam_drift = (drift.get("status") or "PASS").upper()
 overall = int(metrics.get("compliance_score", 100) or 0)
 duration = int(metrics.get("scan_duration_ms", 0) or 0)
-print("\n".join([
-  f"ENCRYPTION={encryption}",
-  f"TAGGING={tagging}",
-  f"NETWORK={network}",
-  f"IAM={iam}",
-  f"IAM_DRIFT={iam_drift}",
-  f"SCORE={overall}",
-  f"VECTORSCAN_VERSION={vector_version}",
-  f"POLICY_VERSION={policy_version}",
-  f"SCHEMA_VERSION={schema_version}",
-  f"POLICY_PACK_HASH={policy_pack_hash}",
-  f"ENV_PLATFORM={platform_name}",
-  f"ENV_PLATFORM_RELEASE={platform_release}",
-  f"ENV_PYTHON_VERSION={python_version}",
-  f"ENV_PYTHON_IMPL={python_impl}",
-  f"ENV_TERRAFORM_VERSION={terraform_version}",
-  f"ENV_TERRAFORM_SOURCE={terraform_source}",
-  f"ENV_STRICT_MODE={strict_mode}",
-  f"ENV_OFFLINE_MODE={offline_mode}",
-  f"SCAN_DURATION_MS={duration}",
-]))
+parser_mode = metrics.get("parser_mode", "legacy") or "legacy"
+resource_count = int(metrics.get("resource_count", data.get("plan_metadata", {}).get("resource_count", 0)) or 0)
+pairs = [
+  ("ENCRYPTION", encryption),
+  ("TAGGING", tagging),
+  ("NETWORK", network),
+  ("IAM", iam),
+  ("IAM_DRIFT", iam_drift),
+  ("SCORE", overall),
+  ("PLAN_RISK_PROFILE", data.get('plan_risk_profile', 'unknown')),
+  ("SUSPICIOUS_DEFAULTS", len(suspicious_defaults)),
+  ("PLAN_SMELL_LEVEL", smell_level),
+  ("PLAN_SMELL_COUNT", smell_count),
+  ("PLAN_SMELL_SUMMARY", smell_summary),
+  ("VECTORSCAN_VERSION", vector_version),
+  ("POLICY_VERSION", policy_version),
+  ("SCHEMA_VERSION", schema_version),
+  ("POLICY_PACK_HASH", policy_pack_hash),
+  ("ENV_PLATFORM", platform_name),
+  ("ENV_PLATFORM_RELEASE", platform_release),
+  ("ENV_PYTHON_VERSION", python_version),
+  ("ENV_PYTHON_IMPL", python_impl),
+  ("ENV_TERRAFORM_VERSION", terraform_version),
+  ("ENV_TERRAFORM_SOURCE", terraform_source),
+  ("ENV_STRICT_MODE", strict_mode),
+  ("ENV_OFFLINE_MODE", offline_mode),
+  ("SCAN_DURATION_MS", duration),
+  ("PARSER_MODE", parser_mode),
+  ("RESOURCE_COUNT", resource_count),
+]
+print("\n".join(f"{key}={shlex.quote(str(value))}" for key, value in pairs))
 PY
 )
 
@@ -208,6 +222,46 @@ print("  violation_severity_summary:")
 for level in LEVELS:
   value = summary.get(level, 0) or 0
   print(f"    {level}: {value}")
+PY
+)
+
+PLAN_RISK_FACTORS_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+import json, os
+
+with open(os.environ['JSON_FILE']) as fh:
+  payload = json.load(fh)
+
+factors = payload.get('plan_risk_factors') or []
+if not factors:
+  print("  plan_risk_factors: []")
+else:
+  print("  plan_risk_factors:")
+  for item in factors:
+    print(f"    - {json.dumps(item, ensure_ascii=False)}")
+PY
+)
+
+SMELL_DETAILS_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+import json, os
+
+with open(os.environ['JSON_FILE']) as fh:
+  payload = json.load(fh)
+
+report = payload.get('smell_report') or {}
+smells = report.get('smells') or []
+if not smells:
+  print("    details: []")
+else:
+  print("    details:")
+  for smell in smells:
+    identifier = smell.get('id', 'smell') or 'smell'
+    level = smell.get('level', 'low') or 'low'
+    message = smell.get('message', '') or ''
+    evidence = smell.get('evidence') or {}
+    print(f"      - id: {json.dumps(identifier, ensure_ascii=False)}")
+    print(f"        level: {json.dumps(level, ensure_ascii=False)}")
+    print(f"        message: {json.dumps(message, ensure_ascii=False)}")
+    print(f"        evidence: {json.dumps(evidence, ensure_ascii=False)}")
 PY
 )
 
@@ -322,8 +376,15 @@ $PLAN_METADATA_BLOCK
   policy_version: $POLICY_VERSION
   schema_version: $SCHEMA_VERSION
   policy_pack_hash: $POLICY_PACK_HASH
- $POLICY_ERRORS_BLOCK
- $SEVERITY_BLOCK
+${POLICY_ERRORS_BLOCK}
+${SEVERITY_BLOCK}
+  plan_risk_profile: $PLAN_RISK_PROFILE
+${PLAN_RISK_FACTORS_BLOCK}
+  smell_report:
+    level: $PLAN_SMELL_LEVEL
+    summary: $PLAN_SMELL_SUMMARY
+    finding_count: $PLAN_SMELL_COUNT
+${SMELL_DETAILS_BLOCK}
   encryption: $ENCRYPTION
   iam: $IAM
   iam_drift: $IAM_DRIFT
@@ -332,6 +393,8 @@ $PLAN_METADATA_BLOCK
   audit_status: $([ "$ENCRYPTION$IAM$IAM_DRIFT$NETWORK$TAGGING" = "PASSPASSPASSPASSPASS" ] && echo COMPLIANT || echo NON_COMPLIANT)
   overall_score: ${SCORE}/100
   scan_duration_ms: $SCAN_DURATION_MS
+  parser_mode: $PARSER_MODE
+  resource_count: $RESOURCE_COUNT
   iam_drift_evidence:
 $EVIDENCE
 YAML

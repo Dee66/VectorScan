@@ -4,7 +4,7 @@ A. FOUNDATIONS & REPO SANITY
 [ ] Ensure VectorScan README, LICENSE (MIT), CONTRIBUTING.md, CODE_OF_CONDUCT.md present and accurate.
 [ ] Confirm all references in VectorGuard docs that pointed to local tools/vectorscan now point to https://github.com/Dee66/VectorScan
 .
-[ ] Ensure ShieldCraft and VectorGuard references do not claim VectorScan as paid — VectorScan must be free and MIT.
+[ ] Ensure ShieldCraft and VectorGuard references do not claim VectorScan as paid  -  VectorScan must be free and MIT.
 [ ] Ensure no secret/private keys are in the repo (git secrets scan).
 [ ] Add manifest.json generator that lists every file included in the release bundle with a hash and version string.
 
@@ -53,7 +53,7 @@ F. HUMAN OUTPUT & UX
 [ ] Ensure human readable output never shows tracebacks by default; only verbose flag shows debug.
 [ ] Ensure human output width/terminal handling stable across typical terminals.
 [ ] Test color/no-color flag output for piping to files.
-[ ] Add test to generate a GIF/recording of a pass→fail example (used in README) — verify the command sequence reproduces expected output.
+[ ] Add test to generate a GIF/recording of a pass→fail example (used in README)  -  verify the command sequence reproduces expected output.
 
 G. TELEMETRY, LEAD CAPTURE & PRIVACY
 
@@ -63,7 +63,7 @@ G. TELEMETRY, LEAD CAPTURE & PRIVACY
 [ ] Ensure telemetry payload contains no secrets or environment variables.
 [ ] Add tests to ensure lead capture only triggers when explicit flags provided.
 
-H. PACKAGING — BUNDLE (vectorscan-free.zip) & CONTENTS
+H. PACKAGING  -  BUNDLE (vectorscan-free.zip) & CONTENTS
 
 [ ] Implement packaging script (scripts/create_release_bundle.py or build_vectorscan_package.py) that zips the package at repository root following a deterministic layout.
 [ ] Bundle must include (explicit list):
@@ -81,13 +81,13 @@ H. PACKAGING — BUNDLE (vectorscan-free.zip) & CONTENTS
 [ ] Produce per-platform bundles if including platform specific binaries; otherwise create a single cross-platform zip that expects Python.
 [ ] Generate vectorscan-free.zip.sha256 alongside the zip.
 
-I. SIGNING — COSIGN & KEY MANAGEMENT
+I. SIGNING  -  COSIGN & KEY MANAGEMENT
 
 [ ] Implement cosign signing step in CI to create <bundle>.zip.sig and publish certificate <bundle>.zip.crt.
 [ ] Add verify.sh in repo to run sha256sum -c <bundle>.zip.sha256 and cosign verify-blob --key <public_key_file> <bundle>.zip <bundle>.zip.sig.
 [ ] Add public verification key (vectorscan-signing.pub) to README or a Key server URL.
 [ ] Do not commit private signing keys into repo. Use CI secrets to hold private keys.
-[ ] Create tests that run on CI runner to verify the signed artifact—download the artifact from release draft in a dry-run and run cosign verify-blob using the public key.
+[ ] Create tests that run on CI runner to verify the signed artifact - download the artifact from release draft in a dry-run and run cosign verify-blob using the public key.
 [x] Add a process doc docs/signing.md describing key rotation, emergency procedures, and how to sign locally for dev uses (using ephemeral dev keys).
 
 J. SBOM, SBOM TESTS & SUPPLY CHAIN
@@ -176,7 +176,7 @@ S. MAINTENANCE & OPERATIONS
 [x] Add a public key rotation announcement template for customers who verify signatures.
 [ ] Add a small runbook for support: how to reproduce a user's failed run locally from their uploaded tfplan, including sanitization steps.
 
-T. OPTIONAL — ENTERPRISE & UPGRADE PATH (non-blocking for free bundle)
+T. OPTIONAL  -  ENTERPRISE & UPGRADE PATH (non-blocking for free bundle)
 
 [ ] Maintain the VectorGuard blueprint repo with clear mapping of policies added beyond P-SEC-001 and P-FIN-001.
 [ ] Add migration guide: how a VectorScan user migrates to VectorGuard blueprint in their CI.

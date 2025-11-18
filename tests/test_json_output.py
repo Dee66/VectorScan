@@ -44,6 +44,11 @@ def _normalize(payload: dict) -> dict:
     clone = json.loads(json.dumps(payload))
     if "file" in clone:
         clone["file"] = _relativize(clone["file"])
+    metrics = clone.get("metrics")
+    if isinstance(metrics, dict):
+        notes = metrics.get("notes")
+        if isinstance(notes, dict):
+            notes.pop("violation_count", None)
     return clone
 
 
@@ -63,6 +68,36 @@ def run_json(plan: Path, *, extra_args: list[str] | None = None):
         text=True,
         cwd=REPO_ROOT,
         env=ENV,
+        check=False,
+    )
+
+
+def run_compare(old_plan: Path, new_plan: Path):
+    old_plan = Path(old_plan)
+    new_plan = Path(new_plan)
+    try:
+        old_plan = old_plan.relative_to(REPO_ROOT)
+    except ValueError:
+        pass
+    try:
+        new_plan = new_plan.relative_to(REPO_ROOT)
+    except ValueError:
+        pass
+    cmd = [
+        "python3",
+        str(CLI),
+        "--json",
+        "--compare",
+        old_plan.as_posix(),
+        new_plan.as_posix(),
+    ]
+    return subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        env=ENV,
+        check=False,
     )
 
 
@@ -129,3 +164,49 @@ def test_diff_mode_snapshots():
         extra_args=["--diff"],
     )
     assert diff_iam["plan_diff"]["summary"]["adds"] >= 0
+
+
+def test_resource_mode_snapshots():
+    scoped = _assert_matches(
+        "tfplan_fail.json",
+        "fail_resource_output.json",
+        expected_code=3,
+        extra_args=["--resource", "aws_rds_cluster.vector_db"],
+    )
+    assert scoped["resource_filter"]["address"] == "aws_rds_cluster.vector_db"
+
+    module_scope = _assert_matches(
+        "tfplan_module_fail.json",
+        "module_resource_output.json",
+        expected_code=3,
+        extra_args=["--resource", "aws_rds_cluster.vector_db"],
+    )
+    assert module_scope["resource_filter"]["match"] == "suffix"
+
+
+def test_resource_scope_missing_errors():
+    res = run_json(FIX / "tfplan_fail.json", extra_args=["--resource", "does_not_exist"])
+    assert res.returncode == 2
+    assert "not found" in res.stderr.lower()
+
+
+def test_preview_mode_snapshot():
+    preview = _assert_matches(
+        "tfplan_fail.json",
+        "fail_preview_output.json",
+        expected_code=10,
+        extra_args=["--preview-vectorguard"],
+    )
+    assert preview["preview_generated"] is True
+    assert len(preview["preview_policies"]) >= 1
+
+
+def test_compare_mode_snapshot():
+    res = run_compare(
+        FIX / "tfplan_compare_old.json",
+        FIX / "tfplan_compare_new.json",
+    )
+    assert res.returncode == 0, res.stderr
+    got = json.loads(res.stdout)
+    exp = _load(GOLD / "plan_compare_output.json")
+    assert got == exp

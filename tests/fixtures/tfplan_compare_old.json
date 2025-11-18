@@ -1,0 +1,80 @@
+{
+  "format_version": "1.0",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_rds_cluster.vector_db",
+          "mode": "managed",
+          "type": "aws_rds_cluster",
+          "name": "vector_db",
+          "values": {
+            "storage_encrypted": true,
+            "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/vector"
+          }
+        },
+        {
+          "address": "aws_rds_cluster.analytics",
+          "mode": "managed",
+          "type": "aws_rds_cluster",
+          "name": "analytics",
+          "values": {
+            "storage_encrypted": true,
+            "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/analytics"
+          }
+        },
+        {
+          "address": "aws_s3_bucket.logs",
+          "mode": "managed",
+          "type": "aws_s3_bucket",
+          "name": "logs",
+          "values": {
+            "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/logs"
+          }
+        }
+      ]
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "aws_rds_cluster.vector_db",
+      "type": "aws_rds_cluster",
+      "name": "vector_db",
+      "change": {
+        "actions": ["update"],
+        "before": {
+          "storage_encrypted": true,
+          "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/vector"
+        },
+        "after": {
+          "storage_encrypted": true,
+          "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/vector"
+        }
+      }
+    },
+    {
+      "address": "aws_s3_bucket.logs",
+      "type": "aws_s3_bucket",
+      "name": "logs",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/logs"
+        }
+      }
+    },
+    {
+      "address": "aws_security_group.legacy",
+      "type": "aws_security_group",
+      "name": "legacy",
+      "change": {
+        "actions": ["delete"],
+        "before": {
+          "name": "legacy"
+        },
+        "after": null
+      }
+    }
+  ]
+}

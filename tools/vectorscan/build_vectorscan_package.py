@@ -31,24 +31,17 @@ from tools.vectorscan.versioning import (
     OUTPUT_SCHEMA_VERSION,
 )
 from tools.vectorscan.policy_pack import policy_pack_hash
+from tools.vectorscan.policies import get_policies
+from tools.vectorscan.policy_manifest import build_policy_manifest
+from tools.vectorscan.preview import load_preview_manifest, PreviewManifestError
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC = REPO_ROOT / "tools" / "vectorscan"
 DIST = REPO_ROOT / "dist"
 REQUIREMENT_FILES = [REPO_ROOT / "requirements.txt", REPO_ROOT / "requirements-dev.txt"]
 
-FILES = [
-    SRC / "vectorscan.py",
-    SRC / "time_utils.py",
-    SRC / "README.md",
-    SRC / "free_policies.rego",
-]
-
-LICENSE_TEXT = (
-    "VectorScan Free Utility\n\n"
-    "This archive includes the VectorScan CLI and minimal policies for two checks.\n"
-    "See the main LICENSE in the repository root for full terms.\n"
-)
+PACKAGE_EXCLUDE_DIRS = {"captures", "__pycache__", ".terraform", ".terraform-bin", ".venv", ".cache"}
+PACKAGE_EXCLUDE_FILES = {"build_vectorscan_package.py"}
 
 PROHIBITED_ARCNAME_PARTS = {"__MACOSX"}
 PROHIBITED_FILENAMES = {".DS_Store"}
@@ -56,6 +49,63 @@ SENSITIVE_DIR_NAMES = {"__pycache__", ".terraform", ".venv", ".cache"}
 SENSITIVE_FILENAMES = {".env", ".envrc", "id_rsa", "id_dsa"}
 SENSITIVE_SUFFIXES = {".env", ".pem", ".key", ".crt", ".pfx", ".p12"}
 TEXT_FILE_EXTENSIONS = {".py", ".md", ".rego", ".txt", ".json", ".sh", ".yaml", ".yml", ".cfg", ".ini", ".tf", ".tfvars"}
+
+
+
+def _collect_cli_package_files() -> List[Path]:
+    candidates: List[Path] = []
+    for dirpath, dirnames, filenames in os.walk(SRC):
+        rel_dir = Path(dirpath).relative_to(SRC)
+        if any(part in PACKAGE_EXCLUDE_DIRS for part in rel_dir.parts):
+            continue
+        dirnames[:] = sorted(d for d in dirnames if d not in PACKAGE_EXCLUDE_DIRS)
+        for filename in sorted(filenames):
+            path = Path(dirpath) / filename
+            try:
+                rel_parts = path.relative_to(SRC).parts
+            except ValueError:
+                continue
+            if any(part in PACKAGE_EXCLUDE_DIRS for part in rel_parts[:-1]):
+                continue
+            if filename in PACKAGE_EXCLUDE_FILES:
+                continue
+            suffix = path.suffix.lower()
+            if not suffix or suffix not in TEXT_FILE_EXTENSIONS:
+                continue
+            candidates.append(path)
+    candidates.sort(key=lambda p: p.relative_to(REPO_ROOT).as_posix())
+    return candidates
+
+
+FILES = _collect_cli_package_files()
+
+LICENSE_TEXT = (
+    "VectorScan Free Utility\n\n"
+    "This archive includes the VectorScan CLI and minimal policies for two checks.\n"
+    "See the main LICENSE in the repository root for full terms.\n"
+)
+
+SIGNER_DOCUMENTATION_URL = "docs/release-distribution.md#verifying-downloads"
+
+def _signer_metadata(bundle_name: str) -> List[Dict[str, str]]:
+    base = f"{bundle_name}.zip"
+    return [
+        {
+            "tool": "cosign",
+            "oidc_issuer": "https://token.actions.githubusercontent.com",
+            "identity": "GitHub Actions (Dee66/VectorScan workflows)",
+            "identity_regexp": ".*",
+            "signature": f"{base}.sig",
+            "certificate": f"{base}.crt",
+            "verification_hint": (
+                "cosign verify-blob --certificate {cert} --signature {sig} "
+                "--certificate-identity-regexp '.*' --certificate-oidc-issuer "
+                "https://token.actions.githubusercontent.com {bundle}"
+            ).format(cert=f"{base}.crt", sig=f"{base}.sig", bundle=base),
+            "documentation": SIGNER_DOCUMENTATION_URL,
+        }
+    ]
+
 DEFAULT_BUNDLE_VERSION = os.getenv("VSCAN_BUNDLE_VERSION", "dev")
 SPECIFIERS = ["==", "!=", ">=", "<=", "~=", ">", "<"]
 MIN_DOS_TIME = datetime(1980, 1, 1, tzinfo=timezone.utc)
@@ -172,11 +222,65 @@ def _deterministic_timestamp() -> str:
 
 
 def _zip_date_time() -> tuple[int, int, int, int, int, int]:
-    dt = datetime.fromtimestamp(max(deterministic_epoch(), MIN_DOS_TIMESTAMP), tz=timezone.utc)
-    return (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+    return (
+        MIN_DOS_TIME.year,
+        MIN_DOS_TIME.month,
+        MIN_DOS_TIME.day,
+        0,
+        0,
+        0,
+    )
 
 
-def _build_manifest(bundle_name: str, bundle_version: str, files: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _policy_manifest_summary() -> Dict[str, Any]:
+    policies = get_policies()
+    metadata_entries = [policy.metadata for policy in policies]
+    if not metadata_entries:
+        raise RuntimeError("No policies registered for manifest generation")
+    return build_policy_manifest(metadata_entries, policy_pack_hash_value=policy_pack_hash(), path="embedded")
+
+
+def _preview_manifest_summary() -> Dict[str, Any]:
+    manifest_path = SRC / "preview_manifest.json"
+    if not manifest_path.exists():
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        placeholder = {
+            "version": "dev",
+            "generated_at": "1970-01-01T00:00:00Z",
+            "policies": [
+                {"id": "P-PLACEHOLDER", "summary": "Placeholder preview manifest"},
+            ],
+        }
+        canonical = json.dumps(placeholder["policies"], sort_keys=True, separators=(",", ":")).encode("utf-8")
+        placeholder["signature"] = f"sha256:{hashlib.sha256(canonical).hexdigest()}"
+        placeholder["verified"] = True
+        manifest_path.write_text(json.dumps(placeholder, indent=2, ensure_ascii=False), encoding="utf-8")
+    try:
+        manifest = load_preview_manifest(manifest_path)
+    except PreviewManifestError as exc:  # pragma: no cover - validation should always succeed
+        raise RuntimeError(f"Failed to validate preview manifest: {exc}") from exc
+    sha_value = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    return {
+        "path": ensure_safe_arcname(manifest_path),
+        "sha256": sha_value,
+        "signature": manifest.get("signature"),
+        "version": manifest.get("version"),
+        "generated_at": manifest.get("generated_at"),
+        "policy_count": len(manifest.get("policies") or []),
+        "verified": manifest.get("verified", False),
+        "policies": manifest.get("policies", []),
+    }
+
+
+def _build_manifest(
+    bundle_name: str,
+    bundle_version: str,
+    files: List[Dict[str, Any]],
+    *,
+    policy_manifest: Dict[str, Any],
+    preview_manifest: Dict[str, Any],
+    signers: List[Dict[str, Any]],
+) -> Dict[str, Any]:
     return {
         "bundle_name": bundle_name,
         "bundle_version": bundle_version,
@@ -187,6 +291,9 @@ def _build_manifest(bundle_name: str, bundle_version: str, files: List[Dict[str,
         "policy_pack_hash": policy_pack_hash(),
         "file_count": len(files),
         "files": files,
+        "policy_manifest": policy_manifest,
+        "preview_manifest": preview_manifest,
+        "signers": signers,
     }
 
 
@@ -346,6 +453,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     bundle_name = args.bundle_name
     bundle_version = args.bundle_version
+    policy_manifest_data = _policy_manifest_summary()
+    preview_manifest_data = _preview_manifest_summary()
+    signer_data = _signer_metadata(bundle_name)
 
     module = load_vectorscan_module()
     terraform_path: Path | None = None
@@ -385,7 +495,14 @@ def main(argv: list[str] | None = None) -> int:
             manifest_entries.append(_file_entry_for_bytes("LICENSE_FREE.txt", license_bytes))
             _write_bytes_with_fixed_metadata(z, "sbom.json", sbom_bytes)
             manifest_entries.append(_file_entry_for_bytes("sbom.json", sbom_bytes))
-            manifest = _build_manifest(bundle_name, bundle_version, manifest_entries)
+            manifest = _build_manifest(
+                bundle_name,
+                bundle_version,
+                manifest_entries,
+                policy_manifest=policy_manifest_data,
+                preview_manifest=preview_manifest_data,
+                signers=signer_data,
+            )
             manifest_payload = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
             manifest_bytes = manifest_payload.encode("utf-8")
             _write_bytes_with_fixed_metadata(z, "manifest.json", manifest_bytes)

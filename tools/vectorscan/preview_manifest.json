@@ -1,0 +1,19 @@
+{
+  "version": "2025.11.17",
+  "generated_at": "2025-11-17T12:00:00Z",
+  "policies": [
+    {
+      "id": "P-SEC-002",
+      "summary": "IAM roles would fail due to excessive permissions under the Zero-Trust suite."
+    },
+    {
+      "id": "P-AUD-001",
+      "summary": "CloudTrail encryption guardrail would fail for the current plan."
+    },
+    {
+      "id": "P-SEC-003",
+      "summary": "S3 bucket public ACL enforcement would block this plan."
+    }
+  ],
+  "signature": "sha256:a25b972105b1d1e4571cb4187f1063f9f57c3850152d3a05e95e9947c4a7aac1"
+}

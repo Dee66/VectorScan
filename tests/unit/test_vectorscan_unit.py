@@ -126,6 +126,11 @@ def test_structured_remediation_blocks(tmp_path, capsys):
     code = vs.main([str(plan_path), "--json"])
     assert code == 3
     payload = json.loads(capsys.readouterr().out)
+    metrics_block = payload.get("metrics") or {}
+    plan_meta = payload.get("plan_metadata") or {}
+    assert metrics_block.get("parser_mode") in {"legacy", "streaming"}
+    assert metrics_block.get("parser_mode") == plan_meta.get("parser_mode")
+    assert metrics_block.get("resource_count") == plan_meta.get("resource_count")
     struct = payload.get("violations_struct") or []
     assert len(struct) == 2
     encryption = next(v for v in struct if v["policy_id"] == "P-SEC-001")
@@ -376,6 +381,31 @@ def test_compute_plan_metadata_counts_and_modules():
     assert metadata["resources_by_type"]["aws_db_instance"]["planned"] == 2
     assert metadata["resources_by_type"]["aws_s3_bucket"]["planned"] == 1
     assert metadata["file_size_mb"] is None
+    assert metadata["parser_mode"] == "legacy"
+
+
+def test_compute_plan_metadata_respects_plan_limits_parser_mode():
+    plan = {
+        "planned_values": {
+            "root_module": {
+                "resources": [
+                    {"type": "aws_db_instance"},
+                ],
+                "child_modules": [],
+            }
+        }
+    }
+    plan_limits = {
+        "parser_mode": "streaming",
+        "file_size_bytes": 100,
+        "parse_duration_ms": 5,
+        "plan_slo": {},
+        "exceeds_threshold": False,
+    }
+
+    metadata = vs.compute_plan_metadata(plan, plan_limits=plan_limits)
+
+    assert metadata["parser_mode"] == "streaming"
 
 
 def test_policy_isolation_runs_other_checks_when_encryption_fails(monkeypatch, tmp_path, capsys):

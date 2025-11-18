@@ -261,7 +261,7 @@ Mocking may be used where needed.
 
 These simulate the entire user workflow.
 
-Scenario A — PASS
+Scenario A  -  PASS
 
 run CLI on pass fixture
 
@@ -271,7 +271,7 @@ verify human output matches expected template
 
 verify JSON matches golden file
 
-Scenario B — FAIL
+Scenario B  -  FAIL
 
 run CLI on failing fixture
 
@@ -281,13 +281,13 @@ verify violations listed clearly
 
 JSON matches golden
 
-Scenario C — IAM Drift With Penalty
+Scenario C  -  IAM Drift With Penalty
 
 run CLI with --iam-drift-penalty 35
 
 compliance score reduces correctly
 
-Scenario D — Audit Ledger
+Scenario D  -  Audit Ledger
 
 run CLI with -o audit.yaml
 
@@ -342,7 +342,7 @@ Additional
 
 1. Add Detailed Schema Validation
 
-Right now, the golden comparison ensures output stability — but not structural correctness.
+Right now, the golden comparison ensures output stability  -  but not structural correctness.
 
 Add jsonschema tests:
 
@@ -377,7 +377,7 @@ These are extremely common real-world Terraform bugs.
 
 ⭐ 3. Add Log Redaction Tests
 
-You added Secrets Redaction — now add tests that ensure:
+You added Secrets Redaction  -  now add tests that ensure:
 
 no email appears in logs
 
@@ -402,7 +402,7 @@ diff output1.json output2.json
 
 produces no drift under deterministic mode.
 
-You already do this — but add a STRICT golden test for double verification.
+You already do this  -  but add a STRICT golden test for double verification.
 
 ⭐ 5. Negative Test: corrupted .zip bundle WITH partial extraction
 

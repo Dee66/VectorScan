@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/telemetry_schema.py
+# hypothesis_version: 6.147.0
+
+['2025-11-14.4', 'csv', 'log_entry', 'schema_kind', 'schema_version', 'summary']

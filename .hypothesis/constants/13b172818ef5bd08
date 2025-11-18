@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/lead_capture.py
+# hypothesis_version: 6.147.0
+
+[200, 300, '.json', '; ', 'Content-Type', 'POST', 'application/json', 'captures', 'maybe_post', 'status', 'utf-8', 'vectorscan-captures', 'write_local_capture']

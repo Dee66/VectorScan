@@ -103,6 +103,7 @@ def test_lead_capture_property(tmp_path, enabled, endpoint, email, plan):
 # Combinatorial test: many plans and POSTs
 def test_lead_capture_stress_many_plans(tmp_path):
     import urllib.request as ur
+
     original = patch_urlopen(ur, fake_urlopen)
     reset_fake_post_payload()
     plan_paths: list[Path] = []

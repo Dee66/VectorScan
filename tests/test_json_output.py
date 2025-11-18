@@ -137,7 +137,9 @@ def test_tfplan_no_encryption_enforces_p_sec_001():
     assert any("P-SEC-001" in item for item in payload["violations"])
     assert payload["metrics"]["compliance_score"] == 50
 
-    encryption_structs = [entry for entry in payload["violations_struct"] if entry["policy_id"] == "P-SEC-001"]
+    encryption_structs = [
+        entry for entry in payload["violations_struct"] if entry["policy_id"] == "P-SEC-001"
+    ]
     assert encryption_structs, "Expected structured violation details for P-SEC-001"
     violation_entry = encryption_structs[0]
     assert "storage_encrypted != true" in violation_entry["message"]
@@ -151,7 +153,8 @@ def test_tfplan_no_encryption_enforces_p_sec_001():
 
     suspicious_defaults = payload.get("suspicious_defaults") or []
     assert any(
-        entry.get("address") == "aws_rds_cluster.vector_db" and "storage_encrypted" in entry.get("reason", "")
+        entry.get("address") == "aws_rds_cluster.vector_db"
+        and "storage_encrypted" in entry.get("reason", "")
         for entry in suspicious_defaults
     )
 
@@ -168,7 +171,9 @@ def test_tfplan_missing_tags_enforces_p_fin_001():
     assert any("CostCenter" in msg for msg in messages)
     assert any("Project" in msg for msg in messages)
 
-    tagging_structs = [entry for entry in payload["violations_struct"] if entry["policy_id"] == "P-FIN-001"]
+    tagging_structs = [
+        entry for entry in payload["violations_struct"] if entry["policy_id"] == "P-FIN-001"
+    ]
     assert len(tagging_structs) == 2
     assert {entry["resource"] for entry in tagging_structs} == {"aws_rds_cluster.vector_db"}
 

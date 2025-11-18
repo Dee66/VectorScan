@@ -887,9 +887,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
         strict_mode=strict_mode,
         offline_mode=offline_mode,
         terraform_report=terraform_report,
-        vectorscan_version_value=str(
-            payload.get("vectorscan_version", VECTORSCAN_VERSION)
-        ),
+        vectorscan_version_value=str(payload.get("vectorscan_version", VECTORSCAN_VERSION)),
     )
     plan_metadata = compute_plan_metadata(
         plan,

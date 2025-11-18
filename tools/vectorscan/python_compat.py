@@ -57,8 +57,7 @@ def ensure_supported_python(version: Tuple[int, int, int] | PythonVersion | None
         return
     detected = _coerce_version(version)
     raise UnsupportedPythonVersion(
-        "VectorScan requires Python "
-        f"{supported_range_label()} but detected {detected.label()}"
+        "VectorScan requires Python " f"{supported_range_label()} but detected {detected.label()}"
     )
 
 

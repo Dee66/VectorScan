@@ -106,10 +106,6 @@ from tools.vectorscan.terraform import (
 )
 from tools.vectorscan.terraform import set_strategy_resolver as _set_strategy_resolver
 from tools.vectorscan.versioning import OUTPUT_SCHEMA_VERSION, POLICY_VERSION, VECTORSCAN_VERSION
-from tools.vectorscan.python_compat import (
-    UnsupportedPythonVersion,
-    ensure_supported_python,
-)
 
 # Backwards-compatible shims for legacy tests and monkeypatching
 _write_local_capture = write_local_capture

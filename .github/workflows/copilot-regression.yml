@@ -1,0 +1,41 @@
+
+name: Copilot Regression
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  copilot-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Copilot scaffolding audit
+        run: |
+          python tools/vectorscan/copilot_scaffolder.py --dry-run
+          python tools/vectorscan/copilot_suite_generator.py --check
+          python tools/vectorscan/copilot_api_stubber.py --check
+          python tools/vectorscan/copilot_determinism_guard.py --fixtures tests/fixtures/tfplan_pass.json tests/fixtures/tfplan_fail.json
+
+      - name: Static checks
+        run: bash scripts/run_static_checks.sh
+
+      - name: Copilot smoke tests
+        run: python -m pytest tests/copilot_generated/test_cli_smoke.py

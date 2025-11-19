@@ -1,4 +1,5 @@
 """Generate the Copilot regression GitHub Actions workflow."""
+
 from __future__ import annotations
 
 import argparse

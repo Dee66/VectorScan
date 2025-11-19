@@ -4,6 +4,7 @@ These tests are intentionally lightweight but exercise the CLI against the
 canonical fixtures so Copilot can regenerate them on demand. Regenerate via:
     python3 tools/vectorscan/copilot_suite_generator.py
 """
+
 from __future__ import annotations
 
 import json

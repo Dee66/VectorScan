@@ -1,4 +1,5 @@
 """Tests for the Copilot determinism guard helper."""
+
 from __future__ import annotations
 
 from pathlib import Path

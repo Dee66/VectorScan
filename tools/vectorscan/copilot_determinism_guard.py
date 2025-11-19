@@ -1,4 +1,5 @@
 """Verify VectorScan emits deterministic output for the Copilot checklist."""
+
 from __future__ import annotations
 
 import argparse
@@ -27,6 +28,8 @@ def _run_cli(cli_path: Path, fixture: Path) -> tuple[str, int]:
     env.setdefault("VSCAN_CLOCK_ISO", "2024-01-01T00:00:00Z")
     env.setdefault("VSCAN_CLOCK_EPOCH", "1704067200")
     env.setdefault("VSCAN_NO_COLOR", "1")
+    env.setdefault("VSCAN_FORCE_DURATION_MS", "0")
+    env.setdefault("VSCAN_FORCE_PARSE_MS", "0")
     cmd = [sys.executable, str(cli_path), str(fixture), "--json"]
     result = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
     payload = f"{result.returncode}\n{result.stdout}"

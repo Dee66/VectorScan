@@ -1,4 +1,5 @@
 """Stub Terraform adapter for Copilot-generated flows."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -5,6 +5,7 @@ golden files, and test modules always exist. Rich templates ensure that even
 placeholder artifacts contain minimal but meaningful JSON so tests can run
 without manual editing.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -81,7 +82,9 @@ def _db_resource(name: str, values: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _db_change(name: str, after: dict[str, Any], before: dict[str, Any] | None = None) -> dict[str, Any]:
+def _db_change(
+    name: str, after: dict[str, Any], before: dict[str, Any] | None = None
+) -> dict[str, Any]:
     return {
         "address": f"aws_db_instance.{name}",
         "mode": "managed",
@@ -194,8 +197,12 @@ _FIXTURE_TEMPLATES: dict[str, str] = {
     "tests/fixtures/tfplan_iam_drift.json": _dump_json(_iam_drift_plan()),
     "tests/fixtures/tfplan_missing_tags.json": _dump_json(_missing_tags_plan()),
     "tests/fixtures/tfplan_no_encryption.json": _dump_json(_no_encryption_plan()),
-    "tests/fixtures/tfplan_compare_old.json": _dump_json(_compare_plan("tfplan_compare_old", encrypted=True)),
-    "tests/fixtures/tfplan_compare_new.json": _dump_json(_compare_plan("tfplan_compare_new", encrypted=False)),
+    "tests/fixtures/tfplan_compare_old.json": _dump_json(
+        _compare_plan("tfplan_compare_old", encrypted=True)
+    ),
+    "tests/fixtures/tfplan_compare_new.json": _dump_json(
+        _compare_plan("tfplan_compare_new", encrypted=False)
+    ),
 }
 
 
@@ -230,7 +237,7 @@ _GOLDEN_TEMPLATES: dict[str, str] = {
             "violations": [],
             "iam_drift_report": {
                 "summary": "Wildcard IAM actions detected",
-                "added_permissions": ["iam:*", "s3:*"]
+                "added_permissions": ["iam:*", "s3:*"],
             },
             "metrics": {"compliance_score": 60.0, "iam_drift": 35.0},
             "environment": {"mode": "placeholder"},
@@ -267,9 +274,9 @@ _GOLDEN_TEMPLATES: dict[str, str] = {
 def _test_template(module_name: str) -> str:
     safe_name = module_name.replace("/", "_").replace(".", "_")
     return (
-        "\"\"\"Auto-generated placeholder tests for {module}.\"\"\"\n\n"
+        '"""Auto-generated placeholder tests for {module}."""\n\n'
         "def test_placeholder_{slug}() -> None:\n"
-        "    \"\"\"Replace with real tests covering CLI behavior.\"\"\"\n"
+        '    """Replace with real tests covering CLI behavior."""\n'
         "    assert True\n"
     ).format(module=module_name, slug=safe_name)
 

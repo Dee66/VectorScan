@@ -16,6 +16,7 @@ from tests.helpers.plan_helpers import (
     write_plan,
 )
 from tools.vectorscan import vectorscan as vs
+from tools.vectorscan.plan_utils import compute_plan_metadata, load_plan_context
 from tools.vectorscan.policies import get_policy
 
 
@@ -248,6 +249,403 @@ def test_iter_resources_large():
     plan = {"planned_values": {"root_module": {"resources": resources}}}
     res = vs.iter_resources(plan)
     assert len(res) == 1000
+
+
+def test_iter_resources_includes_non_policy_resource_types():
+    plan = {
+        "planned_values": {
+            "root_module": {
+                "resources": [
+                    {
+                        "type": "aws_db_instance",
+                        "address": "aws_db_instance.primary",
+                        "values": {"storage_encrypted": True},
+                    },
+                    {
+                        "type": "random_cloud_widget",
+                        "address": "random_cloud_widget.default",
+                        "values": {},
+                    },
+                ],
+                "child_modules": [
+                    {
+                        "resources": [
+                            {
+                                "type": "google_compute_instance",
+                                "address": "module.child.google_compute_instance.app",
+                                "values": {},
+                            }
+                        ],
+                        "child_modules": [],
+                    }
+                ],
+            }
+        }
+    }
+    resources = vs.iter_resources(plan)
+    resource_types = {res.get("type") for res in resources}
+    assert {"aws_db_instance", "random_cloud_widget", "google_compute_instance"}.issubset(resource_types)
+
+    metadata = compute_plan_metadata(plan, resources)
+    assert metadata["resource_count"] == 3
+    assert metadata["resource_types"]["aws_db_instance"] == 1
+    assert metadata["resource_types"]["random_cloud_widget"] == 1
+    assert metadata["resource_types"]["google_compute_instance"] == 1
+
+
+def test_load_plan_context_traverses_all_resource_types(tmp_path, monkeypatch):
+    monkeypatch.setenv("VSCAN_STREAMING_DISABLE", "1")
+    plan = {
+        "planned_values": {
+            "root_module": {
+                "resources": [
+                    {
+                        "address": "aws_db_instance.primary",
+                        "type": "aws_db_instance",
+                        "values": {"storage_encrypted": True},
+                    },
+                    {
+                        "address": "random_pet.naming",
+                        "type": "random_pet",
+                        "values": {},
+                    },
+                ],
+                "child_modules": [
+                    {
+                        "address": "module.analytics",
+                        "resources": [
+                            {
+                                "address": "module.analytics.google_bigquery_dataset.dataset",
+                                "type": "google_bigquery_dataset",
+                                "values": {},
+                            }
+                        ],
+                        "child_modules": [
+                            {
+                                "address": "module.analytics.module.wait",
+                                "resources": [
+                                    {
+                                        "address": "module.analytics.module.wait.null_resource.wait",
+                                        "type": "null_resource",
+                                        "values": {},
+                                    }
+                                ],
+                                "child_modules": [],
+                            }
+                        ],
+                    }
+                ],
+            }
+        },
+        "resource_changes": [
+            {
+                "address": "aws_db_instance.primary",
+                "type": "aws_db_instance",
+                "change": {"actions": ["create"]},
+            },
+            {
+                "address": "module.analytics.google_bigquery_dataset.dataset",
+                "type": "google_bigquery_dataset",
+                "change": {"actions": ["update"]},
+            },
+        ],
+    }
+    plan_path = tmp_path / "plan.json"
+    plan_path.write_text(json.dumps(plan))
+
+    _, resources, plan_limits, module_stats = load_plan_context(plan_path)
+
+    addresses = {res.get("address") for res in resources}
+    expected_addresses = {
+        "aws_db_instance.primary",
+        "random_pet.naming",
+        "module.analytics.google_bigquery_dataset.dataset",
+        "module.analytics.module.wait.null_resource.wait",
+    }
+    assert expected_addresses.issubset(addresses)
+
+    resource_types = {res.get("type") for res in resources}
+    assert {"aws_db_instance", "random_pet", "google_bigquery_dataset", "null_resource"}.issubset(
+        resource_types
+    )
+
+    assert plan_limits["parser_mode"] == "legacy"
+    assert module_stats is None
+
+
+def test_large_noisy_plan_metadata_handles_hundreds_of_resources(tmp_path, monkeypatch):
+    monkeypatch.setenv("VSCAN_STREAMING_DISABLE", "1")
+    root_resources = []
+    for idx in range(150):
+        root_resources.append(
+            {
+                "address": f"aws_db_instance.primary[{idx}]",
+                "type": "aws_db_instance",
+                "values": {
+                    "storage_encrypted": idx % 2 == 0,
+                    "kms_key_id": f"kms-{idx}",
+                    "tags": {"CostCenter": "R", "Project": "Root"},
+                },
+            }
+        )
+
+    child_resources = []
+    for idx in range(120):
+        child_resources.append(
+            {
+                "address": f"module.analytics.newcloud_vector.index[{idx}]",
+                "type": "newcloud_vector_index",
+                "values": {"replicas": idx % 3 + 1},
+            }
+        )
+
+    plan = {
+        "planned_values": {
+            "root_module": {
+                "resources": root_resources,
+                "child_modules": [
+                    {
+                        "address": "module.analytics",
+                        "resources": child_resources[:60],
+                        "child_modules": [
+                            {
+                                "address": "module.analytics.module.fanout",
+                                "resources": child_resources[60:],
+                                "child_modules": [],
+                            }
+                        ],
+                    }
+                ],
+            }
+        },
+        "resource_changes": [
+            {
+                "address": f"aws_db_instance.primary[{idx}]",
+                "type": "aws_db_instance",
+                "change": {"actions": ["update"] if idx % 3 == 0 else ["create"]},
+            }
+            for idx in range(10)
+        ],
+    }
+
+    plan_path = tmp_path / "plan_noisy.json"
+    plan_path.write_text(json.dumps(plan))
+
+    plan_obj, resources, _, _ = load_plan_context(plan_path)
+    total_resources = len(root_resources) + len(child_resources)
+    assert len(resources) == total_resources
+
+    metadata = compute_plan_metadata(plan_obj, resources)
+    assert metadata["resource_count"] == total_resources
+    assert metadata["resource_types"]["aws_db_instance"] == len(root_resources)
+    assert metadata["resource_types"]["newcloud_vector_index"] == len(child_resources)
+    assert metadata["modules"]["child_module_count"] >= 1
+
+
+def test_recursive_module_parsing_handles_nested_modules(tmp_path, monkeypatch):
+    monkeypatch.setenv("VSCAN_STREAMING_DISABLE", "1")
+    plan = {
+        "planned_values": {
+            "root_module": {
+                "address": "root",
+                "resources": [
+                    {
+                        "address": "aws_kms_key.root",
+                        "type": "aws_kms_key",
+                        "values": {"description": "root"},
+                    }
+                ],
+                "child_modules": [
+                    {
+                        "address": "module.analytics",
+                        "resources": [],
+                        "child_modules": [
+                            {
+                                "address": "module.analytics.module.inner",
+                                "resources": [
+                                    {
+                                        "address": "module.analytics.module.inner.null_resource.guard",
+                                        "type": "null_resource",
+                                        "values": {},
+                                    }
+                                ],
+                                "child_modules": [
+                                    {
+                                        "address": "module.analytics.module.inner.module.leaf",
+                                        "resources": [
+                                            {
+                                                "address": "module.analytics.module.inner.module.leaf.random_id.a",
+                                                "type": "random_id",
+                                                "values": {"byte_length": 8},
+                                            },
+                                            {
+                                                "address": "module.analytics.module.inner.module.leaf.aws_s3_bucket.logs",
+                                                "type": "aws_s3_bucket",
+                                                "values": {"acl": "private"},
+                                            },
+                                        ],
+                                        "child_modules": [],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        }
+    }
+
+    plan_path = tmp_path / "plan_recursive.json"
+    plan_path.write_text(json.dumps(plan))
+
+    plan_obj, resources, _, _ = load_plan_context(plan_path)
+    addresses = {res.get("address") for res in resources}
+    expected_addresses = {
+        "aws_kms_key.root",
+        "module.analytics.module.inner.null_resource.guard",
+        "module.analytics.module.inner.module.leaf.random_id.a",
+        "module.analytics.module.inner.module.leaf.aws_s3_bucket.logs",
+    }
+    assert addresses == expected_addresses
+
+    metadata = compute_plan_metadata(plan_obj, resources)
+    assert metadata["resource_count"] == len(expected_addresses)
+    assert metadata["modules"]["child_module_count"] == 3  # analytics, inner, leaf
+    assert metadata["modules"]["with_resources"] == 3  # root, inner, leaf
+    assert metadata["modules"]["has_child_modules"] is True
+
+
+def test_dynamic_block_and_computed_resources_scanned(tmp_path, monkeypatch):
+    """Ensure resources emitted via dynamic blocks or computed for_each entries are counted."""
+
+    monkeypatch.setenv("VSCAN_STREAMING_DISABLE", "1")
+    plan = {
+        "planned_values": {
+            "root_module": {
+                "address": "root",
+                "resources": [
+                    {
+                        "address": "aws_security_group.dynamic_base",
+                        "type": "aws_security_group",
+                        "values": {
+                            "name": "dynamic-base",
+                            "dynamic": {
+                                "ingress": {
+                                    "for_each": "${var.ingress_rules}",
+                                    "content": {
+                                        "cidr_blocks": "${ingress.value.cidr}",
+                                        "description": "generated",
+                                    },
+                                }
+                            },
+                        },
+                    }
+                ],
+                "child_modules": [
+                    {
+                        "address": 'module.regional_workers["us-east-1"]',
+                        "resources": [
+                            {
+                                "address": 'module.regional_workers["us-east-1"].aws_lambda_function.worker["blue"]',
+                                "type": "aws_lambda_function",
+                                "values": {
+                                    "kms_key_arn": {"unknown": True},
+                                    "environment": [
+                                        {"name": "REGION", "value": "us-east-1"},
+                                        {"name": "DYNAMIC_SLOT", "value": "blue"},
+                                    ],
+                                    "tracing_config": {"mode": {"unknown": True}},
+                                },
+                            }
+                        ],
+                        "child_modules": [
+                            {
+                                "address": 'module.regional_workers["us-east-1"].module.dyn_ingress["public"]',
+                                "resources": [
+                                    {
+                                        "address": 'module.regional_workers["us-east-1"].module.dyn_ingress["public"].aws_security_group_rule.allow_all',
+                                        "type": "aws_security_group_rule",
+                                        "values": {
+                                            "description": "from dynamic block",
+                                            "cidr_blocks": ["0.0.0.0/0"],
+                                        },
+                                    }
+                                ],
+                                "child_modules": [],
+                            }
+                        ],
+                    },
+                    {
+                        "address": 'module.regional_workers["eu-central-1"]',
+                        "resources": [
+                            {
+                                "address": 'module.regional_workers["eu-central-1"].aws_lambda_function.worker["green"]',
+                                "type": "aws_lambda_function",
+                                "values": {
+                                    "kms_key_arn": {"unknown": True},
+                                    "environment": [
+                                        {"name": "REGION", "value": "eu-central-1"},
+                                        {"name": "DYNAMIC_SLOT", "value": "green"},
+                                    ],
+                                    "dynamic": {
+                                        "layers": {
+                                            "for_each": "${var.lambda_layers}",
+                                            "content": {"arn": "${layer.value}"},
+                                        }
+                                    },
+                                },
+                            }
+                        ],
+                        "child_modules": [],
+                    },
+                ],
+            }
+        },
+        "resource_changes": [
+            {
+                "address": "aws_security_group.dynamic_base",
+                "type": "aws_security_group",
+                "change": {"actions": ["update"]},
+            },
+            {
+                "address": 'module.regional_workers["us-east-1"].aws_lambda_function.worker["blue"]',
+                "type": "aws_lambda_function",
+                "change": {"actions": ["create"]},
+            },
+            {
+                "address": 'module.regional_workers["us-east-1"].module.dyn_ingress["public"].aws_security_group_rule.allow_all',
+                "type": "aws_security_group_rule",
+                "change": {"actions": ["create"]},
+            },
+            {
+                "address": 'module.regional_workers["eu-central-1"].aws_lambda_function.worker["green"]',
+                "type": "aws_lambda_function",
+                "change": {"actions": ["create"]},
+            },
+        ],
+    }
+
+    plan_path = tmp_path / "plan_dynamic.json"
+    plan_path.write_text(json.dumps(plan))
+
+    plan_obj, resources, _, _ = load_plan_context(plan_path)
+    addresses = {res.get("address") for res in resources}
+    expected_addresses = {
+        "aws_security_group.dynamic_base",
+        'module.regional_workers["us-east-1"].aws_lambda_function.worker["blue"]',
+        'module.regional_workers["us-east-1"].module.dyn_ingress["public"].aws_security_group_rule.allow_all',
+        'module.regional_workers["eu-central-1"].aws_lambda_function.worker["green"]',
+    }
+    assert expected_addresses.issubset(addresses)
+
+    metadata = compute_plan_metadata(plan_obj, resources)
+    assert metadata["resource_count"] == len(expected_addresses)
+    assert metadata["resource_types"]["aws_lambda_function"] == 2
+    assert metadata["resource_types"]["aws_security_group_rule"] == 1
+    assert metadata["resources_by_type"]["aws_lambda_function"]["adds"] == 2
+    assert metadata["resources_by_type"]["aws_security_group_rule"]["adds"] == 1
+    assert metadata["change_summary"] == {"adds": 3, "changes": 1, "destroys": 0}
+    assert metadata["modules"]["child_module_count"] == 3
 
 
 # --- Additional test expansions for uncovered logic and error handling ---

@@ -5,6 +5,7 @@ real pytest suite that exercises the CLI end to end. This module produces those
 suites so they can be regenerated deterministically (similar to how
 `copilot_scaffolder` keeps fixtures and goldens in sync).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,6 +30,7 @@ These tests are intentionally lightweight but exercise the CLI against the
 canonical fixtures so Copilot can regenerate them on demand. Regenerate via:
     python3 tools/vectorscan/copilot_suite_generator.py
 """
+
 from __future__ import annotations
 
 import json

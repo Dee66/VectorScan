@@ -42,6 +42,17 @@ class PlanStreamResult:
     parse_duration_ms: int
 
 
+def _forced_duration_from_env(env_name: str) -> Optional[int]:
+    value = os.getenv(env_name)
+    if value is None:
+        return None
+    try:
+        parsed = int(value)
+    except ValueError:
+        return None
+    return max(0, parsed)
+
+
 class _CharStream:
     __slots__ = ("_fh", "_buffer", "_pos", "source")
 
@@ -314,7 +325,11 @@ class PlanStreamParser:
         with self.path.open("r", encoding="utf-8") as fh:
             stream = _JSONStream(_CharStream(fh, str(self.path)))
             top_level = stream.parse_object(self._handle_top_level)
-        duration_ms = int(round((time.perf_counter() - start) * 1000))
+        forced_duration = _forced_duration_from_env("VSCAN_FORCE_PARSE_MS")
+        if forced_duration is not None:
+            duration_ms = forced_duration
+        else:
+            duration_ms = int(round((time.perf_counter() - start) * 1000))
         plan_stub = {
             "format_version": top_level.get("format_version"),
             "terraform_version": top_level.get("terraform_version"),

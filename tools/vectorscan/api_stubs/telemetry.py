@@ -1,8 +1,9 @@
 """Stub telemetry client for Copilot-generated flows."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Tuple
+from typing import Any, List, Tuple
 
 
 @dataclass

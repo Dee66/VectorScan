@@ -18,8 +18,8 @@ progress::-moz-progress-bar{background:linear-gradient(90deg,#6ee7b7,#22d3ee);}
 <section class="sc-card sc-hero">
    <h1 class="sc-title">VectorScan Test Checklist</h1>
   <div class="sc-progress">
-    <progress id="vs-test-progress" value="0" max="100" aria-label="VectorScan test coverage" style="width:60%;height:18px;"></progress>
-    <div id="vs-test-progress-label">62% Complete (150/243)</div>
+    <progress id="vs-test-progress" value="66" max="100" aria-label="VectorScan test coverage" style="width:60%;height:18px;"></progress>
+    <div id="vs-test-progress-label">66% Complete (160/243)</div>
   </div>
    <div class="sc-legend">
       <span class="sc-pill">🟩 Complete</span>
@@ -243,11 +243,11 @@ When invoking Copilot, ensure it:
 > The static checks also enforce the workflow via `tools/vectorscan/copilot_workflow_generator.py --check`, keeping the regression pipeline reproducible.
 
 ## Section 16 – Investigation Phase Validation
-- [ ] Validate resource traversal logic covers all resource types, not just policy targets.
-- [ ] Test behavior when `tfplan.json` contains unknown or new Terraform resource types.
-- [ ] Test large, noisy plans with hundreds of resources.
-- [ ] Validate recursive module parsing (child and nested modules).
-- [ ] Validate scanning of resources under dynamic blocks or computed fields.
+- [x] Validate resource traversal logic covers all resource types, not just policy targets. _(See `tests/unit/test_vectorscan_unit.py::test_load_plan_context_traverses_all_resource_types`.)_
+- [x] Test behavior when `tfplan.json` contains unknown or new Terraform resource types. _(See `tests/unit/test_vectorscan_unit.py::test_unknown_resource_types_handled`.)_
+- [x] Test large, noisy plans with hundreds of resources. _(See `tests/unit/test_vectorscan_unit.py::test_large_noisy_plan_metadata_handles_hundreds_of_resources`.)_
+- [x] Validate recursive module parsing (child and nested modules). _(See `tests/unit/test_vectorscan_unit.py::test_recursive_module_parsing_handles_nested_modules`.)_
+- [x] Validate scanning of resources under dynamic blocks or computed fields. _(See `tests/unit/test_vectorscan_unit.py::test_dynamic_block_and_computed_resources_scanned`.)_
 - [ ] Ensure investigation logic stops early in fatal-plan cases but still prints safe output.
 - [ ] Validate defaults in resources (e.g., missing encryption fields TerraForm fills at apply time).
 - [ ] Validate normalization logic for plan structures (Terraform sometimes changes field shapes).

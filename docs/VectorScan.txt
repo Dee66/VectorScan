@@ -1,520 +1,310 @@
-VectorScan  -  Source of Truth & Final Specification (v1.0.0)
+🛡️ VectorScan v2.0 — Final Specification
+Terraform Vector Database Governance Scanner
+Aligned With GuardSuite Balanced Launch (Final)
+1. Purpose & Scope
 
-Document Type: Canonical Product + Architecture Specification
-Status: FINAL
-Owner: ShieldCraft AI  -  GuardSuite
-Scope: Full CLI contract, schema, remediation, data integrity, I/O guarantees, policy update rules, test strategy, enterprise behaviors
+VectorScan evaluates Terraform plans for vector database governance risks, including:
 
-I. Overview
+Embedding governance
 
-VectorScan is the standalone, MIT-licensed Terraform plan auditor that enables any infrastructure, RAG, MLOps, or DevSecOps team to validate their tfplan.json with zero setup, deterministic output, and offline reproducibility.
+Vector index configuration
 
-VectorScan is the entry point into the GuardSuite ecosystem.
-Its purpose is to provide a high-signal, high-trust, developer-friendly scanning experience that naturally funnels users into VectorGuard.
+Access control
 
-Core Philosophy
+Network exposure
 
-Governance must be codified, not documented.
+Schema drift
 
-II. Free Policy Bundle
+Retrieval configuration risks
 
-VectorScan ships with two high-value, universal policies:
+VectorScan v2.0 introduces:
 
-P-SEC-001  -  Encryption Mandate
+GuardScore integration
 
-Enforces encryption + KMS key for data services.
+Remediation-Lite hooks
 
-P-FIN-001  -  Mandatory Tagging
+GuardScore Badge support
 
-Requires CostCenter, Project, and other org-specific cost attribution tags.
+Unified 3-pillar schema
 
-III. Developer Experience (DX) Enhancements
+Playground performance conformance
 
-VectorScan is not a simple policy scanner. It is a:
+Versioning + latency reporting
 
-remediation engine
+VectorScan is Pillar #1 in the GuardSuite 3-pillar model:
 
-diff engine
+Vector (VectorScan / VectorGuard)
 
-contextual plan inspector
+Compute (ComputeScan / ComputeGuard)
 
-preview funnel to VectorGuard
+Pipeline (PipelineScan / PipelineGuard)
 
-1. Remediation Engine
+2. Execution Model
+vectorscan plan.json --output json
+vectorscan plan.json --output text
+vectorscan --stdin
+vectorscan --quiet
+vectorscan --explain P-VEC-002
 
-All violations generate a structured remediation block:
 
-"remediation": {
-  "summary": "Enable storage_encrypted for aws_db_instance.db_prod.",
-  "hcl_examples": [
-    "resource \"aws_db_instance\" \"db_prod\" {\n  storage_encrypted = true\n  kms_key_id = \"arn:aws:kms:...\"\n}"
-  ],
-  "docs": [
-    "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html",
-    "https://shieldcraft-ai.com/docs/policies/encryption"
-  ],
-  "hcl_completeness": 0.85
-}
+Exit codes:
 
-Clarification: hcl_completeness
-
-Confidence in the remediation depends on whether all required fields exist within the plan:
-
-1.0 → pure HCL fix with no external variables needed.
-
-<1.0 → remediation requires info from variables/modules.
-
-0.0 → insufficient data to produce a patch.
-
-New: data_taint + taint_explanation
-
-Added to resource_details:
-
-"data_taint": "variable_source",
-"taint_explanation": "KMS Key ID inherited from variable 'kms_key_id' in module 'data_lake/main'"
-
-
-This tells the engineer where the fix belongs (module vs direct resource).
-
-IV. Contextual CLI Modes
-A. Diff Mode
-
-vectorscan --diff tfplan.json
-
-Shows only changed attributes.
-Adds a `plan_diff` block to JSON output (summary counts + per-resource attribute deltas) and appends a deterministic “Plan Diff Summary” after the CLI banner. Compatible with `--json --explain` so narratives reference the same diff-scoped data.
-
-B. Explain Mode
-
-vectorscan --explain tfplan.json
-
-Explains:
-
-what the plan is doing
-
-high-risk resources
-
-policy rationale
-
-recommended guard conditions
-
-C. Resource-Level Drilldown
-
-vectorscan --resource aws_db_instance.prod tfplan.json
-
-Filters violations & metadata to a single resource.
-
-Implementation Note: When `--resource` is provided, VectorScan resolves the selector against every Terraform address (module prefixes optional as long as the suffix is unique), scopes policy evaluation + plan metadata to the matched resource, and emits a `resource_filter` block so downstream automation knows which address was evaluated and whether a suffix match was used. Missing or ambiguous selectors exit with code 2 and print deterministic suggestions.
-
-D. Interactive TUI (Future)
-
-vectorscan --tui tfplan.json
-
-Terminal UI explorer (v1.1+).
-
-V. Plan Metadata & Streaming I/O Strategy
-1. Plan Metadata Contract
-
-VectorScan extracts a stable metadata block:
-
-"plan_metadata": {
-  "resource_count": 148,
-  "module_count": 4,
-  "providers": ["aws"],
-  "adds": 12,
-  "changes": 35,
-  "destroys": 2,
-  "resources_by_type": {
-    "aws_s3_bucket": 4,
-    "aws_db_instance": 2
-  },
-  "exceeds_threshold": false,
-  "file_size_mb": 28.3
-}
-
-2. Large-File Performance Requirements
-
-Terraform plans for >10k resources can exceed 50MB and sometimes hundreds of MB.
-
-Streaming I/O Contract
-
-VectorScan MUST:
-
-use iterative/streaming JSON parsing
-(e.g., ijson or equivalent iterators)
-
-never load the full plan into memory at once
-
-process resource_changes[] chunk-by-chunk
-
-support multi-GB plan files without failure
-
-Performance SLO
-
-<1k resources → ≤200ms
-
-<10k resources → ≤2s
-
-≤1.5GB memory usage for multi-GB plan
-If limits exceeded:
-
-"exceeds_threshold": true
-
-VI. Strategic Funnel Features
-1. VectorGuard Preview Mode
-
-vectorscan --preview-vectorguard tfplan.json
-
-"preview_generated": true,
-"preview_policies": [
-  {"id": "P-SEC-002", "summary": "IAM roles would fail due to excessive permissions"},
-  {"id": "P-AUD-001", "summary": "CloudTrail encryption enforcement would fail"}
-]
-"preview_manifest": {
-  "version": "2025.11.17",
-  "generated_at": "2025-11-17T12:00:00Z",
-  "signature": "sha256:<hash>",
-  "verified": true
-}
-
-Preview Mode Contract
-
-NEVER executes paid policy logic.
-
-Uses the preview manifest bundled with VectorScan.
-
-Includes "preview_generated": true.
-
-Adds "preview_manifest" with version/timestamp/signature + verification status so automation can prove the manifest hasn’t been tampered with.
-
-Exit code 10.
-
-Preview manifest is signed.
-
-Env overrides:
-- `VSCAN_PREVIEW_MANIFEST` points at an alternate manifest file (enterprise bundles).
-- `VSCAN_PREVIEW_SKIP_VERIFY=1` skips signature verification during local development or CI smoke tests. Production bundles MUST leave verification enabled.
-
-Signature logic:
-- SHA-256 is computed over the canonical (sorted) policy list, prefixed with `sha256:`.
-- CLI refuses to enter preview mode when the signature mismatches unless `VSCAN_PREVIEW_SKIP_VERIFY` is set.
-
-Human output prints a "VectorGuard preview" section listing each teaser policy and the manifest path/verification state so demo videos have deterministic copy.
-
-VII. Enterprise & CI/CD Controls
-GitHub Action Mode
-
-vectorscan --gha tfplan.json
-
-Outputs:
-
-JSON only
-
-deterministic formatting
-
-no color
-
-stable keys
-
-Implementation details:
-- Flag aliases `--json --no-color` automatically.
-- JSON uses `indent=2`, UTF-8, and `sort_keys=True` for canonical ordering.
-- Human banners, emojis, and policy summaries stay suppressed so CI logs remain machine-readable.
-- Exit codes are identical to normal runs (0/3/5/10/etc.) so workflows don’t need special handling.
-
-Offline Mode
-
-VSCAN_OFFLINE=1 vectorscan tfplan.json
-
-Guarantees:
-
-no internet
-
-no DNS
-
-no telemetry
-
-no remote downloads
-
-Any network attempt → exit code 6 (CONFIG_ERROR).
-
-Severity Control
-vectorscan --severity medium
-vectorscan --fail-on-critical
-
-Security Grade (Expanded)
-
-Letter grade + exact severity counts:
-
-"security_grade": "B",
-"violation_count_by_severity": {
-  "CRITICAL": 1,
-  "HIGH": 0,
-  "MEDIUM": 3,
-  "LOW": 7
-}
-
-VIII. Policy Packs & Update/Sync Contract
-CLI Flags
-vectorscan --policies free
-vectorscan --policies finops
-vectorscan --policy P-SEC-001
-
-Policy Distribution & Sync Contract
-
-Each release must include:
-
-policy_pack_hash
-
-policy_source_url
-
-policy_version
-
-New CLI Flag
-
-vectorscan --policy-manifest
-
-Prints:
-
-{
-  "policy_version": "1.0.0",
-  "policy_pack_hash": "sha256-abc123…",
-  "policy_source_url": "https://github.com/shieldcraft-ai/policies",
-  "signed": true,
-  "signature": "base64..."
-}
-
-
-This provides an enterprise-grade audit trail.
-
-IX. Output Schema (Canonical Contract)
-
-VectorScan MUST emit:
-
-version
-schema_version
-policy_version
-policy_pack_hash
-policy_source_url
-plan_metadata
-resource_details
-data_taint
-taint_explanation
-violation_severity_summary
-violation_count_by_severity
-remediation
-hcl_completeness
-metrics
-environment
-exit_code
-compliance_score
-security_grade
-preview_generated (optional)
-preview_policies (optional)
-
-X. Exit Codes
 Code	Meaning
-0	PASS
-1	CLI Error
-2	Plan Parse Error
-3	Violations Found
-4	POLICY_LOAD_ERROR
-5	TERRAFORM_ERROR
-6	CONFIG_ERROR (incl. offline violation)
-10	PREVIEW_MODE_ONLY
-XI. Determinism Guarantees
+0	No issues
+1	Issues found
+2	Fatal error
+11	Remediation hints available (Lite)
+3. Performance Requirements (Playground Compatible)
 
-VectorScan MUST guarantee:
+VectorScan MUST conform to GuardSuite performance standard:
 
-deterministic field output
+3.1 Latency Targets
+CLI (local): <500ms
+Playground (WASM): <1300ms
+Worst-case combined latency: <2000ms
 
-deterministic array ordering
+3.2 WASM Warm-Up Flag
 
-deterministic key ordering
+VectorScan MUST indicate WASM readiness:
 
-deterministic severity scoring
+"wasm_supported": true
 
-no randomness
+3.3 Quick Score Mode
 
-stable diff formatting
+If plan resource count > 1000 OR tfplan.json > 40MB:
 
-timestamps only in non-strict mode
+"quick_score_mode": true
 
-Golden tests MUST enforce 1:1 snapshot stability.
+4. Required Output Schema (Canonical 3-Pillar Structure)
 
-XII. Security Guarantees
-Manifest Requirements
+VectorScan must define the canonical JSON schema shared across VectorScan, ComputeScan, and PipelineScan.
 
-manifest.json MUST include:
+Top-level structure:
+{
+  "pillar": "vector",
+  "scan_version": "1.0.0",
+  "guardscore_rules_version": "2025.1",
+  "latency_ms": 243,
+  "quick_score_mode": false,
 
-schema_version
-policy_version
-policy_pack_hash
-policy_source_url
-signature
-released_by
-release_time
-sha256_checksums
+  "environment": {
+    "inferred_stage": "dev",
+    "resource_count": 42,
+    "providers": ["aws"]
+  },
 
+  "issues": [
+    {
+      "id": "P-VEC-001",
+      "severity": "critical",
+      "title": "Publicly accessible vector DB",
+      "description": "The index allows public queries...",
+      "resource_address": "aws_opensearch_index.main",
+      "attributes": { ... },
+      "remediation_hint": "fixpack:P-VEC-001",
+      "remediation_difficulty": "high"
+    }
+  ],
 
-SBOM must be included for every platform binary.
+  "pillar_score_inputs": {
+    "critical": 2,
+    "high": 1,
+    "medium": 0,
+    "low": 0
+  },
 
-XIII. Formal Test Specification
-✔ Remediation Engine Tests
+  "percentile_placeholder": true,
 
-HCL validity
+  "guardscore_badge": {
+    "eligible": true,
+    "score_placeholder": true
+  },
 
-completeness scores
+  "playground_summary": "Vector pillar: 1 critical, 1 high"
+}
 
-doc reference correctness
+5. Issue Structure (Standardized Across Suite)
 
-golden snapshot matching
+Every issue MUST follow:
 
-✔ Preview Mode Safety Tests
+id                  string      # e.g., P-VEC-001
+severity            enum        # critical | high | medium | low
+title               string
+description         string
+resource_address    string
+attributes          dict
+remediation_hint    string      # fixpack:P-VEC-001
+remediation_difficulty enum     # low | medium | high
 
-preview_generated = true
 
-exit 10
+Rename violations → issues for cross-pillar parity.
 
-no paid policy logic executed
+6. Severity Normalization
 
-preview manifest verified
+VectorScan v2.0 must use the shared GuardSuite severity definitions:
 
-✔ Resource Drilldown Tests
+critical  = blocks deployment (security or exposure)
+high      = significant governance failure
+medium    = operational/quality issue
+low       = informational or non-breaking
 
-Only the target resource appears in the output.
 
-✔ Offline Mode Tests
+These map directly into GuardScore’s weighted normalization.
 
-Network calls → fail with exit code 6.
+7. Remediation-Lite (FixPack-Lite Integration)
 
-✔ Diff Mode Tests
+Each common Vector issue MUST have a remediation hint.
 
-Stable diff formatting (snapshot tests).
+Example:
+"remediation_hint": "fixpack:P-VEC-001"
 
-✔ Explain Mode Tests
 
-Detects:
+This maps to a pre-written Terraform snippet in VectorGuard.
 
-changes
+VectorScan does not need to generate the fix.
+That happens in VectorGuard + GuardBoard.
 
-high-risk resources
+8. GuardScore Integration Requirements
 
-applied policies
+VectorScan MUST provide:
 
-rationale
+8.1 Severity Aggregation
+"pillar_score_inputs": {
+  "critical": <int>,
+  "high": <int>,
+  "medium": <int>,
+  "low": <int>
+}
 
-✔ Large-Plan Tests
+8.2 Versioning Metadata
+"scan_version": "1.0.0",
+"guardscore_rules_version": "2025.1"
 
-12k+ resources, streaming parser, memory <1.5GB.
+8.3 Percentile Placeholder
+"percentile_placeholder": true
 
-✔ GHA Mode Tests
+8.4 Latency Measurement
 
-JSON-only, strict ordering.
+Measured end-to-end scan time.
 
-✔ Schema Validation
+9. GuardScore Badge Hooks
 
-All output validated against schema.json.
+VectorScan must NOT generate SVG,
+But must signal badge eligibility:
 
-XIV. Packaging Contract
+"guardscore_badge": {
+  "eligible": true,
+  "score_placeholder": true
+}
 
-Packaging must:
 
-build all platform binaries
+GuardScore will generate the SVG later.
 
-generate SBOM
+10. Environment Metadata (Cross-Pillar Standard)
 
-generate manifest.json
+VectorScan MUST infer environment stage:
 
-sign manifest
+dev
 
-compute checksums
+test
 
-bundle preview manifest
+stage
 
-bundle LICENSE, README, policy docs
+prod
 
-XV. Roadmap (v1.1+)
+Based on tags, filenames, or directory structure.
 
-Interactive TUI
+This must exactly match ComputeScan and PipelineScan.
 
-Auto-patch generation
+11. Security Requirements
+Mandatory:
 
-HCL reverse module mapping
+No absolute paths in output
 
-AI-enhanced remediation
+No leaking user’s directory structure
 
-Policy Pack Marketplace
+Sanitize all strings (no HTML/XML injection)
 
-XVI. Intelligence & Telemetry Enhancements
+Deterministic output ordering
 
-1. Plan Risk Profile (Top-Level Metadata)
+VectorScan must be safe for:
 
-Adds an immediate-at-a-glance indicator under the root payload:
+CI/CD
 
-"plan_risk_profile": "HIGH — 2 unencrypted data stores, 1 public subnet detected"
+Playground
 
-This is metadata-only (no new enforcement) and must synthesize existing findings into a narrative string that is screenshot-friendly and deterministic.
+GitHub Actions
 
-Implementation Note: The heuristic must merge policy failures (P-SEC-001 / P-FIN-001) with non-blocking heuristic warnings (e.g., public subnet from the Suspicious Defaults Detector) so the summary clearly states what is enforced vs. advisory.
-Implementation Note (Determinism & Evidence): plan_risk_profile becomes a required top-level schema field (update schema.json + output_schema.md generator), and PASS/FAIL golden snapshots must assert the exact narrative text so CI proves the summary stays stable.
+12. Free Tier → Paid Funnel Messaging
 
-2. Suspicious Defaults Detector
+VectorScan v2.0 must embed a consistent upgrade message:
 
-Runs lightweight heuristics for known Terraform footguns (unencrypted defaults, public=true, missing S3 encryption, implicit 0.0.0.0/0 ingress, IAM inline policy merges). Findings are advisory, never policy violations, ensuring zero overlap with paid packs while showcasing CLI intelligence.
+"upgrade_hint": 
+"Upgrade to VectorGuard ($79/year) for full vector database 
+compliance, audit trails, and deterministic remediation."
 
-Implementation Note: Implement as a dedicated detector module that scans resource_changes before policy evaluation, emitting a `suspicious_defaults` list that never increments violation counts or alters exit codes.
 
-3. Plan Smell Analyzer (ESLint for Terraform Plans)
+Must match ComputeScan and PipelineScan messaging.
 
-Produces a "plan_smells" block describing complexity indicators such as deep module nesting, excessive for_each expansions, pervasive default inheritance, massive IAM blobs, missing kms_key usage, and unusually large change sets. Output is descriptive, not blocking, and must plug into explain/diff narratives.
+13. Command-Line Interface Requirements
+Provided commands:
+vectorscan plan.json
+vectorscan plan.json --output json
+vectorscan --explain P-VEC-004
+vectorscan --quiet
+vectorscan --stdin
 
-Implementation Note: Reuse the existing `plan_metadata` inventory to compute smells so this feature remains deterministic and side-effect free; serialize results under a top-level `smell_report` structure.
+Exit codes:
+0 = clean
+1 = issues found
+2 = fatal error
+11 = remediation-hint-only
 
-4. Plan Evolution Summary (Two-Plan Diff)
+14. Required Test Coverage (Minimum)
 
-New flag: `vectorscan --compare old.json new.json`
+VectorScan v2.0 must include:
 
-Outputs a "plan_evolution" summary:
+A. Unit Tests
 
-Plan Evolution:
-  +12 resources
-  -3 destroyed
-  ~18 changed
-  !2 downgraded encryption settings
+All rule logic
 
-Optimized for CI/CD, exits with the same codes as single-plan scans, and never evaluates paid policies.
+All remediation hints
 
-Implementation Note: The new `--compare old.json new.json` mode must detect downgraded encryption (storage_encrypted flips) and emit a structured `plan_evolution` object alongside the human summary, backed by golden fixtures.
-Implementation Reality: The shipping CLI now produces `plan_evolution.old_plan`, `.new_plan`, `.delta`, `.summary.lines`, and `.downgraded_encryption` blocks, with `status=ALERT` when any encryption downgrade is detected plus a human-readable compare report. Snapshot tests (`plan_compare_output.json`) lock the JSON payload so regressions surface in CI.
+All severity maps
 
-5. Performance Metrics Block
+B. Integration Tests
 
-Extends the `metrics` object with runtime transparency:
+Large plan
 
-metrics:
-  scan_duration_ms: 142
-  parser_mode: "streaming"
-  resource_count: 4821
+Quick Score mode
 
-Every run must emit these fields, reflecting actual execution data to reinforce competence and determinism.
+GuardScore integration
 
-Implementation Note: CLI now captures real parser timings + parser mode (streaming vs legacy fallback) and mirrors the plan resource count directly into the metrics block. The telemetry pipeline (metrics log, summary, StatsD) consumes the same fields so dashboards instantly reflect runtime regressions or legacy-parser fallbacks without parsing nested metadata.
+Multi-pillar JSON compatibility
 
-Final Statement
+C. Security Tests
 
-VectorScan is the public face of GuardSuite and MUST demonstrate:
+Sanitization
 
-instantly actionable remediation
+No absolute paths
 
-enterprise determinism
+No ordering nondeterminism
 
-credible policy governance
+D. Playground Tests
 
-frictionless developer usability
+WASM warm-up
 
-world-class CI/CD integration
+Latency <1300ms
 
-strong funnel conversion
+15. Multi-Pillar Awareness
 
-This document defines the final, canonical implementation.
+Add to human-readable output:
+
+“Vector pillar scan complete. Combine with ComputeScan and PipelineScan for unified GuardScore.”
+
+This aligns user expectations with the Balanced Launch narrative.
+
+✔️ Architect’s Insight
+
+VectorScan v2.0 transforms the tool from a “standalone scanner” into a pillar of a platform.
+By aligning with GuardScore, GuardBoard, Remediation-Lite, and Playground, VectorScan becomes an integral part of the ecosystem, not an isolated utility. This reduces confusion, increases conversion, ensures consistency across the suite, and dramatically simplifies the implementation of the next pillars (ComputeScan, PipelineScan).

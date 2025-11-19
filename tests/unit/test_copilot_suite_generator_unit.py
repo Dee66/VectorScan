@@ -1,4 +1,5 @@
 """Unit tests for the Copilot suite generator."""
+
 from __future__ import annotations
 
 from pathlib import Path

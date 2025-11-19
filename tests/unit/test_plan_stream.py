@@ -82,3 +82,23 @@ def test_build_slo_metadata_windows():
     assert exceeds_large is True
     assert slo_large["active_window"] == "oversized"
     assert slo_large["breach_reason"] == "resource_count"
+
+
+def test_stream_plan_honors_forced_parse_duration(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    plan = {
+        "format_version": "1.0",
+        "terraform_version": "1.6.0",
+        "planned_values": {
+            "root_module": {
+                "address": "root",
+                "resources": [],
+                "child_modules": [],
+            }
+        },
+    }
+    path = _write_plan(tmp_path, plan)
+
+    monkeypatch.setenv("VSCAN_FORCE_PARSE_MS", "42")
+    result = stream_plan(path)
+
+    assert result.parse_duration_ms == 42

@@ -1,4 +1,5 @@
 """Unit tests for the Copilot scaffolding helper."""
+
 from __future__ import annotations
 
 import json
@@ -52,7 +53,9 @@ def test_golden_templates_embed_expected_blocks(tmp_path: Path) -> None:
     pass_golden = json.loads((tmp_path / "tests/golden/pass_output.json").read_text())
     fail_golden = json.loads((tmp_path / "tests/golden/fail_output.json").read_text())
     iam_drift_golden = json.loads((tmp_path / "tests/golden/iam_drift_output.json").read_text())
-    plan_compare_golden = json.loads((tmp_path / "tests/golden/plan_compare_output.json").read_text())
+    plan_compare_golden = json.loads(
+        (tmp_path / "tests/golden/plan_compare_output.json").read_text()
+    )
     ledger_yaml = (tmp_path / "tests/golden/audit_ledger.yaml").read_text()
 
     assert pass_golden["status"] == "PASS"

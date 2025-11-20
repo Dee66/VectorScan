@@ -6,6 +6,9 @@ from typing import Any, Dict, Optional
 
 _FIXPACK_HINTS: Dict[str, str] = {
     "P-VEC-001": "fixpack:P-VEC-001",
+    "P-VEC-002": "fixpack:P-VEC-002",
+    "P-VEC-003": "fixpack:P-VEC-003",
+    "P-VEC-004": "fixpack:P-VEC-004",
 }
 
 

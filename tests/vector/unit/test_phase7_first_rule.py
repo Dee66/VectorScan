@@ -6,7 +6,14 @@ from src.vectorscan.evaluator import evaluate_plan
 def test_public_access_rule_detects_issue():
     plan = {
         "resources": [
-            {"type": "vector_index", "public_access": True, "address": "idx.main"}
+            {
+                "type": "vector_index",
+                "public_access": True,
+                "encryption_enabled": True,
+                "allowed_cidrs": ["10.0.0.0/8"],
+                "dimension": 64,
+                "address": "idx.main",
+            }
         ],
         "resource_count": 1,
         "providers": ["aws"],

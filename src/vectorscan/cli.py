@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional, Tuple
 import click
 
 from .evaluator import build_fatal_error_output, run_scan
-from .renderer import render_human_readable
+from .renderer import render_human_readable, render_severity_summary
 
 # TODO Phase 2: wire real evaluator
 # TODO Phase 3: integrate rule registry
@@ -54,7 +54,9 @@ def scan(plan: Optional[Path], json_output: bool, stdin: bool, quiet: bool) -> N
     if json_output:
         click.echo(json.dumps(result, indent=2))
     else:
-        click.echo(render_human_readable(result))
+        summary_text = render_severity_summary(result.get("pillar_score_inputs"))
+        issues_text = render_human_readable(result)
+        click.echo(f"{summary_text}\n{issues_text}")
 
 
 def _load_plan_payload(

@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Any, Dict, List
+
+SEVERITY_ORDER = ("critical", "high", "medium", "low")
 
 
-def render_human_readable(output: Dict[str, object]) -> str:
+def render_human_readable(
+    output: Dict[str, object], *, include_summary: bool = False
+) -> str:
     """Return a deterministic text block describing scan issues."""
 
     issues = output.get("issues") or []
@@ -14,6 +18,11 @@ def render_human_readable(output: Dict[str, object]) -> str:
     title = f"Scan completed for {output.get('pillar', 'VectorScan')}"
     lines.append(title)
     lines.append("-")
+
+    if include_summary:
+        summary_block = render_severity_summary(output.get("pillar_score_inputs"))
+        lines.extend(summary_block.splitlines())
+        lines.append("-")
 
     if not issues:
         lines.append("No issues detected.")
@@ -56,3 +65,19 @@ def _indent_patch(patch: object) -> List[str]:
     text = str(patch)
     lines = text.splitlines() or [text]
     return [f"    {line}" for line in lines]
+
+
+def render_severity_summary(pillar_score_inputs: Dict[str, Any] | None) -> str:
+    counts: Dict[str, int] = {}
+    source = pillar_score_inputs or {}
+    for key in SEVERITY_ORDER:
+        value = source.get(key, 0)
+        try:
+            counts[key] = int(value)
+        except (TypeError, ValueError):
+            counts[key] = 0
+
+    lines = ["Summary:"]
+    for key in SEVERITY_ORDER:
+        lines.append(f"  {key}: {counts[key]}")
+    return "\n".join(lines)

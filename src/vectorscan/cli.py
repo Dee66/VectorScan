@@ -45,6 +45,7 @@ def scan(plan: Optional[Path], json_output: bool, stdin: bool, quiet: bool) -> N
 
     plan_dict, source_path, raw_size = _load_plan_payload(plan, stdin)
     result = run_scan(plan=plan_dict, source_path=source_path, raw_size=raw_size)
+    # Issues may now include remediation_metadata alongside remediation_hint.
 
     if quiet:
         return

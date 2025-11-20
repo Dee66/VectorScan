@@ -1,10 +1,9 @@
-"""Compatibility shim that exposes the CLI from `tools.vectorscan` at the project root.
-
-This file allows tests and linters to import `vectorscan` directly without relying on `sys.path` hacks.
-"""
+"""Legacy entrypoint shim forwarding to the legacy vectorscan module."""
 
 import sys
-from importlib import import_module
 
-_vectorscan_module = import_module("tools.vectorscan.vectorscan")
-sys.modules[__name__] = _vectorscan_module
+from legacy.vectorscan_legacy import main
+
+
+if __name__ == "__main__":
+    sys.exit(main())

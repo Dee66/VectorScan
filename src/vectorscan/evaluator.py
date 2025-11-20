@@ -96,6 +96,9 @@ def run_scan(
         hint = fixpack_loader.get_fixpack_hint(rule_id)
         if hint:
             issue["remediation_hint"] = hint
+        metadata = fixpack_loader.get_fixpack_metadata(rule_id)
+        if metadata:
+            issue["remediation_metadata"] = metadata
 
     pillar_score_inputs = {
         "critical": sum(1 for issue in issues if issue.get("severity") == "critical"),

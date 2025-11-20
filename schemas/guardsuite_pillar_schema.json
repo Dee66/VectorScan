@@ -1,0 +1,28 @@
+{
+  "required": [
+    "pillar",
+    "scan_version",
+    "guardscore_rules_version",
+    "canonical_schema_version",
+    "issues",
+    "severity_totals",
+    "pillar_score_inputs",
+    "metadata",
+    "environment",
+    "badge_eligible",
+    "quick_score_mode",
+    "latency_ms",
+    "schema_validation_error"
+  ],
+  "issue_required_fields": [
+    "id",
+    "severity",
+    "title",
+    "description",
+    "resource_address",
+    "attributes",
+    "remediation_hint",
+    "remediation_difficulty"
+  ],
+  "severity_keys": ["critical", "high", "medium", "low"]
+}

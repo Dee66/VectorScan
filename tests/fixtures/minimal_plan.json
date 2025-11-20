@@ -1,0 +1,10 @@
+{
+  "resource_count": 2,
+  "providers": [
+    "registry.terraform.io/hashicorp/aws"
+  ],
+  "resource_changes": [
+    {"address": "aws_s3_bucket.example"},
+    {"address": "aws_iam_role.example"}
+  ]
+}

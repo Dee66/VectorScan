@@ -31,5 +31,6 @@ def test_cli_text_output_includes_severity_summary(tmp_path):
     stdout = result.output
 
     assert "Summary:" in stdout
-    assert "critical: 1" in stdout
-    assert "medium: 1" in stdout
+    assert "critical: 1 (33%)" in stdout
+    assert "medium: 1 (33%)" in stdout
+    assert "badge_eligible: false" in stdout

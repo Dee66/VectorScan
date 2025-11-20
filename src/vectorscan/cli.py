@@ -54,7 +54,7 @@ def scan(plan: Optional[Path], json_output: bool, stdin: bool, quiet: bool) -> N
     if json_output:
         click.echo(json.dumps(result, indent=2))
     else:
-        summary_text = render_severity_summary(result.get("pillar_score_inputs"))
+        summary_text = render_severity_summary(result)
         issues_text = render_human_readable(result)
         click.echo(f"{summary_text}\n{issues_text}")
 

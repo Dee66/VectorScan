@@ -7,9 +7,7 @@ from typing import Any, Dict, List
 SEVERITY_ORDER = ("critical", "high", "medium", "low")
 
 
-def render_human_readable(
-    output: Dict[str, object], *, include_summary: bool = False
-) -> str:
+def render_human_readable(output: Dict[str, object]) -> str:
     """Return a deterministic text block describing scan issues."""
 
     issues = output.get("issues") or []
@@ -18,11 +16,6 @@ def render_human_readable(
     title = f"Scan completed for {output.get('pillar', 'VectorScan')}"
     lines.append(title)
     lines.append("-")
-
-    if include_summary:
-        summary_block = render_severity_summary(output.get("pillar_score_inputs"))
-        lines.extend(summary_block.splitlines())
-        lines.append("-")
 
     if not issues:
         lines.append("No issues detected.")
@@ -67,7 +60,8 @@ def _indent_patch(patch: object) -> List[str]:
     return [f"    {line}" for line in lines]
 
 
-def render_severity_summary(pillar_score_inputs: Dict[str, Any] | None) -> str:
+def render_severity_summary(output: Dict[str, Any]) -> str:
+    pillar_score_inputs = output.get("pillar_score_inputs")
     counts: Dict[str, int] = {}
     source = pillar_score_inputs or {}
     for key in SEVERITY_ORDER:
@@ -77,7 +71,19 @@ def render_severity_summary(pillar_score_inputs: Dict[str, Any] | None) -> str:
         except (TypeError, ValueError):
             counts[key] = 0
 
+    total = sum(counts.values())
+
     lines = ["Summary:"]
     for key in SEVERITY_ORDER:
-        lines.append(f"  {key}: {counts[key]}")
+        count = counts[key]
+        percentage = 0
+        if total > 0:
+            percentage = int(round((count / total) * 100))
+        lines.append(f"  {key}: {count} ({percentage}%)")
+
+    badge_info = output.get("guardscore_badge")
+    eligible = False
+    if isinstance(badge_info, dict):
+        eligible = bool(badge_info.get("eligible", False))
+    lines.append(f"  badge_eligible: {str(eligible).lower()}")
     return "\n".join(lines)

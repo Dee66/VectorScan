@@ -22,3 +22,4 @@ def get_all_rules() -> List[Type[Rule]]:
 
 # Ensure placeholder rule registers with the decorator at import time.
 from . import placeholder_rule as _placeholder_rule  # noqa: F401,E402
+from . import rule_public_access as _rule_public_access  # noqa: F401,E402

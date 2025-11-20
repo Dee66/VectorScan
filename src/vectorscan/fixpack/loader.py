@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-_FIXPACK_HINTS: Dict[str, str] = {}
+_FIXPACK_HINTS: Dict[str, str] = {
+    "P-VEC-001": "fixpack:P-VEC-001",
+}
 
 
 def load_fixpack(issue_id: str) -> Optional[Dict[str, Any]]:

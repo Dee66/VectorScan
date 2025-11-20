@@ -47,6 +47,12 @@ ISSUE_REQUIRED_FIELDS = [
 SEVERITY_KEYS = ["critical", "high", "medium", "low"]
 
 
+def evaluate_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
+    """Convenience wrapper for compatibility with legacy call sites."""
+
+    return run_scan(plan=plan)
+
+
 def run_scan(
     plan: Dict[str, Any],
     *,
@@ -92,6 +98,13 @@ def run_scan(
         if hint:
             issue["remediation_hint"] = hint
 
+    pillar_score_inputs = {
+        "critical": sum(1 for issue in issues if issue.get("severity") == "critical"),
+        "high": sum(1 for issue in issues if issue.get("severity") == "high"),
+        "medium": sum(1 for issue in issues if issue.get("severity") == "medium"),
+        "low": sum(1 for issue in issues if issue.get("severity") == "low"),
+    }
+
     payload = _build_base_payload(
         severity_totals=severity_totals,
         metadata_environment=metadata_environment,
@@ -102,6 +115,7 @@ def run_scan(
         quick_score_mode=quick_score_mode,
         schema_error=None,
         issues=issues,
+        pillar_score_inputs=pillar_score_inputs,
     )
     payload["latency_ms"] = _measure_latency_ms(start)
     return _sort_payload(payload)
@@ -119,6 +133,7 @@ def build_fatal_error_output(message: str) -> Dict[str, Any]:
         plan_metadata={"resource_count": 0, "providers": []},
         quick_score_mode=False,
         schema_error=message,
+        pillar_score_inputs=_zero_severity_totals(),
     )
     payload["percentile_placeholder"] = True
     payload["guardscore_badge"] = {
@@ -140,6 +155,7 @@ def _build_base_payload(
     quick_score_mode: bool,
     schema_error: Optional[str],
     issues: Optional[List[Dict[str, Any]]] = None,
+    pillar_score_inputs: Optional[Dict[str, int]] = None,
 ) -> Dict[str, Any]:
     payload: Dict[str, Any] = {
         "pillar": PILLAR_NAME,
@@ -148,7 +164,7 @@ def _build_base_payload(
         "canonical_schema_version": CANONICAL_SCHEMA_VERSION,
         "issues": list(issues or []),
         "severity_totals": severity_totals,
-        "pillar_score_inputs": dict(severity_totals),
+        "pillar_score_inputs": dict(pillar_score_inputs or severity_totals),
         "metadata": {
             "environment": metadata_environment,
             "plan": plan_metadata,

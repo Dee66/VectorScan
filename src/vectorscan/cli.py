@@ -94,3 +94,13 @@ def _load_plan_payload(
         return json.loads(raw_bytes), plan, len(raw_bytes)
 
     return {}, None, None
+
+
+def main() -> None:
+    """Executable entrypoint used by setuptools scripts."""
+
+    cli()
+
+
+if __name__ == "__main__":
+    main()

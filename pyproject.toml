@@ -1,3 +1,26 @@
+[build-system]
+requires = ["setuptools>=67", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vectorscan"
+version = "0.0.0"
+description = "Vector pillar governance scanner for GuardSuite"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "GuardSuite", email = "engineering@guardsuite.dev" }]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+vectorscan = "vectorscan.cli:main"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.black]
 line-length = 100
 target-version = ["py311"]

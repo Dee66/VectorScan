@@ -1,0 +1,42 @@
+[
+  {
+    "id": "P-VEC-000",
+    "severity": "low",
+    "python_class": "vectorscan.rules.placeholder_rule.PlaceholderRule",
+    "file_path": "src/vectorscan/rules/placeholder_rule.py",
+    "fixpack": null,
+    "description": ""
+  },
+  {
+    "id": "P-VEC-001",
+    "severity": "critical",
+    "python_class": "vectorscan.rules.rule_public_access.PublicAccessRule",
+    "file_path": "src/vectorscan/rules/rule_public_access.py",
+    "fixpack": "fixpack:P-VEC-001",
+    "description": ""
+  },
+  {
+    "id": "P-VEC-002",
+    "severity": "high",
+    "python_class": "vectorscan.rules.rule_missing_encryption.MissingEncryptionRule",
+    "file_path": "src/vectorscan/rules/rule_missing_encryption.py",
+    "fixpack": "fixpack:P-VEC-002",
+    "description": ""
+  },
+  {
+    "id": "P-VEC-003",
+    "severity": "medium",
+    "python_class": "vectorscan.rules.rule_unrestricted_network.UnrestrictedNetworkRule",
+    "file_path": "src/vectorscan/rules/rule_unrestricted_network.py",
+    "fixpack": "fixpack:P-VEC-003",
+    "description": ""
+  },
+  {
+    "id": "P-VEC-004",
+    "severity": "low",
+    "python_class": "vectorscan.rules.rule_low_dimension.LowDimensionRule",
+    "file_path": "src/vectorscan/rules/rule_low_dimension.py",
+    "fixpack": "fixpack:P-VEC-004",
+    "description": ""
+  }
+]

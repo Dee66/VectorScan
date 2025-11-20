@@ -59,6 +59,21 @@ def scan(plan: Optional[Path], json_output: bool, stdin: bool, quiet: bool) -> N
         click.echo(f"{summary_text}\n{issues_text}")
 
 
+@cli.command()
+@click.option("--manifest", is_flag=True, help="Print the rule manifest as JSON")
+def rules(manifest: bool) -> None:
+    """Rule metadata helpers."""
+
+    if manifest:
+        from vectorscan.rules import build_rule_manifest  # pyright: ignore[reportMissingImports]
+
+        click.echo(json.dumps(build_rule_manifest(), indent=2))
+        return
+
+    click.echo("Usage: vectorscan rules --manifest", err=True)
+    raise click.exceptions.Exit(1)
+
+
 def _load_plan_payload(
     plan: Optional[Path],
     stdin: bool,

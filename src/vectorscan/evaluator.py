@@ -65,7 +65,6 @@ def run_scan(
     plan_snapshot = copy(plan) if isinstance(plan, dict) else {}
     resource_count = _extract_resource_count(plan_snapshot)
     providers = _extract_providers(plan_snapshot)
-    severity_totals = _zero_severity_totals()
     metadata_environment = build_environment(plan_snapshot)
     quick_score_mode = _should_enable_quick_score(resource_count, raw_size, source_path)
     issues: List[Dict[str, Any]] = []
@@ -104,6 +103,7 @@ def run_scan(
         "medium": sum(1 for issue in issues if issue.get("severity") == "medium"),
         "low": sum(1 for issue in issues if issue.get("severity") == "low"),
     }
+    severity_totals = dict(pillar_score_inputs)
 
     payload = _build_base_payload(
         severity_totals=severity_totals,

@@ -1,0 +1,316 @@
+# VectorScan v2.0 - Final Specification
+
+Terraform Vector Database Governance Scanner
+Aligned With GuardSuite Balanced Launch (Final)
+## 1. Purpose & Scope
+
+VectorScan evaluates Terraform plans for vector database governance risks, including:
+
+Embedding governance
+
+Vector index configuration
+
+Access control
+
+Network exposure
+
+Schema drift
+
+Retrieval configuration risks
+
+VectorScan v2.0 introduces:
+
+GuardScore integration
+
+Remediation-Lite hooks
+
+GuardScore Badge support
+
+Unified 3-pillar schema
+
+Playground performance conformance
+
+Versioning + latency reporting
+
+VectorScan is Pillar #1 in the GuardSuite 3-pillar model:
+
+Vector (VectorScan / VectorGuard)
+
+Compute (ComputeScan / ComputeGuard)
+
+Pipeline (PipelineScan / PipelineGuard)
+
+## 2. Execution Model
+
+vectorscan plan.json --output json
+vectorscan plan.json --output text
+vectorscan --stdin
+vectorscan --quiet
+vectorscan --explain P-VEC-002
+
+**Exit Codes**
+
+- `0` — No issues
+- `1` — Issues found
+- `2` — Fatal error
+- `11` — Remediation hints available (Lite)
+
+## 3. Performance Requirements (Playground Compatible)
+
+VectorScan MUST conform to GuardSuite performance standard:
+
+### 3.1 Latency Targets
+
+CLI (local): <500ms
+Playground (WASM): <1300ms
+Worst-case combined latency: <2000ms
+
+### 3.2 WASM Warm-Up Flag
+
+VectorScan MUST indicate WASM readiness:
+
+"wasm_supported": true
+
+### 3.3 Quick Score Mode
+
+If plan resource count > 1000 OR tfplan.json > 40MB:
+
+"quick_score_mode": true
+
+## 4. Required Output Schema (Canonical 3-Pillar Structure)
+
+VectorScan must define the canonical JSON schema shared across VectorScan, ComputeScan, and PipelineScan.
+
+Top-level structure:
+{
+"pillar": "vector",
+"scan_version": "1.0.0",
+"guardscore_rules_version": "2025.1",
+"latency_ms": 243,
+"quick_score_mode": false,
+
+"environment": {
+"inferred_stage": "dev",
+"resource_count": 42,
+"providers": ["aws"]
+},
+
+"issues": [
+{
+"id": "P-VEC-001",
+"severity": "critical",
+"title": "Publicly accessible vector DB",
+"description": "The index allows public queries...",
+"resource_address": "aws_opensearch_index.main",
+"attributes": { ... },
+"remediation_hint": "fixpack:P-VEC-001",
+"remediation_difficulty": "high"
+}
+],
+
+"pillar_score_inputs": {
+"critical": 2,
+"high": 1,
+"medium": 0,
+"low": 0
+},
+
+"percentile_placeholder": true,
+
+"guardscore_badge": {
+"eligible": true,
+"score_placeholder": true
+},
+
+"playground_summary": "Vector pillar: 1 critical, 1 high"
+}
+
+## 5. Issue Structure (Standardized Across Suite)
+
+Every issue MUST follow:
+
+id                  string      # e.g., P-VEC-001
+severity            enum        # critical | high | medium | low
+title               string
+description         string
+resource_address    string
+attributes          dict
+remediation_hint    string      # fixpack:P-VEC-001
+remediation_difficulty enum     # low | medium | high
+
+Rename violations  issues for cross-pillar parity.
+
+## 6. Severity Normalization
+
+VectorScan v2.0 must use the shared GuardSuite severity definitions:
+
+critical  = blocks deployment (security or exposure)
+high      = significant governance failure
+medium    = operational/quality issue
+low       = informational or non-breaking
+
+These map directly into GuardScores weighted normalization.
+
+## 7. Remediation-Lite (FixPack-Lite Integration)
+
+Each common Vector issue MUST have a remediation hint.
+
+Example:
+"remediation_hint": "fixpack:P-VEC-001"
+
+This maps to a pre-written Terraform snippet in VectorGuard.
+
+VectorScan does not need to generate the fix.
+That happens in VectorGuard + GuardBoard.
+
+## 8. GuardScore Integration Requirements
+
+VectorScan MUST provide:
+
+### 8.1 Severity Aggregation
+
+"pillar_score_inputs": {
+"critical": <int>,
+"high": <int>,
+"medium": <int>,
+"low": <int>
+}
+
+### 8.2 Versioning Metadata
+
+"scan_version": "1.0.0",
+"guardscore_rules_version": "2025.1"
+
+### 8.3 Percentile Placeholder
+
+"percentile_placeholder": true
+
+### 8.4 Latency Measurement
+
+Measured end-to-end scan time.
+
+## 9. GuardScore Badge Hooks
+
+VectorScan must NOT generate SVG,
+But must signal badge eligibility:
+
+"guardscore_badge": {
+"eligible": true,
+"score_placeholder": true
+}
+
+GuardScore will generate the SVG later.
+
+## 10. Environment Metadata (Cross-Pillar Standard)
+
+VectorScan MUST infer environment stage:
+
+dev
+
+test
+
+stage
+
+prod
+
+Based on tags, filenames, or directory structure.
+
+This must exactly match ComputeScan and PipelineScan.
+
+## 11. Security Requirements
+
+Mandatory:
+
+No absolute paths in output
+
+No leaking users directory structure
+
+Sanitize all strings (no HTML/XML injection)
+
+Deterministic output ordering
+
+VectorScan must be safe for:
+
+CI/CD
+
+Playground
+
+GitHub Actions
+
+## 12. Free Tier - Paid Funnel Messaging
+
+VectorScan v2.0 must embed a consistent upgrade message:
+
+"upgrade_hint":
+"Upgrade to VectorGuard ($79/year) for full vector database
+compliance, audit trails, and deterministic remediation."
+
+Must match ComputeScan and PipelineScan messaging.
+
+## 13. Command-Line Interface Requirements
+
+Provided commands:
+vectorscan plan.json
+vectorscan plan.json --output json
+vectorscan --explain P-VEC-004
+vectorscan --quiet
+vectorscan --stdin
+
+**Exit Codes**
+
+## 0 = clean
+
+## 1 = issues found
+
+## 2 = fatal error
+
+## 11 = remediation-hint-only
+
+## 14. Required Test Coverage (Minimum)
+
+VectorScan v2.0 must include:
+
+A. Unit Tests
+
+All rule logic
+
+All remediation hints
+
+All severity maps
+
+B. Integration Tests
+
+Large plan
+
+Quick Score mode
+
+GuardScore integration
+
+Multi-pillar JSON compatibility
+
+C. Security Tests
+
+Sanitization
+
+No absolute paths
+
+No ordering nondeterminism
+
+D. Playground Tests
+
+WASM warm-up
+
+Latency <1300ms
+
+## 15. Multi-Pillar Awareness
+
+Add to human-readable output:
+
+Vector pillar scan complete. Combine with ComputeScan and PipelineScan for unified GuardScore.
+
+This aligns user expectations with the Balanced Launch narrative.
+
+Architects Insight
+
+VectorScan v2.0 transforms the tool from a standalone scanner into a pillar of a platform.
+By aligning with GuardScore, GuardBoard, Remediation-Lite, and Playground, VectorScan becomes an integral part of the ecosystem, not an isolated utility. This reduces confusion, increases conversion, ensures consistency across the suite, and dramatically simplifies the implementation of the next pillars (ComputeScan, PipelineScan).

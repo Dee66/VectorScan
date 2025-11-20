@@ -5,7 +5,7 @@ from __future__ import annotations
 from copy import copy
 from pathlib import Path
 from time import perf_counter
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from .constants import (
     PILLAR_NAME,
@@ -14,6 +14,7 @@ from .constants import (
     CANONICAL_SCHEMA_VERSION,
 )
 from .metadata import build_environment
+from src.vectorscan.rules import get_all_rules
 
 REQUIRED_OUTPUT_KEYS = [
     "pillar",
@@ -61,6 +62,28 @@ def run_scan(
         {**plan_snapshot, "resource_count": resource_count, "providers": providers}
     )
     quick_score_mode = _should_enable_quick_score(resource_count, raw_size, source_path)
+    issues: List[Dict[str, Any]] = []
+
+    for rule_cls in get_all_rules():
+        try:
+            results = rule_cls.evaluate(plan_snapshot)
+        except Exception as exc:  # noqa: BLE001
+            issues.append(
+                {
+                    "id": "P-VEC-EVAL-ERR",
+                    "severity": "high",
+                    "title": "Rule execution error",
+                    "description": str(exc),
+                    "resource_address": "",
+                    "attributes": {},
+                    "remediation_hint": "",
+                    "remediation_difficulty": "medium",
+                }
+            )
+            continue
+
+        if results:
+            issues.extend(results)
 
     payload = _build_base_payload(
         severity_totals=severity_totals,
@@ -71,6 +94,7 @@ def run_scan(
         },
         quick_score_mode=quick_score_mode,
         schema_error=None,
+        issues=issues,
     )
     payload["latency_ms"] = _measure_latency_ms(start)
     return _sort_payload(payload)
@@ -108,13 +132,14 @@ def _build_base_payload(
     plan_metadata: Dict[str, Any],
     quick_score_mode: bool,
     schema_error: Optional[str],
+    issues: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     payload: Dict[str, Any] = {
         "pillar": PILLAR_NAME,
         "scan_version": SCAN_VERSION,
         "guardscore_rules_version": GUARDSCORE_RULES_VERSION,
         "canonical_schema_version": CANONICAL_SCHEMA_VERSION,
-        "issues": [],
+        "issues": list(issues or []),
         "severity_totals": severity_totals,
         "pillar_score_inputs": dict(severity_totals),
         "metadata": {

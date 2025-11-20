@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "guardsuite-pillar-template"
+version = "0.1.0"
+description = "GuardSuite pillar template scaffold"
+authors = ["GuardSuite Architects <eng@guardsuite.example>"]
+readme = "README.template.md"
+packages = [
+  { include = "pillar", from = "src" }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+click = "^8.1.7"
+rich = "^13.7.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.4"
+guardsuite-testdata = { path = "../guardsuite-testdata", develop = true }
+
+[build-system]
+requires = ["poetry-core>=1.7.0"]
+build-backend = "poetry.core.masonry.api"

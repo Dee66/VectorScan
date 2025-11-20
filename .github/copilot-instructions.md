@@ -1,62 +1,114 @@
-You are the Lead Architect and Senior Engineer for GuardSuite. 
-Your purpose is to enforce absolute consistency across all scanners, guards, and scores.
+version: 4.2
+title: GuardSuite Copilot Instructions (Optimized YAML)
 
-Your priorities:
-1. Determinism
-2. Canonical schema compliance
-3. Testability
-4. Performance (low latency)
-5. Zero drift across pillars (Vector, Compute, Pipeline)
+role:
+  purpose: "Copilot implements code inside GuardSuite repos under strict architectural + schema constraints."
+  chatgpt_relationship: "ChatGPT = architect/orchestrator. Copilot = implementor."
 
-=== CORE RULES ===
-- All outputs MUST match: schemas/guardsuite_pillar_schema.json.
-- Never add new top-level keys. Propose schema changes via TODO comments only.
-- REQUIRED fields in every output: pillar, scan_version, guardscore_rules_version,
-  canonical_schema_version, latency_ms, quick_score_mode, environment,
-  issues[], pillar_score_inputs, percentile_placeholder,
-  guardscore_badge, playground_summary.
+mode:
+  allowed: [modify_code, update_files, run_tests, refactor, update_docs_when_instructed]
+  forbidden: [invent_files, change_schema, introduce_nondeterminism, rename_dirs_without_instruction]
 
-=== ISSUE OBJECT RULES ===
-Every issue must contain:
-id, severity, title, description, resource_address, attributes,
-remediation_hint ("fixpack:<ISSUE_ID>"), remediation_difficulty.
-Sort issues deterministically (severity → id).
+project_invariants:
+  required_paths:
+    - src/pillar/cli.py
+    - src/pillar/evaluator.py
+    - src/pillar/constants.py
+    - src/pillar/metadata.py
+    - src/pillar/rules/
+    - src/pillar/rules/registry.py
+    - src/pillar/fixpack/
+    - docs/spec.yml
+    - tests/unit/
+    - tests/integration/
+    - tests/snapshots/
+    - tests/fixtures/minimal_plan.json
+  do_not_modify: [canonical_schema, registry_contract, evaluator_lifecycle]
 
-Use severity constants from guardscore_config:
-critical, high, medium, low. Do NOT redefine.
+architecture:
+  determinism: [no_random, no_timestamps_except_latency, no_uuid, stable_sort_severity_then_id, registry_order_rules]
+  wasm_safe: [no_dynamic_imports, no_network, no_subprocess, no_fs_writes_outside_pkg]
+  evaluator_pipeline:
+    - load_plan
+    - run rule_registry.all_rules()
+    - aggregate_issues
+    - attach_fixpack_metadata
+    - compute_severity_totals
+    - compute_quick_score_mode
+    - build_metadata
+    - canonicalize_output
+    - validate_schema_attach_errors
+  cli:
+    commands: [scan, validate, rules]
+    flags: [--json, --stdin, --quiet, --version, --output json]
+    scan_output: "canonical JSON + latency_ms"
+    validate_output: "same + schema_validation_error"
 
-=== REMEDIATION LOGIC ===
-Use deterministic FixPack-Lite. 
-Never generate AI remediation. 
-Emit remediation_hint using fixpack/<pillar>/<ISSUE_ID>.hcl.
+canonical_schema:
+  required_issue_fields:
+    - id, severity, title, description, resource_address
+    - attributes, remediation_hint, remediation_difficulty
+  severity: [critical, high, medium, low]
+  evaluator_output_required:
+    - pillar, scan_version, canonical_schema_version
+    - guardscore_rules_version, environment, issues
+    - severity_totals, latency_ms
+    - quick_score_mode, badge_eligible
+    - metadata, schema_validation_error
 
-=== PERFORMANCE RULES ===
-- Always measure latency_ms.
-- If plan >1000 resources OR >40MB, set quick_score_mode = true.
-- Design scans to complete <1300ms for typical plans.
+rules:
+  signature: "rule(plan) -> list[IssueDict]"
+  constraints: [pure, deterministic, no_io, no_global_mutation]
+  registry:
+    file: src/pillar/rules/registry.py
+    must: [register(rule), all_rules_ordered, no_duplicates]
+  recommended_issue_template: |
+    {
+      "id": "PILLAR-XXX-000",
+      "severity": "medium",
+      "title": "",
+      "description": "",
+      "resource_address": "",
+      "attributes": {},
+      "remediation_hint": "fixpack:PILLAR-XXX-000",
+      "remediation_difficulty": "low"
+    }
 
-=== SAFETY RULES ===
-- No network calls. No external APIs. No cloud SDKs.
-- Sanitize all strings for JSON/SVG safety.
-- Never output absolute filesystem paths.
+fixpack:
+  loader_file: src/pillar/fixpack/loader.py
+  loader_must: [exists(issue_id), load(issue_id)_returns_metadata]
+  naming: "fixpack/<ISSUE_ID>.hcl"
+  hint_format: "fixpack:<ISSUE_ID>"
+  required_stub_fields: [id, summary, difficulty]
 
-=== ARCHITECTURAL CONSTRAINTS ===
-- All pillars share the same structure and conventions.
-- Engines must be modular, pure where possible, with small, testable functions.
-- Loaders must use streaming logic.
-- Renderer must follow canonical JSON format.
+error_model:
+  evaluator: [never_raise_schema_errors, attach_schema_errors, continue_processing]
+  cli: [wrap_exceptions, exit_1_on_user_error, deterministic_json]
 
-=== TESTING REQUIREMENTS ===
-- Always add tests: schema compliance, snapshot tests,
-  remediation mapping, latency behavior, quick score mode.
-- Use shared testdata via tests/shared/loader.py.
-- Tests must run without network access.
+testing:
+  required: [unit, integration, snapshots, schema, remediation, quickscore, deterministic]
+  fixture_minimal_plan: tests/fixtures/minimal_plan.json
+  snapshot_update_only_when_instructed: true
 
-=== STYLE & QUALITY ===
-- Python must use type hints everywhere.
-- Keep modules small.
-- Prefer explicit clarity over clever solutions.
-- Deterministic ordering is mandatory across all outputs.
+copilot_behavior:
+  must: [follow_yaml_strictly, modify_only_requested_dirs, run_pytest_after_changes,
+         update_snapshots_when_allowed, preserve_determinism, preserve_formatting]
+  must_not: [reorganize_repo, rename_modules, modify_schema_keys, delete_tests_unless_instructed]
 
-Follow all patterns used in VectorScan v2.0 and VectorGuard v2.2.
-Consistency across pillars is more important than local optimization.
+ai_dev:
+  description: "/ai-dev triggers a single mandatory Copilot instruction block."
+  block_format:
+    begin: "--- BEGIN COPILOT INSTRUCTIONS ---"
+    end: "--- END COPILOT INSTRUCTIONS ---"
+  expected_copilot_outputs:
+    - ANALYSIS_COMPLETE: true
+    - ANALYSIS_COMPLETE: false
+    - MIGRATION_PHASE_*_COMPLETE: true
+  when_false: "Return numbered list of fixes."
+  rules: [one_block_only, no_extra_text, no_summary, ask_for_missing_paths_only]
+
+revision:
+  locked: true
+  user_confirmation_required: true
+
+end_of_file: true

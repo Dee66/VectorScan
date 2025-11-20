@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from . import register
-from .base import Rule
+from .base import Rule, build_issue
 
 
 @register
@@ -13,4 +13,7 @@ class PlaceholderRule(Rule):
 
     @classmethod
     def evaluate(cls, plan):
+        _ = plan
+        _ = build_issue  # Placeholder hook for rule authors.
+        # Still returns no issues — placeholder only.
         return []

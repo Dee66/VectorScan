@@ -13,8 +13,9 @@ from .constants import (
     GUARDSCORE_RULES_VERSION,
     CANONICAL_SCHEMA_VERSION,
 )
-from .metadata import build_environment
+from src.vectorscan.metadata import build_environment
 from src.vectorscan.rules import get_all_rules
+from src.vectorscan.fixpack import loader as fixpack_loader
 
 REQUIRED_OUTPUT_KEYS = [
     "pillar",
@@ -45,6 +46,7 @@ ISSUE_REQUIRED_FIELDS = [
 
 SEVERITY_KEYS = ["critical", "high", "medium", "low"]
 
+
 def run_scan(
     plan: Dict[str, Any],
     *,
@@ -58,16 +60,14 @@ def run_scan(
     resource_count = _extract_resource_count(plan_snapshot)
     providers = _extract_providers(plan_snapshot)
     severity_totals = _zero_severity_totals()
-    metadata_environment = build_environment(
-        {**plan_snapshot, "resource_count": resource_count, "providers": providers}
-    )
+    metadata_environment = build_environment(plan_snapshot)
     quick_score_mode = _should_enable_quick_score(resource_count, raw_size, source_path)
     issues: List[Dict[str, Any]] = []
 
     for rule_cls in get_all_rules():
         try:
             results = rule_cls.evaluate(plan_snapshot)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-except
             issues.append(
                 {
                     "id": "P-VEC-EVAL-ERR",
@@ -84,6 +84,13 @@ def run_scan(
 
         if results:
             issues.extend(results)
+
+    # optional fixpack mapping
+    for issue in issues:
+        rule_id = issue.get("id", "")
+        hint = fixpack_loader.get_fixpack_hint(rule_id)
+        if hint:
+            issue["remediation_hint"] = hint
 
     payload = _build_base_payload(
         severity_totals=severity_totals,

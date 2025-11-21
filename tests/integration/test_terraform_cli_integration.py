@@ -26,7 +26,7 @@ def test_terraform_tests_error_no_download(capsys, monkeypatch):
     # Monkeypatch run_terraform_tests to simulate an ERROR (e.g., no terraform and downloads disabled)
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    import tools.vectorscan.vectorscan as vs
+    import tools.vectorscan.entrypoint_shim as vs
 
     def fake_run_terraform_tests(override_bin, auto_download):
         return {
@@ -54,7 +54,7 @@ def test_terraform_tests_fail_integration(capsys, monkeypatch):
     # Ensure repo root import works
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    import tools.vectorscan.vectorscan as vs
+    import tools.vectorscan.entrypoint_shim as vs
 
     def fake_run_terraform_tests(override_bin, auto_download):
         return {
@@ -81,7 +81,7 @@ def test_terraform_tests_skip_legacy(capsys, monkeypatch):
     # Monkeypatch run_terraform_tests to simulate a SKIP (legacy)
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    import tools.vectorscan.vectorscan as vs
+    import tools.vectorscan.entrypoint_shim as vs
 
     def fake_run_terraform_tests(override_bin, auto_download):
         return {
@@ -105,7 +105,7 @@ def test_terraform_tests_skip_legacy(capsys, monkeypatch):
 def test_terraform_tests_skip_when_missing_binary(capsys, monkeypatch):
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    import tools.vectorscan.vectorscan as vs
+    import tools.vectorscan.entrypoint_shim as vs
 
     def fake_ensure(self, override_bin):  # pragma: no cover - monkeypatched helper
         raise vs.TerraformNotFoundError(

@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import tools.vectorscan.vectorscan as vs  # noqa: E402
+import tools.vectorscan.entrypoint_shim as vs  # noqa: E402
 
 
 def test_run_terraform_tests_handles_binary_crash(monkeypatch):

@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import tools.vectorscan.vectorscan as vectorscan  # noqa: E402
+import tools.vectorscan.entrypoint_shim as vectorscan  # noqa: E402
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 

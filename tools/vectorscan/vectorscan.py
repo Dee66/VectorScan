@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""VectorScan CLI entry point for Terraform plan guardrails."""
+"""VectorScan CLI entry point for Terraform plan guardrails.
+
+Refer to src/pillar/cli.py for the canonical GuardSuite pillar interface;
+this legacy module remains until tools/vectorscan/entrypoint_shim.py bridges
+all commands to the new surface.
+"""
 
 from __future__ import annotations
 
@@ -13,15 +18,52 @@ import tempfile as _tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Set, cast
+from typing import Any, Dict, List, Optional, Sequence, Set, TextIO, cast
 from urllib import request as _urllib_request
 
 # ruff: noqa: E402
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+_SRC_ROOT = _REPO_ROOT / "src"
+if str(_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SRC_ROOT))
 if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
+    sys.path.append(str(_REPO_ROOT))
+_PACKAGE_ROOT = (_SRC_ROOT / "vectorscan").resolve()
+
+
+def _load_canonical_vectorscan_package() -> None:
+    """Ensure sys.modules['vectorscan'] always points at src/vectorscan."""
+
+    import importlib.util
+
+    module_name = "vectorscan"
+    package_init = _PACKAGE_ROOT / "__init__.py"
+    if not package_init.exists():
+        # Bundled builds omit src/, so fall back to whatever vectorscan import is available.
+        return
+
+    try:
+        sys.modules.pop(module_name, None)
+        spec = importlib.util.spec_from_file_location(
+            module_name,
+            package_init,
+            submodule_search_locations=[str(_PACKAGE_ROOT)],
+        )
+        if spec is None or spec.loader is None:
+            raise ImportError
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        module.__path__ = [str(_PACKAGE_ROOT)]
+    except (FileNotFoundError, ImportError):
+        # When packaging omits src/, continue with whichever vectorscan package is available.
+        sys.modules.pop(module_name, None)
+        return
+
+
+_load_canonical_vectorscan_package()
 
 from tools.vectorscan.constants import (
     EXIT_CONFIG_ERROR,
@@ -106,6 +148,40 @@ from tools.vectorscan.terraform import (
 )
 from tools.vectorscan.terraform import set_strategy_resolver as _set_strategy_resolver
 from tools.vectorscan.versioning import OUTPUT_SCHEMA_VERSION, POLICY_VERSION, VECTORSCAN_VERSION
+try:  # Prefer the canonical renderer from src/vectorscan when available.
+    from vectorscan.renderer import safe_print as _safe_print
+except (ModuleNotFoundError, ImportError):  # pragma: no cover - exercised in bundle tests
+
+    def _normalize_surrogates(value: str) -> str:
+        try:
+            payload = value.encode("utf-16", errors="surrogatepass")
+            return payload.decode("utf-16", errors="strict")
+        except UnicodeError:
+            return value
+
+
+    def _safe_print(text: str, *, stream: Optional[TextIO] = None, newline: bool = True) -> None:
+        target = stream or sys.stdout
+        value = _normalize_surrogates(text or "")
+        try:
+            payload = value.encode("utf-8", errors="strict")
+        except UnicodeEncodeError:
+            payload = value.encode("utf-8", errors="replace")
+        buffer = getattr(target, "buffer", None)
+        if buffer is not None:
+            buffer.write(payload)
+            if newline:
+                buffer.write(b"\n")
+            buffer.flush()
+            return
+        try:
+            decoded = payload.decode("utf-8", errors="strict")
+        except UnicodeDecodeError:
+            decoded = payload.decode("utf-8", errors="replace")
+        target.write(decoded)
+        if newline:
+            target.write("\n")
+        target.flush()
 
 # Backwards-compatible shims for legacy tests and monkeypatching
 _write_local_capture = write_local_capture
@@ -118,6 +194,8 @@ subprocess = _subprocess_module
 # Re-export select utilities for downstream tests and integrations without adding new public modules.
 TAGGABLE_TYPES = _POLICY_TAGGABLE_TYPES
 iter_resources = _iter_resources
+
+_SEVERITY_RANK = {level: idx for idx, level in enumerate(SEVERITY_LEVELS)}
 
 
 def load_json(path: Path) -> Dict[str, Any]:
@@ -162,13 +240,12 @@ __all__ = [
 ]
 
 _current_module = sys.modules[__name__]
-sys.modules["vectorscan"] = _current_module
 _register_vectorscan_module(_current_module)
 
 try:
     ensure_supported_python()
 except UnsupportedPythonVersion as exc:
-    print(str(exc), file=sys.stderr)
+    _safe_print(str(exc), stream=sys.stderr)
     sys.exit(EXIT_CONFIG_ERROR)
 
 
@@ -181,7 +258,6 @@ try:
 except PolicyPackError as exc:  # pragma: no cover - exercised in integration tests
     POLICY_PACK_HASH = None
     _POLICY_PACK_ERROR = str(exc)
-
 
 def check_encryption(resources: List[Dict[str, Any]]) -> List[str]:
     """Compatibility wrapper delegating to the pluggable encryption policy."""
@@ -399,13 +475,13 @@ class _PolicyEvaluationGuard:
 def _print_policy_manifest(manifest_path: Optional[str]) -> int:
     if POLICY_PACK_HASH is None:
         message = _POLICY_PACK_ERROR or "Unknown policy pack error"
-        print(f"Policy pack load error: {message}", file=sys.stderr)
+        _safe_print(f"Policy pack load error: {message}", stream=sys.stderr)
         return EXIT_POLICY_LOAD_ERROR
     if manifest_path:
         try:
             manifest = load_policy_manifest(manifest_path)
         except PolicyManifestError as exc:
-            print(f"Policy manifest error: {exc}", file=sys.stderr)
+            _safe_print(f"Policy manifest error: {exc}", stream=sys.stderr)
             return EXIT_CONFIG_ERROR
     else:
         policies = get_policies()
@@ -413,7 +489,7 @@ def _print_policy_manifest(manifest_path: Optional[str]) -> int:
             [policy.metadata for policy in policies],
             policy_pack_hash_value=POLICY_PACK_HASH,
         )
-    print(json.dumps(manifest, indent=2, ensure_ascii=False))
+    _safe_print(json.dumps(manifest, indent=2, ensure_ascii=False))
     return EXIT_SUCCESS
 
 
@@ -448,7 +524,7 @@ def _run_compare_mode(
     }
     payload = cast(Dict[str, Any], _sanitize_for_json(payload))
     if as_json:
-        print(
+        _safe_print(
             json.dumps(
                 payload,
                 indent=2,
@@ -457,7 +533,7 @@ def _run_compare_mode(
             )
         )
     else:
-        print(render_plan_evolution_text(plan_evolution))
+        _safe_print(render_plan_evolution_text(plan_evolution))
     return EXIT_SUCCESS
 
 
@@ -622,6 +698,7 @@ def _should_auto_download_terraform(ns: argparse.Namespace, offline_mode: bool) 
         if env_falsey(legacy_env):
             return False
 
+    # Require explicit opt-in so callers can control network access deterministically.
     return False
 
 
@@ -631,22 +708,26 @@ def _execute_terraform_tests(
     if not _should_run_terraform_tests(ns):
         return None
     auto_download = _should_auto_download_terraform(ns, offline_mode)
-    print("[VectorScan] Ensuring Terraform CLI for module tests...", file=sys.stderr)
+    _safe_print("[VectorScan] Ensuring Terraform CLI for module tests...", stream=sys.stderr)
     terraform_report = run_terraform_tests(ns.terraform_bin, auto_download)
     status = terraform_report.get("status") if terraform_report else "SKIP"
     version = terraform_report.get("version", "?") if terraform_report else "?"
     source = terraform_report.get("source", "?") if terraform_report else "?"
-    print(
+    _safe_print(
         f"[VectorScan] Terraform test status: {status} (CLI {version}, source={source})",
-        file=sys.stderr,
+        stream=sys.stderr,
     )
     if terraform_report:
         stdout_full = terraform_report.get("stdout", "")
         stderr_full = terraform_report.get("stderr", "")
         if stdout_full:
-            print(stdout_full, end="" if stdout_full.endswith("\n") else "\n")
+            _safe_print(stdout_full, newline=not stdout_full.endswith("\n"))
         if stderr_full:
-            print(stderr_full, end="" if stderr_full.endswith("\n") else "\n", file=sys.stderr)
+            _safe_print(
+                stderr_full,
+                stream=sys.stderr,
+                newline=not stderr_full.endswith("\n"),
+            )
     return terraform_report
 
 
@@ -681,6 +762,22 @@ def _evaluate_registered_policies(
         violations=violations,
         policy_errors=policy_errors,
     )
+
+
+def _sort_violations(
+    violations: Sequence[str],
+    severity_lookup: Dict[str, str],
+) -> List[str]:
+    def _key(message: str) -> tuple[int, str, str]:
+        policy_id = message.split(":", 1)[0].strip() or "unknown"
+        severity = severity_lookup.get(policy_id, "low")
+        return (
+            _SEVERITY_RANK.get(severity, len(SEVERITY_LEVELS)),
+            policy_id,
+            message,
+        )
+
+    return sorted(violations, key=_key)
 
 
 def _inject_preview_metadata(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -743,7 +840,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
     if POLICY_PACK_HASH is None:
         message = _POLICY_PACK_ERROR or "Unknown policy pack error"
-        print(f"Policy pack load error: {message}", file=sys.stderr)
+        _safe_print(f"Policy pack load error: {message}", stream=sys.stderr)
         return EXIT_POLICY_LOAD_ERROR
     policy_pack_hash_value = POLICY_PACK_HASH
 
@@ -760,10 +857,10 @@ def _run_cli(argv: list[str] | None = None) -> int:
         try:
             resource_scope = _resolve_resource_scope(ns.resource, all_resources)
         except _ResourceScopeError as exc:
-            print(exc.message, file=sys.stderr)
+            _safe_print(exc.message, stream=sys.stderr)
             if exc.suggestions:
                 joined = ", ".join(exc.suggestions)
-                print(f"Did you mean: {joined}?", file=sys.stderr)
+                _safe_print(f"Did you mean: {joined}?", stream=sys.stderr)
             return EXIT_INVALID_INPUT
         resources = [resource_scope["resource"]]
         resource_filter_set = {resource_scope["address"]}
@@ -777,12 +874,12 @@ def _run_cli(argv: list[str] | None = None) -> int:
             ns.policy_ids, ns.policies, available_policy_ids
         )
     except _PolicySelectionError as exc:
-        print(exc.message, file=sys.stderr)
+        _safe_print(exc.message, stream=sys.stderr)
         if exc.choices:
-            print("Available options: " + ", ".join(exc.choices), file=sys.stderr)
+            _safe_print("Available options: " + ", ".join(exc.choices), stream=sys.stderr)
         return EXIT_INVALID_INPUT
     if not selected_policy_ids:
-        print("No policies selected for evaluation.", file=sys.stderr)
+        _safe_print("No policies selected for evaluation.", stream=sys.stderr)
         return EXIT_INVALID_INPUT
     policy_lookup = {p.metadata.policy_id: p for p in all_policies}
     policies = [policy_lookup[pid] for pid in selected_policy_ids]
@@ -791,8 +888,14 @@ def _run_cli(argv: list[str] | None = None) -> int:
     policy_ids = policy_eval.policy_ids
     severity_lookup = policy_eval.severity_lookup
     policy_metadata_lookup = policy_eval.policy_metadata
-    violations = policy_eval.violations
+    violations = _sort_violations(policy_eval.violations, severity_lookup)
     policy_errors = policy_eval.policy_errors
+
+    def _policy_sort_key(policy_id: str) -> tuple[int, str]:
+        severity = severity_lookup.get(policy_id, "low")
+        return (_SEVERITY_RANK.get(severity, len(SEVERITY_LEVELS)), policy_id)
+
+    ordered_policy_ids = sorted(policy_ids, key=_policy_sort_key)
 
     if manifest_override_path:
         try:
@@ -802,7 +905,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
                 selected_policy_ids=policy_ids,
             )
         except PolicyManifestError as exc:
-            print(f"Policy manifest error: {exc}", file=sys.stderr)
+            _safe_print(f"Policy manifest error: {exc}", stream=sys.stderr)
             return EXIT_CONFIG_ERROR
     else:
         manifest_data = build_policy_manifest(
@@ -833,7 +936,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
         "violations": violations,
         "violations_struct": violation_structs,
         "counts": {"violations": len(violations)},
-        "checks": policy_ids,
+        "checks": ordered_policy_ids,
         "vectorscan_version": VECTORSCAN_VERSION,
         "policy_version": POLICY_VERSION,
         "schema_version": OUTPUT_SCHEMA_VERSION,
@@ -993,14 +1096,14 @@ def _run_cli(argv: list[str] | None = None) -> int:
         try:
             preview_manifest_data = _inject_preview_metadata(payload)
         except PreviewManifestError as exc:
-            print(f"Preview manifest error: {exc}", file=sys.stderr)
+            _safe_print(f"Preview manifest error: {exc}", stream=sys.stderr)
             return EXIT_CONFIG_ERROR
         code = EXIT_PREVIEW_MODE
 
     safe_payload = cast(Dict[str, Any], _sanitize_for_json(payload))
 
     if ns.as_json:
-        print(
+        _safe_print(
             json.dumps(
                 safe_payload,
                 indent=2,
@@ -1018,62 +1121,62 @@ def _run_cli(argv: list[str] | None = None) -> int:
         tf_status = str(terraform_report.get("status", "SKIP")).upper()
         badge = _status_badge(tf_status, use_color)
         if tf_status == "PASS":
-            print(f"Terraform tests: {badge}")
+            _safe_print(f"Terraform tests: {badge}")
         elif tf_status == "SKIP":
             message = terraform_report.get("message", "Terraform CLI unavailable; skipping tests")
-            print(f"Terraform tests: {badge} - {message}")
+            _safe_print(f"Terraform tests: {badge} - {message}")
         else:
-            print(f"Terraform tests: {badge} (see details above)")
+            _safe_print(f"Terraform tests: {badge} (see details above)")
 
     if resource_scope and not ns.as_json:
         scope_addr = resource_scope["address"]
         if resource_scope["match_type"] == "suffix" and ns.resource != scope_addr:
-            print(f"Resource scope: {scope_addr} (matched from '{ns.resource}')")
+            _safe_print(f"Resource scope: {scope_addr} (matched from '{ns.resource}')")
         else:
-            print(f"Resource scope: {scope_addr}")
+            _safe_print(f"Resource scope: {scope_addr}")
 
     if has_policy_failures or has_policy_violations:
-        print(f"{_status_badge('FAIL', use_color)} - tfplan.json - VectorScan checks")
+        _safe_print(f"{_status_badge('FAIL', use_color)} - tfplan.json - VectorScan checks")
         for v in violations:
-            print("  ", v)
+            _safe_print(f"  {v}")
         if violations:
             summary_line = ", ".join(
                 f"{level}={severity_summary.get(level, 0)}" for level in SEVERITY_LEVELS
             )
-            print(f"  Violation severity summary: {summary_line}")
+            _safe_print(f"  Violation severity summary: {summary_line}")
         if policy_errors:
-            print("  Policy engine errors detected (partial coverage):")
+            _safe_print("  Policy engine errors detected (partial coverage):")
             for err in policy_errors:
-                print(f"    - {err['policy']}: {err['error']}")
-        print("\n🚀 Want full, automated Zero-Trust & FinOps coverage?")
-        print(
+                _safe_print(f"    - {err['policy']}: {err['error']}")
+        _safe_print("\n🚀 Want full, automated Zero-Trust & FinOps coverage?")
+        _safe_print(
             "Get the complete 8-point compliance kit (Blueprint) for $79/year → https://gumroad.com/l/vectorguard-blueprint\n"
         )
     else:
-        print(
+        _safe_print(
             f"{_status_badge('PASS', use_color)} - tfplan.json - VectorScan checks (encryption + mandatory tags)"
         )
 
     if ns.explain and not ns.as_json and explanation_block:
-        print("")
-        print(render_explanation_text(explanation_block))
-        print("")
+        _safe_print("")
+        _safe_print(render_explanation_text(explanation_block))
+        _safe_print("")
 
     if ns.diff and not ns.as_json:
-        print("")
-        print(render_plan_diff_text(plan_diff_block or {"summary": {}, "resources": []}))
-        print("")
+        _safe_print("")
+        _safe_print(render_plan_diff_text(plan_diff_block or {"summary": {}, "resources": []}))
+        _safe_print("")
 
     if preview_manifest_data and not ns.as_json:
-        print("VectorGuard preview policies (no paid policy execution):")
+        _safe_print("VectorGuard preview policies (no paid policy execution):")
         for entry in preview_manifest_data["policies"]:
-            print(f"  - {entry['id']}: {entry['summary']}")
+            _safe_print(f"  - {entry['id']}: {entry['summary']}")
         preview_path = preview_manifest_data.get("path")
         if preview_path:
-            print(
+            _safe_print(
                 f"  Manifest: {preview_path} (verified={preview_manifest_data.get('verified', False)})"
             )
-        print("Preview mode exit code: 10 (PREVIEW_MODE_ONLY)")
+        _safe_print("Preview mode exit code: 10 (PREVIEW_MODE_ONLY)")
 
     # Optional lead capture (local, and optional HTTP POST if configured)
     if (not offline_mode) and (
@@ -1086,12 +1189,12 @@ def _run_cli(argv: list[str] | None = None) -> int:
             "source": "vectorscan-cli",
         }
         path_out = _write_local_capture(lead)
-        print(f"Lead payload saved: {path_out}")
+        _safe_print(f"Lead payload saved: {path_out}")
 
         endpoint = ns.endpoint or os.getenv("VSCAN_LEAD_ENDPOINT", "")
         if endpoint:
             ok, info = _maybe_post(endpoint, lead)
-            print(f"Lead POST => {info} ({'OK' if ok else 'SKIP/FAIL'})")
+            _safe_print(f"Lead POST => {info} ({'OK' if ok else 'SKIP/FAIL'})")
     return code
 
 
@@ -1100,10 +1203,10 @@ def main(argv: list[str] | None = None) -> int:
         ensure_supported_python()
         return _run_cli(argv)
     except UnsupportedPythonVersion as exc:
-        print(f"[Python Compatibility] {exc}", file=sys.stderr)
+        _safe_print(f"[Python Compatibility] {exc}", stream=sys.stderr)
         return EXIT_CONFIG_ERROR
     except StrictModeViolation as exc:
-        print(f"[Strict Mode] {exc}", file=sys.stderr)
+        _safe_print(f"[Strict Mode] {exc}", stream=sys.stderr)
         return EXIT_CONFIG_ERROR
 
 

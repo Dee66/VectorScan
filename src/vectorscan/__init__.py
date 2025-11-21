@@ -1,5 +1,5 @@
-"""GuardSuite pillar template package."""
+"""VectorScan package exports."""
 
-from .constants import PILLAR_NAME
+from .cli import main as main
 
-__all__ = ["PILLAR_NAME"]
+__all__ = ["main"]

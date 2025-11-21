@@ -14,6 +14,7 @@ for p in (str(_ROOT), str(_TOOLS_VSCAN)):
 os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
 
 import pytest
+from tools.vectorscan import vectorscan as vectorscan_cli
 
 
 class DummyResp:
@@ -56,9 +57,7 @@ def test_cli_to_api_lead_capture(tmp_path, monkeypatch):
     global _fake_urlopen_payload
     _fake_urlopen_payload = None
     try:
-        import vectorscan
-
-        code = vectorscan.main([str(plan_path), "--lead-capture", "--email", "int@example.com"])
+        code = vectorscan_cli.main([str(plan_path), "--lead-capture", "--email", "int@example.com"])
     finally:
         ur.urlopen = original
         os.environ.pop("LEAD_CAPTURE_ENABLED", None)

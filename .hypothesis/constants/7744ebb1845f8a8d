@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/src/vectorscan/rules/rule_low_dimension.py
+# hypothesis_version: 6.148.1
+
+['P-VEC-004', 'address', 'dimension', 'fixpack:P-VEC-004', 'low', 'medium', 'resources', 'type', 'vector_index']

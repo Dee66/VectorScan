@@ -44,8 +44,8 @@ def is_offline() -> bool:
         if env_falsey(allow_value):
             return True
 
-    # Default: run in offline mode until explicitly overridden.
-    return True
+    # Default: allow network access unless explicitly disabled.
+    return False
 
 
 def is_strict_mode() -> bool:

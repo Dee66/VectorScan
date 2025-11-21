@@ -9,4 +9,5 @@ mypy
 httpx
 pyyaml
 types-PyYAML
+jsonschema
 nox

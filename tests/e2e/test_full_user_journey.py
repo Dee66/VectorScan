@@ -15,6 +15,8 @@ for p in (str(_ROOT), str(_TOOLS_VSCAN)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from tools.vectorscan import vectorscan as vectorscan_cli
+
 os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
 
 
@@ -41,15 +43,13 @@ def _run_cli_from_bundle(bundle_root: Path, plan: Path, base_env: dict[str, str]
 
 def test_end_to_end_happy_path(tmp_path, capsys):
     # Full flow: PASS plan -> PASS exit, optional local lead capture file is written
-    import vectorscan
-
     plan = _ROOT / "examples" / "aws-pgvector-rag" / "tfplan-pass.json"
 
     # Pre-count capture files
     captures_dir = _TOOLS_VSCAN / "captures"
     before = set(captures_dir.glob("lead_*.json")) if captures_dir.exists() else set()
 
-    code = vectorscan.main([str(plan), "--lead-capture", "--email", "e2e@example.com"])
+    code = vectorscan_cli.main([str(plan), "--lead-capture", "--email", "e2e@example.com"])
     out = capsys.readouterr().out
     clean = _strip_ansi(out)
 
@@ -68,10 +68,8 @@ def test_end_to_end_happy_path(tmp_path, capsys):
 
 def test_end_to_end_unhappy_path(capsys):
     # Full flow: FAIL plan -> FAIL exit, violations include both policy codes
-    import vectorscan
-
     plan = _ROOT / "examples" / "aws-pgvector-rag" / "tfplan-fail.json"
-    code = vectorscan.main([str(plan)])
+    code = vectorscan_cli.main([str(plan)])
     out = capsys.readouterr().out
     clean = _strip_ansi(out)
 
@@ -86,8 +84,6 @@ def test_end_to_end_partial_failure(monkeypatch, capsys):
     import urllib.request as ur
     from urllib import error
 
-    import vectorscan
-
     plan = _ROOT / "examples" / "aws-pgvector-rag" / "tfplan-pass.json"
 
     # Force urlopen to raise immediately (simulate endpoint outage) to keep test fast
@@ -98,7 +94,7 @@ def test_end_to_end_partial_failure(monkeypatch, capsys):
 
     try:
         os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
-        code = vectorscan.main([str(plan), "--lead-capture", "--email", "e2e2@example.com"])
+        code = vectorscan_cli.main([str(plan), "--lead-capture", "--email", "e2e2@example.com"])
     finally:
         os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
 
@@ -110,8 +106,6 @@ def test_end_to_end_partial_failure(monkeypatch, capsys):
 
 
 def test_end_to_end_unicode_output(monkeypatch, tmp_path, capsys):
-    import vectorscan
-
     plan = tmp_path / "unicode-plan.json"
     plan.write_text(
         json.dumps(
@@ -146,7 +140,7 @@ def test_end_to_end_unicode_output(monkeypatch, tmp_path, capsys):
     )
 
     capsys.readouterr()
-    code = vectorscan.main([str(plan), "--json"])
+    code = vectorscan_cli.main([str(plan), "--json"])
     output = capsys.readouterr().out
     payload = json.loads(output)
 
@@ -156,7 +150,7 @@ def test_end_to_end_unicode_output(monkeypatch, tmp_path, capsys):
 
     # Human-readable output should also preserve Unicode/emoji
     capsys.readouterr()
-    code_text = vectorscan.main([str(plan)])
+    code_text = vectorscan_cli.main([str(plan)])
     human = capsys.readouterr().out
     human_clean = _strip_ansi(human)
     assert code_text == 3

@@ -10,6 +10,8 @@ __pycache__/
 
 # Build and distribution artifacts
 dist/
+.release-venv/
+*.egg-info/
 htmlcov/
 .coverage
 pip-wheel-metadata/

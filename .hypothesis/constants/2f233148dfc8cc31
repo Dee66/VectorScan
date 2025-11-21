@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/src/vectorscan/rules/rule_unrestricted_network.py
+# hypothesis_version: 6.148.1
+
+['0.0.0.0/0', 'P-VEC-003', 'address', 'allowed_cidrs', 'fixpack:P-VEC-003', 'medium', 'resources', 'type', 'vector_index']

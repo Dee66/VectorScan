@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/copilot_suite_generator.py
+# hypothesis_version: 6.148.1
+
+['--base-path', '--check', 'Created suites:', 'Updated suites:', '__main__', 'store_true', 'utf-8']

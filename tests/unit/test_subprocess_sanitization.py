@@ -9,7 +9,10 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from vectorscan import ModernTerraformTestStrategy, _safe_chdir_flag  # type: ignore[attr-defined]
+from tools.vectorscan import vectorscan as vscan
+
+_safe_chdir_flag = vscan._safe_chdir_flag
+ModernTerraformTestStrategy = vscan.ModernTerraformTestStrategy
 
 
 def test_safe_chdir_flag_accepts_repo_path(tmp_path):
@@ -57,7 +60,7 @@ def test_modern_strategy_reports_error_on_unsafe_path(monkeypatch):
     def boom(*args, **kwargs):  # pragma: no cover - simple test helper
         raise ValueError("escape detected")
 
-    monkeypatch.setattr("vectorscan._safe_chdir_flag", boom)
+    monkeypatch.setattr(vscan, "_safe_chdir_flag", boom)
 
     report = strategy.run(Path("/usr/bin/terraform"), "1.9.0")
     assert report["status"] == "ERROR"
@@ -69,7 +72,7 @@ def test_modern_strategy_commands_include_safe_chdir(tmp_path, monkeypatch):
     tf_dir = repo / "tests" / "tf-tests"
     tf_dir.mkdir(parents=True)
 
-    monkeypatch.setattr("vectorscan.ROOT_DIR", repo)
+    monkeypatch.setattr(vscan, "ROOT_DIR", repo)
 
     chdir_calls = []
 
@@ -78,7 +81,7 @@ def test_modern_strategy_commands_include_safe_chdir(tmp_path, monkeypatch):
         assert path == tf_dir
         return "-chdir=/safe"
 
-    monkeypatch.setattr("vectorscan._safe_chdir_flag", fake_safe)
+    monkeypatch.setattr(vscan, "_safe_chdir_flag", fake_safe)
 
     recorded_commands = []
 
@@ -86,7 +89,7 @@ def test_modern_strategy_commands_include_safe_chdir(tmp_path, monkeypatch):
         recorded_commands.append(cmd)
         return SimpleNamespace(returncode=0, stdout="ok", stderr="")
 
-    monkeypatch.setattr("vectorscan.subprocess.run", fake_run)
+    monkeypatch.setattr(vscan.subprocess, "run", fake_run)
 
     strategy = ModernTerraformTestStrategy()
     report = strategy.run(Path("/usr/bin/terraform"), "1.9.0")
@@ -111,7 +114,7 @@ def test_modern_strategy_rejects_symlink_escape(tmp_path, monkeypatch):
     tf_symlink = tests_dir / "tf-tests"
     tf_symlink.symlink_to(outside_tf, target_is_directory=True)
 
-    monkeypatch.setattr("vectorscan.ROOT_DIR", repo)
+    monkeypatch.setattr(vscan, "ROOT_DIR", repo)
 
     strategy = ModernTerraformTestStrategy()
     report = strategy.run(Path("/usr/bin/terraform"), "1.9.0")

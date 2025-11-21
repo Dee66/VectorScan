@@ -200,6 +200,14 @@ def generate_schema_md() -> str:
     return markdown
 
 
+def generate_docs() -> tuple[str, str]:
+    """Regenerate both spec and schema documents for convenience."""
+
+    spec = generate_spec_md()
+    schema = generate_schema_md()
+    return spec, schema
+
+
 if __name__ == "__main__":
     generate_spec_md()
     generate_schema_md()

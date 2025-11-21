@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/VectorScan/src/vectorscan/rules/placeholder_rule.py
+# hypothesis_version: 6.148.1
+
+['P-VEC-000', 'low']

@@ -2,9 +2,50 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+import sys
+from typing import Any, Dict, List, Optional, TextIO
 
 SEVERITY_ORDER = ("critical", "high", "medium", "low")
+
+
+def _normalize_surrogates(value: str) -> str:
+    """Collapse stray UTF-16 surrogate pairs back into real code points."""
+
+    try:
+        # round-trip through UTF-16 to combine surrogate halves when present
+        payload = value.encode("utf-16", errors="surrogatepass")
+        return payload.decode("utf-16", errors="strict")
+    except UnicodeError:
+        return value
+
+
+def _safe_print(text: str, *, stream: Optional[TextIO] = None, newline: bool = True) -> None:
+    """Write text to the target stream while preserving emoji and CJK characters."""
+
+    target = stream or sys.stdout
+    value = _normalize_surrogates(text or "")
+    try:
+        payload = value.encode("utf-8", errors="strict")
+    except UnicodeEncodeError:
+        payload = value.encode("utf-8", errors="replace")
+    buffer = getattr(target, "buffer", None)
+    if buffer is not None:
+        buffer.write(payload)
+        if newline:
+            buffer.write(b"\n")
+        buffer.flush()
+        return
+    try:
+        decoded = payload.decode("utf-8", errors="surrogatepass")
+    except UnicodeDecodeError:
+        decoded = payload.decode("utf-8", errors="replace")
+    target.write(decoded)
+    if newline:
+        target.write("\n")
+    target.flush()
+
+
+safe_print = _safe_print
 
 
 def render_human_readable(output: Dict[str, object]) -> str:

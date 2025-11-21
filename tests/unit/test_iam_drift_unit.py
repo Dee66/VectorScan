@@ -1,4 +1,12 @@
 import json
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.vectorscan.iam_drift import build_iam_drift_report
 
 
 def make_plan(resource_changes):
@@ -6,7 +14,6 @@ def make_plan(resource_changes):
 
 
 def test_iam_drift_detects_risky_added_action():
-    from vectorscan import build_iam_drift_report
 
     before_policy = json.dumps(
         {
@@ -40,7 +47,6 @@ def test_iam_drift_detects_risky_added_action():
 
 
 def test_iam_drift_pass_when_no_risky_additions():
-    from vectorscan import build_iam_drift_report
 
     after_policy = json.dumps(
         {

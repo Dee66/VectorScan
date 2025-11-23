@@ -1,0 +1,80 @@
+{
+  "mode": "compare",
+  "plan_evolution": {
+    "delta": {
+      "adds": 1,
+      "changes": 1,
+      "destroys": 1,
+      "resource_count": 1
+    },
+    "downgraded_encryption": {
+      "count": 2,
+      "resources": [
+        {
+          "address": "aws_rds_cluster.analytics",
+          "current": {
+            "kms_key_id": null,
+            "storage_encrypted": true
+          },
+          "name": "analytics",
+          "previous": {
+            "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/analytics",
+            "storage_encrypted": true
+          },
+          "reasons": [
+            "kms_key_id removed"
+          ],
+          "type": "aws_rds_cluster"
+        },
+        {
+          "address": "aws_rds_cluster.vector_db",
+          "current": {
+            "kms_key_id": null,
+            "storage_encrypted": false
+          },
+          "name": "vector_db",
+          "previous": {
+            "kms_key_id": "arn:aws:kms:us-east-1:111111111111:key/vector",
+            "storage_encrypted": true
+          },
+          "reasons": [
+            "storage_encrypted flipped to false",
+            "kms_key_id removed"
+          ],
+          "type": "aws_rds_cluster"
+        }
+      ]
+    },
+    "new_plan": {
+      "change_summary": {
+        "adds": 2,
+        "changes": 2,
+        "destroys": 2
+      },
+      "file": "tests/fixtures/tfplan_compare_new.json",
+      "resource_count": 4
+    },
+    "old_plan": {
+      "change_summary": {
+        "adds": 1,
+        "changes": 1,
+        "destroys": 1
+      },
+      "file": "tests/fixtures/tfplan_compare_old.json",
+      "resource_count": 3
+    },
+    "summary": {
+      "lines": [
+        "+1 resources (3 \u2192 4)",
+        "+1 planned adds (1 \u2192 2)",
+        "~1 changed resources (1 \u2192 2)",
+        "-1 destroyed resources (1 \u2192 2)",
+        "!2 downgraded encryption settings"
+      ]
+    }
+  },
+  "scan_version": "v2.0.0",
+  "schema_version": "1.2.0",
+  "status": "ALERT",
+  "vectorscan_version": "0.1.0"
+}

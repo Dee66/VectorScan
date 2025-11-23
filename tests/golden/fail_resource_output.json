@@ -1,224 +1,27 @@
 {
-  "status": "FAIL",
-  "file": "tests/fixtures/tfplan_fail.json",
-  "violations": [
-    "P-SEC-001: aws_rds_cluster 'vector_db' has storage_encrypted != true",
-    "P-FIN-001: aws_rds_cluster 'vector_db' missing/empty tag 'CostCenter'"
-  ],
-  "violations_struct": [
-    {
-      "policy_id": "P-SEC-001",
-      "policy_name": "Encryption Mandate",
-      "message": "P-SEC-001: aws_rds_cluster 'vector_db' has storage_encrypted != true",
-      "severity": "critical",
-      "resource": "aws_rds_cluster.vector_db",
-      "resource_details": {
-        "address": "aws_rds_cluster.vector_db",
-        "type": "aws_rds_cluster",
-        "name": "vector_db",
-        "module_path": "root",
-        "data_taint": "resource_body",
-        "taint_explanation": "Set kms_key_id directly on aws_rds_cluster.vector_db."
-      },
-      "remediation": {
-        "summary": "Enable encryption and configure kms_key_id for aws_rds_cluster.vector_db.",
-        "hcl_examples": [
-          "resource \"aws_rds_cluster\" \"vector_db\" {\n  storage_encrypted = true\n  kms_key_id       = \"<kms-key-arn>\"\n}}"
-        ],
-        "docs": [
-          "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html",
-          "https://vectorguard.dev/docs/policies/p-sec-001"
-        ],
-        "hcl_completeness": 0.75
-      }
-    },
-    {
-      "policy_id": "P-FIN-001",
-      "policy_name": "Mandatory Tagging",
-      "message": "P-FIN-001: aws_rds_cluster 'vector_db' missing/empty tag 'CostCenter'",
-      "severity": "high",
-      "resource": "aws_rds_cluster.vector_db",
-      "resource_details": {
-        "address": "aws_rds_cluster.vector_db",
-        "type": "aws_rds_cluster",
-        "name": "vector_db",
-        "module_path": "root",
-        "data_taint": "resource_body",
-        "taint_explanation": "Tags CostCenter missing on aws_rds_cluster.vector_db."
-      },
-      "remediation": {
-        "summary": "Populate CostCenter and Project tags for aws_rds_cluster.vector_db.",
-        "hcl_examples": [
-          "resource \"aws_rds_cluster\" \"vector_db\" {\n  tags = merge(var.default_tags, {\n    CostCenter = \"finops-1234\"\n    Project    = \"vectorguard\"\n  })\n}}"
-        ],
-        "docs": [
-          "https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html",
-          "https://vectorguard.dev/docs/policies/p-fin-001"
-        ],
-        "hcl_completeness": 0.75
-      }
-    }
-  ],
-  "counts": {
-    "violations": 2
-  },
+  "badge_eligible": false,
+  "canonical_schema_version": "1.0.0",
   "checks": [
     "P-SEC-001",
     "P-FIN-001"
   ],
-  "vectorscan_version": "0.1.0",
-  "policy_version": "1.0.0",
-  "schema_version": "1.2.0",
-  "policy_pack_hash": "126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c",
-  "policy_errors": [],
-  "violation_severity_summary": {
-    "critical": 1,
-    "high": 1,
-    "medium": 0,
-    "low": 0
-  },
-  "policy_source_url": "https://github.com/Dee66/VectorScan/tree/main/tools/vectorscan/policies",
-  "policy_manifest": {
-    "policy_version": "1.0.0",
-    "policy_pack_hash": "126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c",
-    "policy_source_url": "https://github.com/Dee66/VectorScan/tree/main/tools/vectorscan/policies",
-    "policy_count": 2,
-    "policies": [
-      {
-        "id": "P-FIN-001",
-        "name": "Mandatory Tagging",
-        "severity": "high",
-        "category": "finops",
-        "description": "Taggable AWS resources must include CostCenter and Project tags."
-      },
-      {
-        "id": "P-SEC-001",
-        "name": "Encryption Mandate",
-        "severity": "critical",
-        "category": "security",
-        "description": "RDS resources must enable storage encryption and reference a kms_key_id."
-      }
-    ],
-    "signature": "sha256:bdd7820ee169f78660c992e699d108b992b5b067aa459e25873e0ecca8503cea",
-    "signed": true,
-    "verified": true,
-    "path": "embedded"
-  },
-  "violation_count_by_severity": {
-    "critical": 1,
-    "high": 1,
-    "medium": 0,
-    "low": 0
-  },
-  "resource_filter": {
-    "input": "aws_rds_cluster.vector_db",
-    "address": "aws_rds_cluster.vector_db",
-    "type": "aws_rds_cluster",
-    "name": "vector_db",
-    "module_path": "root",
-    "match": "exact"
+  "counts": {
+    "violations": 2
   },
   "environment": {
+    "offline_mode": false,
     "platform": "linux",
     "platform_release": "unit-kernel",
-    "python_version": "3.11.test",
     "python_implementation": "CPython",
-    "terraform_version": "not-run",
-    "terraform_source": "not-run",
-    "vectorscan_version": "0.1.0",
+    "python_version": "3.11.test",
     "strict_mode": false,
-    "offline_mode": false
+    "terraform_source": "not-run",
+    "terraform_version": "not-run",
+    "vectorscan_version": "0.1.0"
   },
-  "plan_metadata": {
-    "resource_count": 1,
-    "resource_types": {
-      "aws_rds_cluster": 1
-    },
-    "providers": [
-      "aws"
-    ],
-    "module_count": 1,
-    "modules": {
-      "root": "root",
-      "with_resources": 1,
-      "child_module_count": 0,
-      "has_child_modules": false
-    },
-    "exceeds_threshold": false,
-    "change_summary": {
-      "adds": 0,
-      "changes": 0,
-      "destroys": 0
-    },
-    "resources_by_type": {
-      "aws_rds_cluster": {
-        "planned": 1,
-        "adds": 0,
-        "changes": 0,
-        "destroys": 0
-      }
-    },
-    "file_size_mb": 0.000429,
-    "parser_mode": "streaming",
-    "file_size_bytes": 429,
-    "parse_duration_ms": 123,
-    "plan_slo": {
-      "observed": {
-        "resource_count": 1,
-        "parse_duration_ms": 123,
-        "file_size_bytes": 429
-      },
-      "thresholds": {
-        "fast_path": {
-          "max_resources": 1000,
-          "max_parse_ms": 200
-        },
-        "large_plan": {
-          "max_resources": 10000,
-          "max_parse_ms": 2000
-        },
-        "file_size_limit_bytes": 1500000000
-      },
-      "active_window": "fast_path",
-      "breach_reason": null
-    }
-  },
-  "suspicious_defaults": [
-    {
-      "address": "aws_rds_cluster.vector_db",
-      "resource_type": "aws_rds_cluster",
-      "reason": "storage_encrypted defaults to false"
-    }
-  ],
-  "smell_report": {
-    "level": "moderate",
-    "summary": "1 structural smell detected (missing_kms_key)",
-    "stats": {
-      "resource_count": 1,
-      "max_module_depth": 0,
-      "for_each_instances": 0,
-      "kms_missing": 1,
-      "iam_policy_statements": 0,
-      "iam_policy_actions": 0,
-      "iam_policy_length": 0,
-      "change_total": 0
-    },
-    "smells": [
-      {
-        "id": "missing_kms_key",
-        "level": "moderate",
-        "message": "1 data store resource(s) missing kms_key_id encryption wiring.",
-        "evidence": {
-          "missing_count": 1,
-          "sample": [
-            "aws_rds_cluster.vector_db"
-          ]
-        }
-      }
-    ]
-  },
+  "file": "tests/fixtures/tfplan_fail.json",
+  "guardscore_rules_version": "2025.1",
   "iam_drift_report": {
-    "status": "PASS",
     "counts": {
       "risky_changes": 0
     },
@@ -228,33 +31,381 @@
         "NotAction not evaluated",
         "Resource scoping not evaluated for drift risk"
       ]
+    },
+    "status": "PASS"
+  },
+  "issues": [
+    {
+      "attributes": {
+        "category": "finops",
+        "module_address": "root",
+        "resource_count": 1,
+        "resource_name": "vector_db",
+        "resource_selector": "aws_rds_cluster.*",
+        "resource_type": "aws_rds_cluster",
+        "rule_id": "PILLAR-AWS-002",
+        "service": "rds",
+        "stub": true
+      },
+      "description": "FinOps policy mandates CostCenter and Project tags on production Aurora clusters.",
+      "id": "PILLAR-AWS-002",
+      "remediation_difficulty": "medium",
+      "remediation_hint": "fixpack:PILLAR-AWS-002",
+      "remediation_metadata": {
+        "fixpack_id": "PILLAR-AWS-002",
+        "summary": "Add CostCenter and Project tags to production Aurora clusters.",
+        "terraform_patch": "resource \"aws_rds_cluster\" \"example\" {\n    tags = merge(var.default_tags, {\n        CostCenter = \"finops-1234\"\n        Project    = \"vector-scan\"\n    })\n}"
+      },
+      "resource_address": "aws_rds_cluster.vector_db",
+      "severity": "high",
+      "title": "RDS clusters require CostCenter + Project tags"
+    }
+  ],
+  "latency_ms": 123,
+  "metadata": {
+    "control": {
+      "allow_network_capture": false,
+      "auto_download": false,
+      "offline_mode": false,
+      "terraform_outcome": "not_requested"
+    },
+    "environment": {
+      "offline_mode": false,
+      "platform": "linux",
+      "platform_release": "unit-kernel",
+      "python_implementation": "CPython",
+      "python_version": "3.11.test",
+      "strict_mode": false,
+      "terraform_source": "not-run",
+      "terraform_version": "not-run",
+      "vectorscan_version": "0.1.0"
+    },
+    "plan": {
+      "change_summary": {
+        "adds": 0,
+        "changes": 0,
+        "destroys": 0
+      },
+      "exceeds_threshold": false,
+      "file_size_bytes": 429,
+      "file_size_mb": 0.000429,
+      "module_count": 1,
+      "modules": {
+        "child_module_count": 0,
+        "has_child_modules": false,
+        "root": "root",
+        "with_resources": 1
+      },
+      "parse_duration_ms": 123,
+      "parser_mode": "streaming",
+      "plan_slo": {
+        "active_window": "fast_path",
+        "breach_reason": null,
+        "observed": {
+          "file_size_bytes": 429,
+          "parse_duration_ms": 123,
+          "resource_count": 1
+        },
+        "thresholds": {
+          "fast_path": {
+            "max_parse_ms": 200,
+            "max_resources": 1000
+          },
+          "file_size_limit_bytes": 1500000000,
+          "large_plan": {
+            "max_parse_ms": 2000,
+            "max_resources": 10000
+          }
+        }
+      },
+      "providers": [
+        "aws"
+      ],
+      "resource_count": 1,
+      "resource_types": {
+        "aws_rds_cluster": 1
+      },
+      "resources_by_type": {
+        "aws_rds_cluster": {
+          "adds": 0,
+          "changes": 0,
+          "destroys": 0,
+          "planned": 1
+        }
+      }
     }
   },
   "metrics": {
-    "eligible_checks": 2,
-    "passed_checks": 0,
     "compliance_score": 0,
-    "network_exposure_score": 100,
-    "open_sg_count": 0,
-    "iam_risky_actions": 0,
-    "notes": {
-      "open_security_groups": [],
-      "iam_risky_details": [],
-      "violation_count": 2
-    },
+    "eligible_checks": 2,
     "iam_drift": {
-      "status": "PASS",
-      "risky_change_count": 0
+      "risky_change_count": 0,
+      "status": "PASS"
     },
-    "scan_duration_ms": 123,
+    "iam_risky_actions": 0,
+    "network_exposure_score": 100,
+    "notes": {
+      "iam_risky_details": [],
+      "open_security_groups": []
+    },
+    "open_sg_count": 0,
     "parser_mode": "streaming",
-    "resource_count": 1
+    "passed_checks": 0,
+    "resource_count": 1,
+    "scan_duration_ms": 123
   },
-  "plan_risk_profile": "critical",
+  "pillar": "VectorScan",
+  "plan_metadata": {
+    "change_summary": {
+      "adds": 0,
+      "changes": 0,
+      "destroys": 0
+    },
+    "exceeds_threshold": false,
+    "file_size_bytes": 429,
+    "file_size_mb": 0.000429,
+    "module_count": 1,
+    "modules": {
+      "child_module_count": 0,
+      "has_child_modules": false,
+      "root": "root",
+      "with_resources": 1
+    },
+    "parse_duration_ms": 123,
+    "parser_mode": "streaming",
+    "plan_slo": {
+      "active_window": "fast_path",
+      "breach_reason": null,
+      "observed": {
+        "file_size_bytes": 429,
+        "parse_duration_ms": 123,
+        "resource_count": 1
+      },
+      "thresholds": {
+        "fast_path": {
+          "max_parse_ms": 200,
+          "max_resources": 1000
+        },
+        "file_size_limit_bytes": 1500000000,
+        "large_plan": {
+          "max_parse_ms": 2000,
+          "max_resources": 10000
+        }
+      }
+    },
+    "providers": [
+      "aws"
+    ],
+    "resource_count": 1,
+    "resource_types": {
+      "aws_rds_cluster": 1
+    },
+    "resources_by_type": {
+      "aws_rds_cluster": {
+        "adds": 0,
+        "changes": 0,
+        "destroys": 0,
+        "planned": 1
+      }
+    }
+  },
   "plan_risk_factors": [
     "Critical policy violations detected",
     "Compliance score below 60",
     "Suspicious defaults detected"
   ],
-  "security_grade": "F"
+  "plan_risk_profile": "critical",
+  "policy_errors": [],
+  "policy_manifest": {
+    "path": "embedded",
+    "policies": [
+      {
+        "category": "finops",
+        "description": "Taggable AWS resources must include CostCenter and Project tags.",
+        "id": "P-FIN-001",
+        "name": "Mandatory Tagging",
+        "severity": "high"
+      },
+      {
+        "category": "security",
+        "description": "RDS resources must enable storage encryption and reference a kms_key_id.",
+        "id": "P-SEC-001",
+        "name": "Encryption Mandate",
+        "severity": "critical"
+      }
+    ],
+    "policy_count": 2,
+    "policy_pack_hash": "126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c",
+    "policy_source_url": "https://github.com/Dee66/VectorScan/tree/main/tools/vectorscan/policies",
+    "policy_version": "1.0.0",
+    "signature": "sha256:bdd7820ee169f78660c992e699d108b992b5b067aa459e25873e0ecca8503cea",
+    "signed": true,
+    "verified": true
+  },
+  "policy_pack_hash": "126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c",
+  "policy_source_url": "https://github.com/Dee66/VectorScan/tree/main/tools/vectorscan/policies",
+  "policy_version": "1.0.0",
+  "quick_score_mode": false,
+  "remediation_ledger": {
+    "paths": [
+      {
+        "id": "PILLAR-AWS-002",
+        "remediation_metadata": {
+          "fixpack_id": "PILLAR-AWS-002",
+          "summary": "Add CostCenter and Project tags to production Aurora clusters.",
+          "terraform_patch": "resource \"aws_rds_cluster\" \"example\" {\n    tags = merge(var.default_tags, {\n        CostCenter = \"finops-1234\"\n        Project    = \"vector-scan\"\n    })\n}"
+        },
+        "severity": "high"
+      }
+    ],
+    "per_severity": {
+      "critical": 0,
+      "high": 1,
+      "low": 0,
+      "medium": 0
+    },
+    "remediation_metadata_aggregate": {
+      "PILLAR-AWS-002": {
+        "fixpack_id": "PILLAR-AWS-002",
+        "summary": "Add CostCenter and Project tags to production Aurora clusters.",
+        "terraform_patch": "resource \"aws_rds_cluster\" \"example\" {\n    tags = merge(var.default_tags, {\n        CostCenter = \"finops-1234\"\n        Project    = \"vector-scan\"\n    })\n}"
+      }
+    },
+    "remediation_rule_index": [
+      "PILLAR-AWS-002"
+    ],
+    "remediation_summary": {
+      "critical": 0,
+      "high": 1,
+      "low": 0,
+      "medium": 0
+    },
+    "rule_ids": [
+      "PILLAR-AWS-002"
+    ]
+  },
+  "resource_filter": {
+    "address": "aws_rds_cluster.vector_db",
+    "input": "aws_rds_cluster.vector_db",
+    "match": "exact",
+    "module_path": "root",
+    "name": "vector_db",
+    "type": "aws_rds_cluster"
+  },
+  "scan_version": "v2.0.0",
+  "schema_validation_error": null,
+  "schema_version": "1.2.0",
+  "security_grade": "F",
+  "severity_totals": {
+    "critical": 1,
+    "high": 1,
+    "low": 0,
+    "medium": 0
+  },
+  "smell_report": {
+    "level": "moderate",
+    "smells": [
+      {
+        "evidence": {
+          "missing_count": 1,
+          "sample": [
+            "aws_rds_cluster.vector_db"
+          ]
+        },
+        "id": "missing_kms_key",
+        "level": "moderate",
+        "message": "1 data store resource(s) missing kms_key_id encryption wiring."
+      }
+    ],
+    "stats": {
+      "change_total": 0,
+      "for_each_instances": 0,
+      "iam_policy_actions": 0,
+      "iam_policy_length": 0,
+      "iam_policy_statements": 0,
+      "kms_missing": 1,
+      "max_module_depth": 0,
+      "resource_count": 1
+    },
+    "summary": "1 structural smell detected (missing_kms_key)"
+  },
+  "status": "FAIL",
+  "suspicious_defaults": [
+    {
+      "address": "aws_rds_cluster.vector_db",
+      "reason": "storage_encrypted defaults to false",
+      "resource_type": "aws_rds_cluster"
+    }
+  ],
+  "vectorscan_version": "0.1.0",
+  "violation_count_by_severity": {
+    "critical": 1,
+    "high": 1,
+    "low": 0,
+    "medium": 0
+  },
+  "violation_severity_summary": {
+    "critical": 1,
+    "high": 1,
+    "low": 0,
+    "medium": 0
+  },
+  "violations": [
+    "P-SEC-001: aws_rds_cluster 'vector_db' has storage_encrypted != true",
+    "P-FIN-001: aws_rds_cluster 'vector_db' missing/empty tag 'CostCenter'"
+  ],
+  "violations_struct": [
+    {
+      "message": "P-SEC-001: aws_rds_cluster 'vector_db' has storage_encrypted != true",
+      "policy_id": "P-SEC-001",
+      "policy_name": "Encryption Mandate",
+      "remediation": {
+        "docs": [
+          "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html",
+          "https://vectorguard.dev/docs/policies/p-sec-001"
+        ],
+        "hcl_completeness": 0.75,
+        "hcl_examples": [
+          "resource \"aws_rds_cluster\" \"vector_db\" {\n  storage_encrypted = true\n  kms_key_id       = \"<kms-key-arn>\"\n}}"
+        ],
+        "summary": "Enable encryption and configure kms_key_id for aws_rds_cluster.vector_db."
+      },
+      "resource": "aws_rds_cluster.vector_db",
+      "resource_details": {
+        "address": "aws_rds_cluster.vector_db",
+        "data_taint": "resource_body",
+        "module_path": "root",
+        "name": "vector_db",
+        "taint_explanation": "Set kms_key_id directly on aws_rds_cluster.vector_db.",
+        "type": "aws_rds_cluster"
+      },
+      "severity": "critical"
+    },
+    {
+      "message": "P-FIN-001: aws_rds_cluster 'vector_db' missing/empty tag 'CostCenter'",
+      "policy_id": "P-FIN-001",
+      "policy_name": "Mandatory Tagging",
+      "remediation": {
+        "docs": [
+          "https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html",
+          "https://vectorguard.dev/docs/policies/p-fin-001"
+        ],
+        "hcl_completeness": 0.75,
+        "hcl_examples": [
+          "resource \"aws_rds_cluster\" \"vector_db\" {\n  tags = merge(var.default_tags, {\n    CostCenter = \"finops-1234\"\n    Project    = \"vectorguard\"\n  })\n}}"
+        ],
+        "summary": "Populate CostCenter and Project tags for aws_rds_cluster.vector_db."
+      },
+      "resource": "aws_rds_cluster.vector_db",
+      "resource_details": {
+        "address": "aws_rds_cluster.vector_db",
+        "data_taint": "resource_body",
+        "module_path": "root",
+        "name": "vector_db",
+        "taint_explanation": "Tags CostCenter missing on aws_rds_cluster.vector_db.",
+        "type": "aws_rds_cluster"
+      },
+      "severity": "high"
+    }
+  ]
 }

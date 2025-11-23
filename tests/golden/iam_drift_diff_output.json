@@ -1,183 +1,38 @@
 {
-  "status": "PASS",
-  "file": "tests/fixtures/tfplan_iam_drift.json",
-  "violations": [],
-  "violations_struct": [],
-  "counts": {
-    "violations": 0
-  },
+  "badge_eligible": true,
+  "canonical_schema_version": "1.0.0",
   "checks": [
     "P-SEC-001",
     "P-FIN-001"
   ],
-  "vectorscan_version": "0.1.0",
-  "policy_version": "1.0.0",
-  "schema_version": "1.2.0",
-  "policy_pack_hash": "126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c",
-  "policy_errors": [],
-  "violation_severity_summary": {
-    "critical": 0,
-    "high": 0,
-    "medium": 0,
-    "low": 0
-  },
-  "policy_source_url": "https://github.com/Dee66/VectorScan/tree/main/tools/vectorscan/policies",
-  "policy_manifest": {
-    "policy_version": "1.0.0",
-    "policy_pack_hash": "126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c",
-    "policy_source_url": "https://github.com/Dee66/VectorScan/tree/main/tools/vectorscan/policies",
-    "policy_count": 2,
-    "policies": [
-      {
-        "id": "P-FIN-001",
-        "name": "Mandatory Tagging",
-        "severity": "high",
-        "category": "finops",
-        "description": "Taggable AWS resources must include CostCenter and Project tags."
-      },
-      {
-        "id": "P-SEC-001",
-        "name": "Encryption Mandate",
-        "severity": "critical",
-        "category": "security",
-        "description": "RDS resources must enable storage encryption and reference a kms_key_id."
-      }
-    ],
-    "signature": "sha256:bdd7820ee169f78660c992e699d108b992b5b067aa459e25873e0ecca8503cea",
-    "signed": true,
-    "verified": true,
-    "path": "embedded"
-  },
-  "violation_count_by_severity": {
-    "critical": 0,
-    "high": 0,
-    "medium": 0,
-    "low": 0
+  "counts": {
+    "violations": 0
   },
   "environment": {
+    "offline_mode": false,
     "platform": "linux",
     "platform_release": "unit-kernel",
-    "python_version": "3.11.test",
     "python_implementation": "CPython",
-    "terraform_version": "not-run",
-    "terraform_source": "not-run",
-    "vectorscan_version": "0.1.0",
+    "python_version": "3.11.test",
     "strict_mode": false,
-    "offline_mode": false
+    "terraform_source": "not-run",
+    "terraform_version": "not-run",
+    "vectorscan_version": "0.1.0"
   },
-  "plan_metadata": {
-    "resource_count": 1,
-    "resource_types": {
-      "aws_rds_cluster": 1
-    },
-    "providers": [
-      "aws"
-    ],
-    "module_count": 1,
-    "modules": {
-      "root": "root",
-      "with_resources": 1,
-      "child_module_count": 0,
-      "has_child_modules": false
-    },
-    "exceeds_threshold": false,
-    "change_summary": {
-      "adds": 1,
-      "changes": 0,
-      "destroys": 0
-    },
-    "resources_by_type": {
-      "aws_rds_cluster": {
-        "planned": 1,
-        "adds": 0,
-        "changes": 0,
-        "destroys": 0
-      },
-      "aws_iam_policy": {
-        "planned": 0,
-        "adds": 1,
-        "changes": 0,
-        "destroys": 0
-      }
-    },
-    "file_size_mb": 0.000957,
-    "parser_mode": "streaming",
-    "file_size_bytes": 957,
-    "parse_duration_ms": 123,
-    "plan_slo": {
-      "observed": {
-        "resource_count": 1,
-        "parse_duration_ms": 123,
-        "file_size_bytes": 957
-      },
-      "thresholds": {
-        "fast_path": {
-          "max_resources": 1000,
-          "max_parse_ms": 200
-        },
-        "large_plan": {
-          "max_resources": 10000,
-          "max_parse_ms": 2000
-        },
-        "file_size_limit_bytes": 1500000000
-      },
-      "active_window": "fast_path",
-      "breach_reason": null
-    }
-  },
-  "suspicious_defaults": [],
-  "smell_report": {
-    "level": "low",
-    "summary": "No structural smells detected.",
-    "stats": {
-      "resource_count": 1,
-      "max_module_depth": 0,
-      "for_each_instances": 0,
-      "kms_missing": 0,
-      "iam_policy_statements": 1,
-      "iam_policy_actions": 2,
-      "iam_policy_length": 147,
-      "change_total": 1
-    },
-    "smells": []
-  },
-  "plan_diff": {
-    "summary": {
-      "adds": 1,
-      "changes": 0,
-      "destroys": 0
-    },
-    "resources": [
-      {
-        "address": "aws_iam_policy.app_policy",
-        "type": "aws_iam_policy",
-        "name": "app_policy",
-        "change_type": "adds",
-        "actions": [
-          "create"
-        ],
-        "changed_attributes": [
-          {
-            "path": "policy",
-            "before": null,
-            "after": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [{\n    \"Effect\": \"Allow\",\n    \"Action\": [\"iam:PassRole\", \"s3:DeleteObject\"],\n    \"Resource\": \"*\"\n  }]\n}"
-          }
-        ]
-      }
-    ]
-  },
+  "file": "tests/fixtures/tfplan_iam_drift.json",
+  "guardscore_rules_version": "2025.1",
   "iam_drift_report": {
-    "status": "FAIL",
     "counts": {
       "risky_changes": 1
     },
     "items": [
       {
-        "resource_type": "aws_iam_policy",
-        "resource_name": "app_policy",
         "change": [
           "create"
         ],
+        "notaction_broad_allow": false,
+        "resource_name": "app_policy",
+        "resource_type": "aws_iam_policy",
         "risky_additions": [
           "iam:PassRole",
           "s3:DeleteObject"
@@ -185,8 +40,7 @@
         "severity_by_action": {
           "iam:PassRole": "high",
           "s3:DeleteObject": "high"
-        },
-        "notaction_broad_allow": false
+        }
       }
     ],
     "notes": {
@@ -194,31 +48,288 @@
         "NotAction not evaluated",
         "Resource scoping not evaluated for drift risk"
       ]
+    },
+    "status": "FAIL"
+  },
+  "issues": [],
+  "latency_ms": 123,
+  "metadata": {
+    "control": {
+      "allow_network_capture": false,
+      "auto_download": false,
+      "offline_mode": false,
+      "terraform_outcome": "not_requested"
+    },
+    "environment": {
+      "offline_mode": false,
+      "platform": "linux",
+      "platform_release": "unit-kernel",
+      "python_implementation": "CPython",
+      "python_version": "3.11.test",
+      "strict_mode": false,
+      "terraform_source": "not-run",
+      "terraform_version": "not-run",
+      "vectorscan_version": "0.1.0"
+    },
+    "plan": {
+      "change_summary": {
+        "adds": 1,
+        "changes": 0,
+        "destroys": 0
+      },
+      "exceeds_threshold": false,
+      "file_size_bytes": 957,
+      "file_size_mb": 0.000957,
+      "module_count": 1,
+      "modules": {
+        "child_module_count": 0,
+        "has_child_modules": false,
+        "root": "root",
+        "with_resources": 1
+      },
+      "parse_duration_ms": 123,
+      "parser_mode": "streaming",
+      "plan_slo": {
+        "active_window": "fast_path",
+        "breach_reason": null,
+        "observed": {
+          "file_size_bytes": 957,
+          "parse_duration_ms": 123,
+          "resource_count": 1
+        },
+        "thresholds": {
+          "fast_path": {
+            "max_parse_ms": 200,
+            "max_resources": 1000
+          },
+          "file_size_limit_bytes": 1500000000,
+          "large_plan": {
+            "max_parse_ms": 2000,
+            "max_resources": 10000
+          }
+        }
+      },
+      "providers": [
+        "aws"
+      ],
+      "resource_count": 1,
+      "resource_types": {
+        "aws_rds_cluster": 1
+      },
+      "resources_by_type": {
+        "aws_iam_policy": {
+          "adds": 1,
+          "changes": 0,
+          "destroys": 0,
+          "planned": 0
+        },
+        "aws_rds_cluster": {
+          "adds": 0,
+          "changes": 0,
+          "destroys": 0,
+          "planned": 1
+        }
+      }
     }
   },
   "metrics": {
-    "eligible_checks": 2,
-    "passed_checks": 2,
     "compliance_score": 80,
-    "network_exposure_score": 100,
-    "open_sg_count": 0,
-    "iam_risky_actions": 0,
-    "notes": {
-      "open_security_groups": [],
-      "iam_risky_details": [],
-      "violation_count": 0
-    },
+    "eligible_checks": 2,
     "iam_drift": {
-      "status": "FAIL",
-      "risky_change_count": 1
+      "risky_change_count": 1,
+      "status": "FAIL"
     },
-    "scan_duration_ms": 123,
+    "iam_risky_actions": 0,
+    "network_exposure_score": 100,
+    "notes": {
+      "iam_risky_details": [],
+      "open_security_groups": []
+    },
+    "open_sg_count": 0,
     "parser_mode": "streaming",
-    "resource_count": 1
+    "passed_checks": 2,
+    "resource_count": 1,
+    "scan_duration_ms": 123
   },
-  "plan_risk_profile": "high",
+  "pillar": "VectorScan",
+  "plan_diff": {
+    "resources": [
+      {
+        "actions": [
+          "create"
+        ],
+        "address": "aws_iam_policy.app_policy",
+        "change_type": "adds",
+        "changed_attributes": [
+          {
+            "after": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [{\n    \"Effect\": \"Allow\",\n    \"Action\": [\"iam:PassRole\", \"s3:DeleteObject\"],\n    \"Resource\": \"*\"\n  }]\n}",
+            "before": null,
+            "path": "policy"
+          }
+        ],
+        "name": "app_policy",
+        "type": "aws_iam_policy"
+      }
+    ],
+    "summary": {
+      "adds": 1,
+      "changes": 0,
+      "destroys": 0
+    }
+  },
+  "plan_metadata": {
+    "change_summary": {
+      "adds": 1,
+      "changes": 0,
+      "destroys": 0
+    },
+    "exceeds_threshold": false,
+    "file_size_bytes": 957,
+    "file_size_mb": 0.000957,
+    "module_count": 1,
+    "modules": {
+      "child_module_count": 0,
+      "has_child_modules": false,
+      "root": "root",
+      "with_resources": 1
+    },
+    "parse_duration_ms": 123,
+    "parser_mode": "streaming",
+    "plan_slo": {
+      "active_window": "fast_path",
+      "breach_reason": null,
+      "observed": {
+        "file_size_bytes": 957,
+        "parse_duration_ms": 123,
+        "resource_count": 1
+      },
+      "thresholds": {
+        "fast_path": {
+          "max_parse_ms": 200,
+          "max_resources": 1000
+        },
+        "file_size_limit_bytes": 1500000000,
+        "large_plan": {
+          "max_parse_ms": 2000,
+          "max_resources": 10000
+        }
+      }
+    },
+    "providers": [
+      "aws"
+    ],
+    "resource_count": 1,
+    "resource_types": {
+      "aws_rds_cluster": 1
+    },
+    "resources_by_type": {
+      "aws_iam_policy": {
+        "adds": 1,
+        "changes": 0,
+        "destroys": 0,
+        "planned": 0
+      },
+      "aws_rds_cluster": {
+        "adds": 0,
+        "changes": 0,
+        "destroys": 0,
+        "planned": 1
+      }
+    }
+  },
   "plan_risk_factors": [
     "IAM drift detected risky changes"
   ],
-  "security_grade": "B"
+  "plan_risk_profile": "high",
+  "policy_errors": [],
+  "policy_manifest": {
+    "path": "embedded",
+    "policies": [
+      {
+        "category": "finops",
+        "description": "Taggable AWS resources must include CostCenter and Project tags.",
+        "id": "P-FIN-001",
+        "name": "Mandatory Tagging",
+        "severity": "high"
+      },
+      {
+        "category": "security",
+        "description": "RDS resources must enable storage encryption and reference a kms_key_id.",
+        "id": "P-SEC-001",
+        "name": "Encryption Mandate",
+        "severity": "critical"
+      }
+    ],
+    "policy_count": 2,
+    "policy_pack_hash": "126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c",
+    "policy_source_url": "https://github.com/Dee66/VectorScan/tree/main/tools/vectorscan/policies",
+    "policy_version": "1.0.0",
+    "signature": "sha256:bdd7820ee169f78660c992e699d108b992b5b067aa459e25873e0ecca8503cea",
+    "signed": true,
+    "verified": true
+  },
+  "policy_pack_hash": "126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c",
+  "policy_source_url": "https://github.com/Dee66/VectorScan/tree/main/tools/vectorscan/policies",
+  "policy_version": "1.0.0",
+  "quick_score_mode": false,
+  "remediation_ledger": {
+    "paths": [],
+    "per_severity": {
+      "critical": 0,
+      "high": 0,
+      "low": 0,
+      "medium": 0
+    },
+    "remediation_metadata_aggregate": {},
+    "remediation_rule_index": [],
+    "remediation_summary": {
+      "critical": 0,
+      "high": 0,
+      "low": 0,
+      "medium": 0
+    },
+    "rule_ids": []
+  },
+  "scan_version": "v2.0.0",
+  "schema_validation_error": null,
+  "schema_version": "1.2.0",
+  "security_grade": "B",
+  "severity_totals": {
+    "critical": 0,
+    "high": 0,
+    "low": 0,
+    "medium": 0
+  },
+  "smell_report": {
+    "level": "low",
+    "smells": [],
+    "stats": {
+      "change_total": 1,
+      "for_each_instances": 0,
+      "iam_policy_actions": 2,
+      "iam_policy_length": 147,
+      "iam_policy_statements": 1,
+      "kms_missing": 0,
+      "max_module_depth": 0,
+      "resource_count": 1
+    },
+    "summary": "No structural smells detected."
+  },
+  "status": "PASS",
+  "suspicious_defaults": [],
+  "vectorscan_version": "0.1.0",
+  "violation_count_by_severity": {
+    "critical": 0,
+    "high": 0,
+    "low": 0,
+    "medium": 0
+  },
+  "violation_severity_summary": {
+    "critical": 0,
+    "high": 0,
+    "low": 0,
+    "medium": 0
+  },
+  "violations": [],
+  "violations_struct": []
 }

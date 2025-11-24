@@ -41,7 +41,7 @@
       "allow_network_capture": false,
       "auto_download": false,
       "offline_mode": false,
-      "terraform_outcome": "not_requested"
+      "terraform_outcome": "SKIP"
     },
     "environment": {
       "offline_mode": false,

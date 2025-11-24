@@ -509,5 +509,30 @@
       "remediation_hint": "fixpack:VS-007",
       "remediation_difficulty": "medium"
     }
+  },
+  {
+    "id": "VS-013",
+    "summary": {
+      "severity": "low",
+      "title": "VS-013 strict-mode/Terraform parity verification",
+      "description": "Regenerated strict-mode CLI, Terraform CLI, lead capture, and Terraform gating integration suites to confirm banner parity, terraform_outcome propagation, and offline/no-network metadata consistency. All suites passed; the existing PytestUnknownMarkWarning on the integration marker persists but requires no new action.",
+      "resource_address": "tests/test_strict_mode_cli.py"
+    },
+    "files_changed": [],
+    "tests": {
+      "tests_run": 32,
+      "failures": 0,
+      "duration_s": 12.87,
+      "test_suites": [
+        "pytest -q tests/test_strict_mode_cli.py",
+        "pytest -q tests/test_terraform_cli.py",
+        "pytest -q tests/unit/test_lead_capture_unit.py",
+        "pytest -q tests/integration/test_terraform_gating_integration.py"
+      ]
+    },
+    "notes": {
+      "remediation_hint": "fixpack:VS-013",
+      "remediation_difficulty": "low"
+    }
   }
 ]

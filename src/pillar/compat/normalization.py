@@ -467,14 +467,18 @@ def run_normalized_scan(
         env_block = dict(control_flags)
     flattened_ctx["environment"] = env_block
 
+    auto_download_effective = bool(control_flags.get("auto_download"))
     if terraform_shim.tests_requested(options):
-        terraform_report, terraform_outcome = terraform_shim.execute(
+        (
+            terraform_report,
+            terraform_outcome,
+            auto_download_effective,
+        ) = terraform_shim.execute(
             options,
             auto_download=bool(control_flags.get("auto_download")),
         )
-        control_flags["terraform_outcome"] = terraform_outcome
-    else:
-        control_flags.setdefault("terraform_outcome", terraform_outcome)
+    control_flags["auto_download"] = bool(auto_download_effective)
+    control_flags["terraform_outcome"] = terraform_outcome
 
     plan, resources, plan_limits, module_stats = _load_plan_context(
         normalized_plan,
@@ -740,6 +744,8 @@ def run_normalized_scan(
         if "allow_network" in control_flags
         else control_flags.get("allow_network_capture")
     )
+    environment_snapshot["auto_download"] = bool(control_flags.get("auto_download"))
+    environment_snapshot["terraform_outcome"] = control_flags.get("terraform_outcome", terraform_outcome)
     environment_snapshot = dict(sorted(environment_snapshot.items()))
     payload["environment"] = environment_snapshot
     canonical_issues = _canonical_issues_for_payload(flattened_ctx.get("issues"))
@@ -1161,6 +1167,7 @@ def _build_metadata_block(
         ("plan", plan_block),
     ]
     if control_block:
+        metadata_items.append(("_control_flags", dict(control_block)))
         metadata_items.append(("control", control_block))
 
     ordered_metadata: Dict[str, Any] = {}

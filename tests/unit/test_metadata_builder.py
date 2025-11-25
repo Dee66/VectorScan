@@ -12,7 +12,7 @@ from src.pillar.compat.normalization import (
     metadata_inject,
     resolve_offline_mode,
 )
-from src.pillar.metadata import build_metadata
+from src.pillar.metadata import build_metadata, snapshot_control_flags
 
 FIXTURE_PATH = Path("tests/fixtures/minimal_plan.json")
 
@@ -23,7 +23,7 @@ def _build_context() -> dict:
     context = metadata_inject(context)
     options = ScanOptions()
     offline_mode = resolve_offline_mode(context, options)
-    flags = build_control_flags(context, options, offline_mode)
+    flags = snapshot_control_flags(build_control_flags(context, options, offline_mode))
     environment_block = dict(context.get("environment") or {})
     environment_block.update(flags)
     context["environment"] = environment_block
@@ -46,6 +46,10 @@ def test_build_metadata_includes_canonical_fields():
     assert env_meta["allow_network"] == (flags.get("allow_network") or flags["allow_network_capture"])
     assert env_meta["auto_download"] is flags["auto_download"]
     assert env_meta["terraform_outcome"] == str(flags.get("terraform_outcome", "SKIP"))
+
+    control_snapshot = metadata["_control_flags"]
+    assert control_snapshot == metadata["control"]
+    assert control_snapshot["auto_download"] is flags["auto_download"]
 
     plan_meta = metadata["plan"]
     assert plan_meta.get("resource_count") == ctx["plan_metadata"].get("resource_count")

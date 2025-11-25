@@ -17,6 +17,7 @@ evaluator_contract:
   - "Evaluator builds the canonical payload with required keys plus severity_totals, pillar_score inputs, metadata.environment, and metadata.plan as mandated by the master spec."
   - "quick_score_mode toggles on large plans (>1k resources or >40MB) and must be stored alongside latency_ms measured in milliseconds."
   - "Schema validation errors bubble into schema_validation_error while still emitting the deterministic payload frame."
+  - "Evaluator-exclusive scaffolding fields (`pillar_score_inputs`, `required`, `guardscore_badge`, `percentile_placeholder`, `severity_keys`) remain internal to the canonical payload and are not surfaced in CLI JSON, but must stay deterministic for GuardScore parity."
 
 rule_engine_contract:
   - "Rules live under src/pillar/rules with registry ordering enforced (severity rank then id)."
@@ -37,6 +38,7 @@ cli_contract:
   - "CLI exposes commands [scan, validate, rules] and must support flags --json, --stdin, --quiet, --version, and --output json per cross-repo alignment rules."
   - "scan emits canonical JSON (with latency_ms) or human output, validate performs schema guardrails, and rules prints the policy manifest."
   - "CLI inherits GuardSuite status badge conventions and must honor offline-mode/environment flags."
+  - "CLI owns presentation-only fields (badge_eligible state machine plus reporting.* aggregates and policy_blocks.* metadata such as policy_manifest/policy_pack_hash/policy_version) and may emit them in JSON output without feeding them back into the canonical evaluator."
 
 pillar_schema_requirements:
   - "Issues sorted by severity → id with severity levels [critical, high, medium, low]."

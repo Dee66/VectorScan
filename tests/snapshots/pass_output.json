@@ -16,7 +16,9 @@
     "strict_mode": false,
     "terraform_source": "not-run",
     "terraform_version": "not-run",
-    "vectorscan_version": "0.1.0"
+    "vectorscan_version": "0.1.0",
+    "auto_download": false,
+    "terraform_outcome": "SKIP"
   },
   "file": "tests/fixtures/tfplan_pass.json",
   "guardscore_rules_version": "2025.1",
@@ -36,6 +38,13 @@
   "issues": [],
   "latency_ms": 123,
   "metadata": {
+    "_control_flags": {
+      "allow_network": false,
+      "allow_network_capture": false,
+      "auto_download": false,
+      "offline_mode": false,
+      "terraform_outcome": "SKIP"
+    },
     "control": {
       "allow_network": false,
       "allow_network_capture": false,
@@ -54,7 +63,9 @@
       "strict_mode": false,
       "terraform_source": "not-run",
       "terraform_version": "not-run",
-      "vectorscan_version": "0.1.0"
+      "vectorscan_version": "0.1.0",
+      "auto_download": false,
+      "terraform_outcome": "SKIP"
     },
     "plan": {
       "change_summary": {

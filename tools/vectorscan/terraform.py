@@ -33,7 +33,7 @@ def _stub_mode_enabled() -> bool:
     return env_truthy(os.getenv("VSCAN_TERRAFORM_STUB"))
 
 
-def _offline_stub_report(status: str, *, message: str) -> Dict[str, Any]:
+def _offline_stub_report(status: str, *, message: str, auto_download: bool) -> Dict[str, Any]:
     normalized = status.upper()
     if normalized not in {"PASS", "FAIL", "SKIP", "ERROR"}:
         normalized = "SKIP"
@@ -53,7 +53,13 @@ def _offline_stub_report(status: str, *, message: str) -> Dict[str, Any]:
         "source": "stub",
         "strategy": "stub",
         "plan_output": "mock-plan-output",
+        "auto_download": bool(auto_download),
     }
+
+
+def _with_auto_download(payload: Dict[str, Any], *, auto_download: bool) -> Dict[str, Any]:
+    payload["auto_download"] = bool(auto_download)
+    return payload
 
 
 def _parse_semver(value: str) -> Tuple[int, int, int]:
@@ -471,44 +477,52 @@ def run_terraform_tests(override_bin: Optional[str], auto_download: bool) -> Dic
         download_dir=DEFAULT_TERRAFORM_CACHE,
         auto_download=auto_download,
     )
+    auto_download_flag = bool(manager.auto_download)
     try:
         resolution = manager.ensure(override_bin)
     except TerraformNotFoundError as exc:
         if _stub_mode_enabled():
-            return _offline_stub_report("SKIP", message=str(exc))
-        return {
+            return _offline_stub_report("SKIP", message=str(exc), auto_download=auto_download_flag)
+        return _with_auto_download({
             "status": "SKIP",
             "message": str(exc),
-        }
+        }, auto_download=auto_download_flag)
     except TerraformManagerError as exc:
         if _stub_mode_enabled():
-            return _offline_stub_report("ERROR", message=str(exc))
-        return {
+            return _offline_stub_report("ERROR", message=str(exc), auto_download=auto_download_flag)
+        return _with_auto_download({
             "status": "ERROR",
             "message": str(exc),
-        }
+        }, auto_download=auto_download_flag)
 
     strategy = _shared_select_strategy()(resolution.version)
     try:
         report = strategy.run(resolution.path, resolution.version)
     except OSError as exc:
-        return _strategy_error_report(
-            resolution,
-            strategy,
-            f"Terraform execution failed: {exc}",
-            stderr=str(exc),
+        return _with_auto_download(
+            _strategy_error_report(
+                resolution,
+                strategy,
+                f"Terraform execution failed: {exc}",
+                stderr=str(exc),
+            ),
+            auto_download=auto_download_flag,
         )
     except Exception as exc:
-        return _strategy_error_report(
-            resolution,
-            strategy,
-            f"Terraform tests crashed unexpectedly: {exc}",
-            stderr=str(exc),
+        return _with_auto_download(
+            _strategy_error_report(
+                resolution,
+                strategy,
+                f"Terraform tests crashed unexpectedly: {exc}",
+                stderr=str(exc),
+            ),
+            auto_download=auto_download_flag,
         )
     report["version"] = resolution.version
     report["binary"] = str(resolution.path)
     report["source"] = resolution.source
     report["strategy"] = getattr(strategy, "name", "unknown")
+    report["auto_download"] = auto_download_flag
     return report
 
 

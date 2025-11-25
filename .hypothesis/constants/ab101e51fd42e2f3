@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/pillar/metadata.py
+# hypothesis_version: 6.148.2
+
+['SKIP', '_control_flags', 'allow_network', 'auto_download', 'build_metadata', 'control', 'environment', 'offline_mode', 'pillar', 'plan', 'plan_metadata', 'scan_version', 'terraform_outcome']

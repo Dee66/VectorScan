@@ -1371,6 +1371,8 @@ def test_offline_mode_disables_terraform_auto_download(tmp_path, monkeypatch, ca
     control = (payload.get("metadata") or {}).get("control") or {}
     assert control.get("auto_download") is False
     assert control.get("terraform_outcome") == "SKIP"
+    env_block = payload.get("environment") or {}
+    assert env_block.get("auto_download") is False
     monkeypatch.delenv("VSCAN_OFFLINE", raising=False)
     monkeypatch.delenv("VSCAN_TERRAFORM_TESTS", raising=False)
 
@@ -1384,45 +1386,66 @@ def _prepare_plan_for_terraform_toggle(tmp_path, monkeypatch):
     monkeypatch.delenv("VSCAN_ALLOW_TERRAFORM_DOWNLOAD", raising=False)
     monkeypatch.delenv("VSCAN_TERRAFORM_AUTO_DOWNLOAD", raising=False)
     monkeypatch.setenv("VSCAN_TERRAFORM_TESTS", "1")
+    monkeypatch.setenv("VSCAN_TERRAFORM_STUB", "0")
     captured = {}
 
     def fake_run(override_bin, auto_download):
         captured["auto_download"] = auto_download
-        return {"status": "SKIP", "message": "toggle"}
+        return {
+            "status": "SKIP",
+            "message": "toggle",
+            "auto_download": auto_download,
+        }
 
-    monkeypatch.setattr(vs, "run_terraform_tests", fake_run)
+    monkeypatch.setattr(entrypoint_shim, "run_terraform_tests", fake_run)
     return plan_path, captured
 
 
-def test_terraform_auto_download_requires_explicit_opt_in(tmp_path, monkeypatch):
+def _assert_auto_download_state(capsys, expected: bool) -> None:
+    payload = json.loads(capsys.readouterr().out)
+    control = (payload.get("metadata") or {}).get("control") or {}
+    env_block = payload.get("environment") or {}
+    assert control.get("auto_download") is expected
+    assert env_block.get("auto_download") is expected
+
+
+def test_terraform_auto_download_requires_explicit_opt_in(tmp_path, monkeypatch, capsys):
     plan_path, captured = _prepare_plan_for_terraform_toggle(tmp_path, monkeypatch)
-    code = vs.main([str(plan_path), "--allow-network"])
+    capsys.readouterr()
+    code = vs.main([str(plan_path), "--allow-network", "--json"])
     assert code == 0
     assert captured.get("auto_download") is False
+    _assert_auto_download_state(capsys, False)
 
 
-def test_terraform_auto_download_enabled_via_new_env(tmp_path, monkeypatch):
+def test_terraform_auto_download_enabled_via_new_env(tmp_path, monkeypatch, capsys):
     plan_path, captured = _prepare_plan_for_terraform_toggle(tmp_path, monkeypatch)
     monkeypatch.setenv("VSCAN_ALLOW_TERRAFORM_DOWNLOAD", "1")
-    code = vs.main([str(plan_path), "--allow-network"])
+    capsys.readouterr()
+    code = vs.main([str(plan_path), "--allow-network", "--json"])
     assert code == 0
     assert captured.get("auto_download") is True
+    _assert_auto_download_state(capsys, True)
 
 
-def test_terraform_auto_download_enabled_via_legacy_env(tmp_path, monkeypatch):
+def test_terraform_auto_download_enabled_via_legacy_env(tmp_path, monkeypatch, capsys):
     plan_path, captured = _prepare_plan_for_terraform_toggle(tmp_path, monkeypatch)
     monkeypatch.setenv("VSCAN_TERRAFORM_AUTO_DOWNLOAD", "1")
-    code = vs.main([str(plan_path), "--allow-network"])
+    capsys.readouterr()
+    code = vs.main([str(plan_path), "--allow-network", "--json"])
     assert code == 0
     assert captured.get("auto_download") is True
+    _assert_auto_download_state(capsys, True)
 
 
-def test_terraform_auto_download_respects_no_download_flag(tmp_path, monkeypatch):
+def test_terraform_auto_download_respects_no_download_flag(tmp_path, monkeypatch, capsys):
     plan_path, captured = _prepare_plan_for_terraform_toggle(tmp_path, monkeypatch)
     monkeypatch.setenv("VSCAN_ALLOW_TERRAFORM_DOWNLOAD", "1")
-    code = vs.main([str(plan_path), "--allow-network", "--no-terraform-download"])
+    capsys.readouterr()
+    code = vs.main([str(plan_path), "--allow-network", "--no-terraform-download", "--json"])
     assert code == 0
     assert captured.get("auto_download") is False
+    _assert_auto_download_state(capsys, False)
 
 
 def test_permission_denied_plan_read(monkeypatch, tmp_path, capsys):
@@ -1439,9 +1462,10 @@ def test_permission_denied_plan_read(monkeypatch, tmp_path, capsys):
     monkeypatch.setenv("VSCAN_STREAMING_DISABLE", "1")
     monkeypatch.setattr(Path, "read_text", fake_read_text)
 
-    code = vs.main([str(plan_path), "--json"])
+    with pytest.raises(SystemExit) as exc:
+        vs.main([str(plan_path), "--json"])
     captured = capsys.readouterr()
 
-    assert code == vs.EXIT_INVALID_INPUT
+    assert exc.value.code == vs.EXIT_INVALID_INPUT
     assert "permission denied" in captured.err.lower()
     monkeypatch.delenv("VSCAN_STREAMING_DISABLE", raising=False)

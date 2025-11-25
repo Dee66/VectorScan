@@ -47,25 +47,26 @@ def execute(
     options: Any,
     *,
     auto_download: bool,
-) -> Tuple[Optional[Dict[str, Any]], str]:
-    """Execute terraform tests via the legacy runner and normalize the result."""
+) -> Tuple[Optional[Dict[str, Any]], str, bool]:
+    """Execute terraform tests via the legacy runner and return (report, outcome, flag)."""
 
     enabled = tests_requested(options)
     if not enabled:
-        return None, "SKIP"
+        return None, "SKIP", bool(auto_download)
 
     override_bin = getattr(options, "terraform_bin", None)
+    effective_auto_download = bool(auto_download)
     if getattr(options, "no_terraform_download", False):
-        auto_download = False
+        effective_auto_download = False
     if env_truthy(os.getenv("VSCAN_OFFLINE")) or env_truthy(os.getenv("VSCAN_TERRAFORM_STUB")):
-        auto_download = False
+        effective_auto_download = False
 
     legacy._safe_print(
         "[VectorScan] Ensuring Terraform CLI for module tests...",
         stream=sys.stderr,
     )
     try:
-        report = entrypoint_shim.run_terraform_tests(override_bin, auto_download)
+        report = entrypoint_shim.run_terraform_tests(override_bin, effective_auto_download)
     except (TerraformManagerError, TerraformDownloadError) as exc:
         return (
             {
@@ -75,6 +76,7 @@ def execute(
                 "stderr": str(exc),
             },
             "FAIL",
+            effective_auto_download,
         )
     except Exception as exc:  # pragma: no cover - defensive guard
         return (
@@ -85,6 +87,7 @@ def execute(
                 "stderr": str(exc),
             },
             "FAIL",
+            effective_auto_download,
         )
 
     status_token = "SKIP"
@@ -108,9 +111,15 @@ def execute(
                 "stderr": "",
             },
             "SKIP",
+            effective_auto_download,
         )
 
-    return report, _normalize_outcome(status_token)
+    if "auto_download" in report:
+        effective_auto_download = bool(report["auto_download"])
+    else:
+        report["auto_download"] = effective_auto_download
+
+    return report, _normalize_outcome(status_token), effective_auto_download
 
 
 def _bundled_terraform_binary() -> Optional[str]:  # Legacy helper retained for completeness

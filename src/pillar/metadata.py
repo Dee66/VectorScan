@@ -5,6 +5,8 @@ from typing import Any, Dict
 
 from src.pillar import constants as pillar_constants
 
+__all__ = ["build_metadata", "snapshot_control_flags"]
+
 
 def build_metadata(context: Dict[str, Any]) -> Dict[str, Any]:
     """Return a deterministic metadata block derived from the evaluation context."""
@@ -20,16 +22,20 @@ def build_metadata(context: Dict[str, Any]) -> Dict[str, Any]:
     environment_block = _build_environment_metadata(context)
     if environment_block:
         metadata["environment"] = environment_block
+    control_flags = snapshot_control_flags(_extract_control_flags(context))
+    if control_flags:
+        metadata["_control_flags"] = control_flags
+        metadata["control"] = dict(control_flags)
     return metadata
 
 
 def _build_environment_metadata(context: Dict[str, Any]) -> Dict[str, Any]:
     base_environment = _copy_dict(context.get("environment"))
-    flags = _extract_control_flags(context)
+    flags = snapshot_control_flags(_extract_control_flags(context))
     ordered: Dict[str, Any] = {}
     for key in sorted(base_environment.keys()):
         ordered[key] = base_environment[key]
-    ordered.update(_ordered_flag_snapshot(flags))
+    ordered.update(flags)
     return ordered
 
 
@@ -44,7 +50,7 @@ def _extract_control_flags(context: Dict[str, Any]) -> Dict[str, Any]:
     return flags
 
 
-def _ordered_flag_snapshot(flags: Dict[str, Any]) -> Dict[str, Any]:
+def snapshot_control_flags(flags: Dict[str, Any]) -> Dict[str, Any]:
     offline_mode = bool(flags.get("offline_mode"))
     allow_network_capture = bool(flags.get("allow_network_capture"))
     allow_network = bool(flags.get("allow_network", allow_network_capture))

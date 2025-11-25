@@ -20,7 +20,7 @@ from src.pillar.compat.normalization import (
 )
 from src.pillar.rules import registry as rule_registry
 from src.pillar.rules.rule_engine import evaluate_rules
-from src.pillar.metadata import build_metadata
+from src.pillar.metadata import build_metadata, snapshot_control_flags
 from tools.vectorscan.constants import (
     EXIT_PREVIEW_MODE,
     EXIT_TERRAFORM_ERROR,
@@ -50,11 +50,13 @@ def evaluate_scan(
     enriched = audit_ledger_synthesize(enriched)
     offline_mode = resolve_offline_mode(enriched, resolved_options)
     environment_block = dict(enriched.get("environment") or {})
-    control_flags = build_control_flags(enriched, resolved_options, offline_mode)
+    control_flags = snapshot_control_flags(
+        build_control_flags(enriched, resolved_options, offline_mode)
+    )
     environment_block.update(control_flags)
     environment_block = dict(sorted(environment_block.items()))
     enriched["environment"] = environment_block
-    enriched["_control_flags"] = control_flags
+    enriched["_control_flags"] = dict(control_flags)
     enriched["_canonical_metadata"] = build_metadata(enriched)
     evaluation_value = enriched.get("evaluation")
     evaluation_block = evaluation_value if isinstance(evaluation_value, dict) else None
@@ -66,6 +68,7 @@ def evaluate_scan(
         control_meta = metadata_block.setdefault("control", {})
         control_meta.update(control_flags)
         metadata_block["control"] = dict(sorted(control_meta.items()))
+        metadata_block["_control_flags"] = dict(control_flags)
         enriched["evaluation"] = evaluation_block
     raw_result = run_normalized_scan(
         enriched["plan"],

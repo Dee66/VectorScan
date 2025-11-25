@@ -11,12 +11,14 @@
   "environment": {
     "allow_network": false,
     "allow_network_capture": false,
+    "auto_download": false,
     "offline_mode": false,
     "platform": "linux",
     "platform_release": "unit-kernel",
     "python_implementation": "CPython",
     "python_version": "3.11.test",
     "strict_mode": false,
+    "terraform_outcome": "SKIP",
     "terraform_source": "not-run",
     "terraform_version": "not-run",
     "vectorscan_version": "0.1.0"
@@ -61,6 +63,13 @@
   ],
   "latency_ms": 123,
   "metadata": {
+    "_control_flags": {
+      "allow_network": false,
+      "allow_network_capture": false,
+      "auto_download": false,
+      "offline_mode": false,
+      "terraform_outcome": "SKIP"
+    },
     "control": {
       "allow_network": false,
       "allow_network_capture": false,
@@ -71,12 +80,14 @@
     "environment": {
       "allow_network": false,
       "allow_network_capture": false,
+      "auto_download": false,
       "offline_mode": false,
       "platform": "linux",
       "platform_release": "unit-kernel",
       "python_implementation": "CPython",
       "python_version": "3.11.test",
       "strict_mode": false,
+      "terraform_outcome": "SKIP",
       "terraform_source": "not-run",
       "terraform_version": "not-run",
       "vectorscan_version": "0.1.0"

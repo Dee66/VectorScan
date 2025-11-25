@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/src/vectorscan/rules/rule_missing_encryption.py
-# hypothesis_version: 6.148.1
-
-['Encryption disabled', 'P-VEC-002', 'address', 'encryption_enabled', 'fixpack:P-VEC-002', 'high', 'medium', 'resources', 'type', 'vector_index']

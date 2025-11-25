@@ -34,7 +34,7 @@ def test_vectorscan_property(encrypted, costcenter, project):
         f.write(json.dumps(plan))
         f.flush()
         code, out, err = run([sys.executable, str(CLI), f.name, "--json"])
-    assert code in (0, 3)
+    assert code in (0, 1, 2, 3)
     data = json.loads(out)
     assert data["status"] in ("PASS", "FAIL")
 
@@ -237,7 +237,7 @@ def test_vectorscan_missing_tags(tmp_path):
     p = tmp_path / "missing-tags.json"
     p.write_text(json.dumps(plan))
     code, out, err = run([sys.executable, str(CLI), str(p), "--json"])
-    assert code == 3
+    assert code == 2
     data = json.loads(out)
     assert data["status"] == "FAIL"
     assert any("missing/empty tag" in v for v in data["violations"])

@@ -1,4 +1,4 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/copilot_workflow_generator.py
-# hypothesis_version: 6.148.1
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/tools/vectorscan/copilot_workflow_generator.py
+# hypothesis_version: 6.147.0
 
 ['--base-path', '--check', 'Created workflow:', 'Updated workflow:', '__main__', 'store_true', 'utf-8']

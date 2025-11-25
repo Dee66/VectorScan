@@ -9,6 +9,8 @@
     "violations": 2
   },
   "environment": {
+    "allow_network": false,
+    "allow_network_capture": false,
     "offline_mode": false,
     "platform": "linux",
     "platform_release": "unit-kernel",
@@ -50,12 +52,8 @@
       "description": "FinOps policy mandates CostCenter and Project tags on production Aurora clusters.",
       "id": "PILLAR-AWS-002",
       "remediation_difficulty": "medium",
-      "remediation_hint": "fixpack:PILLAR-AWS-002",
-      "remediation_metadata": {
-        "fixpack_id": "PILLAR-AWS-002",
-        "summary": "Add CostCenter and Project tags to production Aurora clusters.",
-        "terraform_patch": "resource \"aws_rds_cluster\" \"example\" {\n    tags = merge(var.default_tags, {\n        CostCenter = \"finops-1234\"\n        Project    = \"vector-scan\"\n    })\n}"
-      },
+      "remediation_hint": "",
+      "remediation_metadata": {},
       "resource_address": "aws_rds_cluster.vector_db",
       "severity": "high",
       "title": "RDS clusters require CostCenter + Project tags"
@@ -64,12 +62,15 @@
   "latency_ms": 123,
   "metadata": {
     "control": {
+      "allow_network": false,
       "allow_network_capture": false,
       "auto_download": false,
       "offline_mode": false,
       "terraform_outcome": "SKIP"
     },
     "environment": {
+      "allow_network": false,
+      "allow_network_capture": false,
       "offline_mode": false,
       "platform": "linux",
       "platform_release": "unit-kernel",
@@ -250,11 +251,7 @@
     "paths": [
       {
         "id": "PILLAR-AWS-002",
-        "remediation_metadata": {
-          "fixpack_id": "PILLAR-AWS-002",
-          "summary": "Add CostCenter and Project tags to production Aurora clusters.",
-          "terraform_patch": "resource \"aws_rds_cluster\" \"example\" {\n    tags = merge(var.default_tags, {\n        CostCenter = \"finops-1234\"\n        Project    = \"vector-scan\"\n    })\n}"
-        },
+        "remediation_metadata": {},
         "severity": "high"
       }
     ],
@@ -265,11 +262,7 @@
       "medium": 0
     },
     "remediation_metadata_aggregate": {
-      "PILLAR-AWS-002": {
-        "fixpack_id": "PILLAR-AWS-002",
-        "summary": "Add CostCenter and Project tags to production Aurora clusters.",
-        "terraform_patch": "resource \"aws_rds_cluster\" \"example\" {\n    tags = merge(var.default_tags, {\n        CostCenter = \"finops-1234\"\n        Project    = \"vector-scan\"\n    })\n}"
-      }
+      "PILLAR-AWS-002": {}
     },
     "remediation_rule_index": [
       "PILLAR-AWS-002"

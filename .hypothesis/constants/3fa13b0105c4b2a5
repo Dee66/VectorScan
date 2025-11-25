@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/policy_pack.py
-# hypothesis_version: 6.147.0
-
-[b'\x00', '*.rego', 'free_policies.rego', 'missing', 'utf-8']

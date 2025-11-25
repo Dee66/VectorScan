@@ -15,7 +15,6 @@ from .constants import (
 )
 from src.vectorscan.metadata import build_environment
 from src.vectorscan.rules import get_all_rules
-from src.vectorscan.fixpack import loader as fixpack_loader
 
 REQUIRED_OUTPUT_KEYS = [
     "pillar",
@@ -89,16 +88,6 @@ def run_scan(
 
         if results:
             issues.extend(results)
-
-    # optional fixpack mapping
-    for issue in issues:
-        rule_id = issue.get("id", "")
-        hint = fixpack_loader.get_fixpack_hint(rule_id)
-        if hint:
-            issue["remediation_hint"] = hint
-        metadata = fixpack_loader.get_fixpack_metadata(rule_id)
-        if metadata:
-            issue["remediation_metadata"] = metadata
 
     pillar_score_inputs = {
         "critical": sum(1 for issue in issues if issue.get("severity") == "critical"),

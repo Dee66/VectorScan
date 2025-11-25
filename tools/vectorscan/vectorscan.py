@@ -79,6 +79,7 @@ from tools.vectorscan.constants import ROOT_DIR as _ROOT_DIR
 from tools.vectorscan.constants import (
     SEVERITY_LEVELS,
 )
+from tools.vectorscan.entrypoint_shim import main as shim_main
 from tools.vectorscan.env_flags import env_falsey, env_truthy, is_offline, is_strict_mode
 from tools.vectorscan.environment import (
     StrictModeViolation,
@@ -148,6 +149,7 @@ from tools.vectorscan.terraform import (
 )
 from tools.vectorscan.terraform import set_strategy_resolver as _set_strategy_resolver
 from tools.vectorscan.versioning import OUTPUT_SCHEMA_VERSION, POLICY_VERSION, VECTORSCAN_VERSION
+from pillar import constants as pillar_constants
 try:  # Prefer the canonical renderer from src/vectorscan when available.
     from vectorscan.renderer import safe_print as _safe_print
 except (ModuleNotFoundError, ImportError):  # pragma: no cover - exercised in bundle tests
@@ -198,6 +200,13 @@ iter_resources = _iter_resources
 _SEVERITY_RANK = {level: idx for idx, level in enumerate(SEVERITY_LEVELS)}
 
 
+def strict_mode_enabled() -> bool:
+    try:
+        return bool(is_strict_mode())
+    except Exception:
+        return False
+
+
 def load_json(path: Path) -> Dict[str, Any]:
     try:
         return _plan_load_json(path)
@@ -237,6 +246,7 @@ __all__ = [
     "request",
     "tempfile",
     "subprocess",
+    "strict_mode_enabled",
 ]
 
 _current_module = sys.modules[__name__]
@@ -521,7 +531,30 @@ def _run_compare_mode(
         "plan_evolution": plan_evolution,
         "vectorscan_version": VECTORSCAN_VERSION,
         "schema_version": OUTPUT_SCHEMA_VERSION,
+        "scan_version": pillar_constants.SCAN_VERSION,
     }
+
+    remediation_result = None
+    try:
+        from src.pillar.compat.normalization import ScanOptions
+        from src.pillar.evaluator import evaluate_scan
+
+        plan_payload = json.loads(new_path.read_text(encoding="utf-8"))
+        remediation_result = evaluate_scan(
+            plan_payload,
+            source_path=new_path,
+            options=ScanOptions(as_json=True),
+        )
+    except Exception:  # pragma: no cover - defensive guard to keep compare mode resilient
+        remediation_result = None
+    if remediation_result and isinstance(remediation_result.payload, dict):
+        remediation_ledger = remediation_result.payload.get("remediation_ledger")
+        if isinstance(remediation_ledger, dict):
+            payload["remediation_ledger"] = remediation_ledger
+        issues_block = remediation_result.payload.get("issues")
+        if isinstance(issues_block, list):
+            payload["issues"] = issues_block
+
     payload = cast(Dict[str, Any], _sanitize_for_json(payload))
     if as_json:
         _safe_print(
@@ -1199,16 +1232,8 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    try:
-        ensure_supported_python()
-        return _run_cli(argv)
-    except UnsupportedPythonVersion as exc:
-        _safe_print(f"[Python Compatibility] {exc}", stream=sys.stderr)
-        return EXIT_CONFIG_ERROR
-    except StrictModeViolation as exc:
-        _safe_print(f"[Strict Mode] {exc}", stream=sys.stderr)
-        return EXIT_CONFIG_ERROR
+    return shim_main(argv)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(shim_main())

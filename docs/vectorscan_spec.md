@@ -103,7 +103,7 @@ Top-level structure:
 "description": "The index allows public queries...",
 "resource_address": "aws_opensearch_index.main",
 "attributes": { ... },
-"remediation_hint": "fixpack:P-VEC-001",
+"remediation_hint": "",
 "remediation_difficulty": "high"
 }
 ],
@@ -135,7 +135,7 @@ title               string
 description         string
 resource_address    string
 attributes          dict
-remediation_hint    string      # fixpack:P-VEC-001
+remediation_hint    string      # blank placeholder in free_scanner builds
 remediation_difficulty enum     # low | medium | high
 
 Rename violations  issues for cross-pillar parity.
@@ -153,15 +153,10 @@ These map directly into GuardScores weighted normalization.
 
 ## 7. Remediation-Lite (FixPack-Lite Integration)
 
-Each common Vector issue MUST have a remediation hint.
-
-Example:
-"remediation_hint": "fixpack:P-VEC-001"
-
-This maps to a pre-written Terraform snippet in VectorGuard.
-
-VectorScan does not need to generate the fix.
-That happens in VectorGuard + GuardBoard.
+Each common Vector issue MUST include the `remediation_hint` field, even if the
+value is an empty string. VectorScan free_scanner builds omit patch
+instructions; paid VectorGuard tiers may populate the hint with actionable
+content. The fix itself still happens in VectorGuard + GuardBoard.
 
 ## 8. GuardScore Integration Requirements
 

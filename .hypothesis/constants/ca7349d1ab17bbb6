@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/vectorscan/rules/base.py
+# hypothesis_version: 6.147.0
+
+['UNSET', 'attributes', 'description', 'id', 'low', 'medium', 'remediation_hint', 'remediation_metadata', 'resource_address', 'severity', 'title']

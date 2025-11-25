@@ -79,26 +79,10 @@ def _render_issue_block(issue: Dict[str, object]) -> List[str]:
     remediation_hint = issue.get("remediation_hint") or "N/A"
     block.append(f"  Remediation: {remediation_hint}")
 
-    metadata = issue.get("remediation_metadata")
-    if isinstance(metadata, dict):
-        summary = metadata.get("description") or ""
-        if summary:
-            block.append(f"  Fix summary: {summary}")
-        patch = metadata.get("terraform_patch")
-        if patch:
-            block.append("  Terraform patch:")
-            block.extend(_indent_patch(patch))
-    else:
-        description = issue.get("description")
-        if description:
-            block.append(f"  Fix summary: {description}")
+    description = issue.get("description")
+    if description:
+        block.append(f"  Fix summary: {description}")
     return block
-
-
-def _indent_patch(patch: object) -> List[str]:
-    text = str(patch)
-    lines = text.splitlines() or [text]
-    return [f"    {line}" for line in lines]
 
 
 def render_severity_summary(output: Dict[str, Any]) -> str:

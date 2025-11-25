@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, cast
 
+from src.pillar.compat import error_text
 from tools.vectorscan.env_flags import env_falsey
 from tools.vectorscan.plan_stream import (
     ModuleStats,
@@ -25,9 +26,15 @@ class PlanLoadError(Exception):
     """Raised when a Terraform plan cannot be parsed or fails schema validation."""
 
 
+def _emit_error(message: str) -> None:
+    print(message, file=sys.stderr)
+    print("", file=sys.stderr)
+
+
 def _schema_error(message: str) -> None:
-    print(f"Schema error: {message}", file=sys.stderr)
-    raise PlanLoadError(message)
+    rendered = error_text.schema_error()
+    _emit_error(rendered)
+    raise PlanLoadError(rendered)
 
 
 def _validate_plan_schema(plan: Dict[str, Any]) -> None:
@@ -60,17 +67,21 @@ def load_json(path: Path) -> Dict[str, Any]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        print(f"Error: file not found: {path}", file=sys.stderr)
-        raise PlanLoadError(f"missing plan: {path}")
-    except PermissionError as exc:
-        print(f"Error: permission denied reading plan: {path}: {exc}", file=sys.stderr)
-        raise PlanLoadError(f"permission denied: {path}")
-    except OSError as exc:
-        print(f"Error: unable to read plan: {path}: {exc}", file=sys.stderr)
-        raise PlanLoadError(f"plan read error: {path}")
-    except json.JSONDecodeError as exc:
-        print(f"Error: invalid JSON: {path}: {exc}", file=sys.stderr)
-        raise PlanLoadError(f"invalid plan json: {path}")
+        rendered = error_text.file_not_found(path)
+        _emit_error(rendered)
+        raise PlanLoadError(rendered)
+    except PermissionError:
+        rendered = error_text.permission_denied(path)
+        _emit_error(rendered)
+        raise PlanLoadError(rendered)
+    except OSError:
+        rendered = error_text.permission_denied(path)
+        _emit_error(rendered)
+        raise PlanLoadError(rendered)
+    except json.JSONDecodeError:
+        rendered = error_text.invalid_json(path)
+        _emit_error(rendered)
+        raise PlanLoadError(rendered)
     if not isinstance(data, dict):
         _schema_error("Top-level plan JSON must be an object")
     _validate_plan_schema(data)
@@ -105,13 +116,15 @@ def _load_plan_streaming_context(
     try:
         result = stream_plan(path)
     except FileNotFoundError:
-        print(f"Error: file not found: {path}", file=sys.stderr)
-        raise PlanLoadError(f"missing plan: {path}")
+        rendered = error_text.file_not_found(path)
+        _emit_error(rendered)
+        raise PlanLoadError(rendered)
     except PlanSchemaError as exc:
         _schema_error(str(exc))
     except PlanStreamError as exc:
-        print(f"Error: invalid JSON: {path}: {exc}", file=sys.stderr)
-        raise PlanLoadError(f"invalid streaming plan: {path}")
+        rendered = error_text.invalid_json(path)
+        _emit_error(rendered)
+        raise PlanLoadError(rendered)
 
     plan = result.top_level
     plan_limits = _build_plan_limit_block(

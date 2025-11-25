@@ -85,6 +85,8 @@ This checklist now tracks the standalone VectorScan repo work that originated in
    - Added `tests/unit/test_vectorscan_unit.py::test_vectorscan_json_output_stable` which pins the deterministic clock, runs `vectorscan.py --json` twice on the FAIL plan, and asserts the pretty-printed JSON payloads (and parsed objects) are byte-identical.
 - [x] Add golden-file comparison tests for PASS, FAIL, and IAM drift JSON outputs
    - `tests/test_json_output.py` now runs the CLI with deterministic env vars and compares the full JSON payloads for `tfplan_pass.json`, `tfplan_fail.json`, and `tfplan_iam_drift.json` against the snapshots under `tests/golden/*.json`, catching any schema/order regressions end-to-end.
+- [x] Standardize the targeted JSON/CLI/snapshot regression command
+   - CI and implementors run `pytest -q tests/test_json_output.py tests/test_cli.py tests/snapshots/test_snapshots.py` so the canonical snapshot suite path remains `tests/snapshots/test_snapshots.py` instead of a top-level placeholder.
 - [x] Add a "large plan" test (5MB+) to confirm performance and deterministic ordering
    - `tests/performance/test_performance_sanity.py::test_vectorscan_large_plan_over_5mb` now synthesizes a >5MB tfplan, asserts the CLI stays under the 6s budget, and reruns the CLI to verify JSON output determinism under the deterministic clock helper.
 - [x] Add negative tests for malformed or partial tfplan JSON structures

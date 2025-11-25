@@ -5,10 +5,9 @@
     "P-SEC-001",
     "P-FIN-001"
   ],
-  "counts": {
-    "violations": 0
-  },
   "environment": {
+    "allow_network": false,
+    "allow_network_capture": false,
     "offline_mode": false,
     "platform": "linux",
     "platform_release": "unit-kernel",
@@ -38,12 +37,15 @@
   "latency_ms": 123,
   "metadata": {
     "control": {
+      "allow_network": false,
       "allow_network_capture": false,
       "auto_download": false,
       "offline_mode": false,
       "terraform_outcome": "SKIP"
     },
     "environment": {
+      "allow_network": false,
+      "allow_network_capture": false,
       "offline_mode": false,
       "platform": "linux",
       "platform_release": "unit-kernel",
@@ -137,60 +139,6 @@
       "destroys": 0
     }
   },
-  "plan_metadata": {
-    "change_summary": {
-      "adds": 0,
-      "changes": 0,
-      "destroys": 0
-    },
-    "exceeds_threshold": false,
-    "file_size_bytes": 549,
-    "file_size_mb": 0.000549,
-    "module_count": 1,
-    "modules": {
-      "child_module_count": 0,
-      "has_child_modules": false,
-      "root": "root",
-      "with_resources": 1
-    },
-    "parse_duration_ms": 123,
-    "parser_mode": "streaming",
-    "plan_slo": {
-      "active_window": "fast_path",
-      "breach_reason": null,
-      "observed": {
-        "file_size_bytes": 549,
-        "parse_duration_ms": 123,
-        "resource_count": 1
-      },
-      "thresholds": {
-        "fast_path": {
-          "max_parse_ms": 200,
-          "max_resources": 1000
-        },
-        "file_size_limit_bytes": 1500000000,
-        "large_plan": {
-          "max_parse_ms": 2000,
-          "max_resources": 10000
-        }
-      }
-    },
-    "providers": [
-      "aws"
-    ],
-    "resource_count": 1,
-    "resource_types": {
-      "aws_rds_cluster": 1
-    },
-    "resources_by_type": {
-      "aws_rds_cluster": {
-        "adds": 0,
-        "changes": 0,
-        "destroys": 0,
-        "planned": 1
-      }
-    }
-  },
   "plan_risk_profile": "low",
   "policy_errors": [],
   "policy_manifest": {
@@ -266,7 +214,6 @@
     },
     "summary": "No structural smells detected."
   },
-  "status": "PASS",
   "suspicious_defaults": [],
   "vectorscan_version": "0.1.0",
   "violation_count_by_severity": {
@@ -280,7 +227,5 @@
     "high": 0,
     "low": 0,
     "medium": 0
-  },
-  "violations": [],
-  "violations_struct": []
+  }
 }

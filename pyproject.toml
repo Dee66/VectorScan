@@ -12,6 +12,7 @@ authors = [{ name = "GuardSuite", email = "engineering@guardsuite.dev" }]
 requires-python = ">=3.9"
 dependencies = [
   "click>=8.1,<9",
+  "guardsuite-core>=2.3.0,<3.0.0",
 ]
 
 [project.scripts]

@@ -25,4 +25,4 @@ def test_public_access_rule_detects_issue():
     assert len(issues) == 1
     assert issues[0]["id"] == "P-VEC-001"
     assert issues[0]["severity"] == "critical"
-    assert issues[0]["remediation_hint"] == "fixpack:P-VEC-001"
+    assert issues[0]["remediation_hint"] == ""

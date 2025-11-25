@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Build vectorscan-free.zip containing the VectorScan CLI and free policies.
+Build vectorscan-free.zip containing the VectorScan CLI, pillar modules, and free policies.
 
 Contents:
 - tools/vectorscan/vectorscan.py
 - tools/vectorscan/README.md
 - tools/vectorscan/free_policies.rego
+- src/pillar/** (canonical GuardSuite pillar implementation)
 - LICENSE_FREE.txt (snippet referencing main license)
 
 Usage:
-  python3 tools/vectorscan/build_vectorscan_package.py
+    python3 tools/vectorscan/build_vectorscan_package.py
 """
 from __future__ import annotations
 
@@ -38,6 +39,7 @@ from tools.vectorscan.versioning import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC = REPO_ROOT / "tools" / "vectorscan"
+PILLAR_SRC = REPO_ROOT / "src" / "pillar"
 DIST = REPO_ROOT / "dist"
 REQUIREMENT_FILES = [REPO_ROOT / "requirements.txt", REPO_ROOT / "requirements-dev.txt"]
 
@@ -72,32 +74,41 @@ TEXT_FILE_EXTENSIONS = {
 }
 
 
-def _collect_cli_package_files() -> List[Path]:
+def _collect_package_files() -> List[Path]:
+    include_roots = [SRC, PILLAR_SRC]
     candidates: List[Path] = []
-    for dirpath, dirnames, filenames in os.walk(SRC):
-        rel_dir = Path(dirpath).relative_to(SRC)
-        if any(part in PACKAGE_EXCLUDE_DIRS for part in rel_dir.parts):
-            continue
-        dirnames[:] = sorted(d for d in dirnames if d not in PACKAGE_EXCLUDE_DIRS)
-        for filename in sorted(filenames):
-            path = Path(dirpath) / filename
-            try:
-                rel_parts = path.relative_to(SRC).parts
-            except ValueError:
+
+    def _collect_from(root: Path) -> None:
+        if not root.exists():
+            return
+        for dirpath, dirnames, filenames in os.walk(root):
+            rel_dir = Path(dirpath).relative_to(root)
+            if any(part in PACKAGE_EXCLUDE_DIRS for part in rel_dir.parts):
                 continue
-            if any(part in PACKAGE_EXCLUDE_DIRS for part in rel_parts[:-1]):
-                continue
-            if filename in PACKAGE_EXCLUDE_FILES:
-                continue
-            suffix = path.suffix.lower()
-            if not suffix or suffix not in TEXT_FILE_EXTENSIONS:
-                continue
-            candidates.append(path)
+            dirnames[:] = sorted(d for d in dirnames if d not in PACKAGE_EXCLUDE_DIRS)
+            for filename in sorted(filenames):
+                path = Path(dirpath) / filename
+                try:
+                    rel_parts = path.relative_to(root).parts
+                except ValueError:
+                    continue
+                if any(part in PACKAGE_EXCLUDE_DIRS for part in rel_parts[:-1]):
+                    continue
+                if filename in PACKAGE_EXCLUDE_FILES:
+                    continue
+                suffix = path.suffix.lower()
+                if not suffix or suffix not in TEXT_FILE_EXTENSIONS:
+                    continue
+                candidates.append(path)
+
+    for base in include_roots:
+        _collect_from(base)
+
     candidates.sort(key=lambda p: p.relative_to(REPO_ROOT).as_posix())
     return candidates
 
 
-FILES = _collect_cli_package_files()
+FILES = _collect_package_files()
 
 LICENSE_TEXT = (
     "VectorScan Free Utility\n\n"

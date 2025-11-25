@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/plan_stream.py
-# hypothesis_version: 6.148.1
-
-[1000, 65536, 1500000000, '\x08', '"', '+', ',', '-', '-0123456789', '.', '/', '0', '1000', '10000', '200', '2000', ':', 'E', 'VSCAN_PLAN_LARGE_MS', '[', '\\', ']', '_JSONStream', '_buffer', '_fh', '_pos', 'active_window', 'address', 'b', 'breach_reason', 'chars', 'child_modules', 'e', 'f', 'false', 'fast_path', 'file_size', 'file_size_bytes', 'format_version', 'large_plan', 'max_parse_ms', 'max_resources', 'module_address', 'n', 'name', 'null', 'observed', 'oversized', 'parse_duration', 'parse_duration_ms', 'planned_values', 'r', 'resource', 'resource_changes', 'resource_count', 'resources', 'root', 'root_module', 'source', 't', 'terraform_version', 'tfn', 'thresholds', 'true', 'type', 'u', 'unnamed', 'utf-8', '{', '}']

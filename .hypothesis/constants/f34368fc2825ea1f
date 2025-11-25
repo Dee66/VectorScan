@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/policy_manifest.py
-# hypothesis_version: 6.147.0
-
-[',', ':', 'PolicyManifestError', 'category', 'description', 'embedded', 'id', 'load_policy_manifest', 'name', 'path', 'policies', 'policy_count', 'policy_pack_hash', 'policy_source_url', 'policy_version', 'severity', 'signature', 'signed', 'utf-8', 'verified']

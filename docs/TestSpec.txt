@@ -46,6 +46,8 @@ tests/
     fail_output.json
     iam_drift_output.json
     audit_ledger.yaml
+  snapshots/
+    test_snapshots.py
   test_cli.py
   test_end_to_end.py
   test_json_output.py

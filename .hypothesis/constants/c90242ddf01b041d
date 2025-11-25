@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/pillar/cli.py
+# hypothesis_version: 6.147.0
+
+[', ', '--allow-network', '--email', '--endpoint', '--iam-drift-penalty', '--lead-capture', '--manifest', '--no-network', '--quiet', '--stdin', '--terraform-bin', '--terraform-tests', ':', 'Emit JSON output', 'PASS', 'SKIP', 'VSCAN_LEAD_ENDPOINT', '__main__', 'address', 'allow_network', 'as_json', 'control', 'diff', 'email', 'endpoint', 'environment', 'explain', 'gha', 'iam_drift_penalty', 'id', 'issues', 'json_output', 'lead_capture', 'manifest_path', 'match_type', 'message', 'metadata', 'no_color', 'no_network', 'offline_mode', 'path', 'pillar', 'plan', 'policies', 'policy_ids', 'policy_manifest', 'preview_vectorguard', 'quiet', 'remediation_metadata', 'resource', 'resources', 'result', 'source', 'status', 'stdin', 'suffix', 'summary', 'terraform_bin', 'terraform_tests', 'tfplan.json', 'timestamp', 'utf-8', 'vectorscan-cli', 'verified']

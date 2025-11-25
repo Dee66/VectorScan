@@ -30,7 +30,6 @@ class MissingEncryptionRule(Rule):
                     description="Vector index has encryption set to false.",
                     resource_address=resource.get("address", ""),
                     attributes={"encryption_enabled": bool(encryption_enabled)},
-                    remediation_hint="fixpack:P-VEC-002",
                     remediation_difficulty="medium",
                 )
             )

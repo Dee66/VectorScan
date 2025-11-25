@@ -6,8 +6,6 @@ import inspect
 from pathlib import Path
 from typing import Any, Dict, List, Type
 
-from vectorscan.fixpack import loader as fixpack_loader
-
 from .base import Rule
 
 _registry: List[Type[Rule]] = []
@@ -38,7 +36,6 @@ def build_rule_manifest() -> List[Dict[str, Any]]:
                 "severity": rule_cls.severity,
                 "python_class": python_class,
                 "file_path": file_path,
-                "fixpack": fixpack_loader.get_fixpack_hint(rule_cls.id),
                 "description": (rule_cls.__doc__ or "").strip(),
             }
         )

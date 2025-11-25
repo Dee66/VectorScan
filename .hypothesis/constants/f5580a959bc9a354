@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/pillar/rules/rule_engine.py
+# hypothesis_version: 6.147.0
+
+['"*"', '0.0.0.0/0', 'CostCenter', 'PILLAR-STUB-UNSET', 'Placeholder issue', 'Project', 'action":"*', 'action":[\'*\']', 'address', 'allows_0_0_0_0', 'attributes', 'aws_s3_bucket', 'bucket_encryption', 'cidr_blocks', 'critical', 'description', 'document', 'enabled', 'enabling', 'flags', 'has_missing_tags', 'high', 'iam_policy_wildcard', 'id', 'ingress', 'is_managed', 'kms_key_id', 'kms_master_key_id', 'low', 'managed', 'match', 'medium', 'mode', 'module_address', 'on', 'plan_metadata', 'policy', 'remediation_hint', 'remediation_metadata', 'required_attribute', 'resource_address', 'resource_count', 'resource_name', 'resource_type', 'resources', 'rule_id', 'severity', 'status', 'stub', 'tags', 'title', 'type', 'values', 'versioning']

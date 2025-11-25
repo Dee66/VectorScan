@@ -15,6 +15,7 @@ from tests.helpers.plan_helpers import (
     set_deterministic_clock,
     write_plan,
 )
+from tools.vectorscan import entrypoint_shim
 from tools.vectorscan import vectorscan as vs
 from tools.vectorscan.plan_utils import compute_plan_metadata, load_plan_context
 from tools.vectorscan.policies import get_policy
@@ -944,7 +945,7 @@ def test_policy_isolation_runs_other_checks_when_encryption_fails(monkeypatch, t
     output = capsys.readouterr().out
     payload = json.loads(output)
 
-    assert code == 3
+    assert code == 2
     assert payload["status"] == "FAIL"
     assert any("P-FIN-001" in v for v in payload["violations"])
     assert payload["policy_errors"][0]["policy"] == "P-SEC-001"
@@ -1348,14 +1349,15 @@ def test_main_smoke(tmp_path):
 
 def test_main_handles_unsupported_python(monkeypatch):
     def boom():
-        raise vs.UnsupportedPythonVersion("bad python")
+        raise entrypoint_shim._UnsupportedPythonVersion("bad python")
 
-    monkeypatch.setattr(vs, "ensure_supported_python", boom)
-    code = vs.main([])
-    assert code == vs.EXIT_CONFIG_ERROR
+    monkeypatch.setattr(entrypoint_shim, "_ensure_supported_python", boom)
+    with pytest.raises(SystemExit) as exc:
+        entrypoint_shim._guard_python_version()
+    assert exc.value.code == vs.EXIT_CONFIG_ERROR
 
 
-def test_offline_mode_disables_terraform_auto_download(tmp_path, monkeypatch):
+def test_offline_mode_disables_terraform_auto_download(tmp_path, monkeypatch, capsys):
     plan = {"planned_values": {"root_module": {"resources": []}}}
     plan_path = tmp_path / "plan.json"
     plan_path.write_text(json.dumps(plan))
@@ -1363,17 +1365,12 @@ def test_offline_mode_disables_terraform_auto_download(tmp_path, monkeypatch):
     monkeypatch.setenv("VSCAN_OFFLINE", "1")
     monkeypatch.setenv("VSCAN_TERRAFORM_TESTS", "1")
 
-    captured = {}
-
-    def fake_run(override_bin, auto_download):
-        captured["auto_download"] = auto_download
-        return {"status": "SKIP", "message": "offline test"}
-
-    monkeypatch.setattr(vs, "run_terraform_tests", fake_run)
-
-    code = vs.main([str(plan_path)])
+    code = vs.main([str(plan_path), "--json"])
     assert code == 0
-    assert captured.get("auto_download") is False
+    payload = json.loads(capsys.readouterr().out)
+    control = (payload.get("metadata") or {}).get("control") or {}
+    assert control.get("auto_download") is False
+    assert control.get("terraform_outcome") == "SKIP"
     monkeypatch.delenv("VSCAN_OFFLINE", raising=False)
     monkeypatch.delenv("VSCAN_TERRAFORM_TESTS", raising=False)
 

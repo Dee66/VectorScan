@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/scripts/dependency_vulnerability_scan.py
-# hypothesis_version: 6.147.0
-
-['#', '*', '--format', '--requirements', '-r ', '==', 'Content-Type', 'Output format', 'PyPI', 'UNKNOWN', '^[A-Za-z0-9_.-]+', '__main__', 'application/json', 'ecosystem', 'findings', 'id', 'include', 'json', 'name', 'package', 'queries', 'requirements-dev.txt', 'requirements.txt', 'results', 'score', 'severity', 'spec', 'summary', 'text', 'type', 'utf-8', 'version', 'vulns']

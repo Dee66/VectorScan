@@ -1,114 +1,122 @@
-version: 4.2
+version: 4.3
 title: GuardSuite Copilot Instructions (Optimized YAML)
 
 role:
-  purpose: "Copilot implements code inside GuardSuite repos under strict architectural + schema constraints."
-  chatgpt_relationship: "ChatGPT = architect/orchestrator. Copilot = implementor."
+purpose: "Copilot implements code inside GuardSuite repos under strict architectural + schema constraints."
+chatgpt_relationship: "ChatGPT = architect/orchestrator. Copilot = implementor."
 
 mode:
-  allowed: [modify_code, update_files, run_tests, refactor, update_docs_when_instructed]
-  forbidden: [invent_files, change_schema, introduce_nondeterminism, rename_dirs_without_instruction]
+allowed: [modify_code, update_files, run_tests, refactor, update_docs_when_instructed]
+forbidden: [invent_files, change_schema, introduce_nondeterminism, rename_dirs_without_instruction]
 
 project_invariants:
-  required_paths:
-    - src/pillar/cli.py
-    - src/pillar/evaluator.py
-    - src/pillar/constants.py
-    - src/pillar/metadata.py
-    - src/pillar/rules/
-    - src/pillar/rules/registry.py
-    - src/pillar/fixpack/
-    - docs/spec.yml
-    - tests/unit/
-    - tests/integration/
-    - tests/snapshots/
-    - tests/fixtures/minimal_plan.json
-  do_not_modify: [canonical_schema, registry_contract, evaluator_lifecycle]
+required_paths:
+- src/pillar/cli.py
+- src/pillar/evaluator.py
+- src/pillar/constants.py
+- src/pillar/metadata.py
+- src/pillar/rules/
+- src/pillar/rules/registry.py
+- src/pillar/fixpack/
+- product/spec.yml
+- tests/unit/
+- tests/integration/
+- tests/snapshots/
+- tests/fixtures/minimal_plan.json
+do_not_modify: [canonical_schema, registry_contract, evaluator_lifecycle]
 
 architecture:
-  determinism: [no_random, no_timestamps_except_latency, no_uuid, stable_sort_severity_then_id, registry_order_rules]
-  wasm_safe: [no_dynamic_imports, no_network, no_subprocess, no_fs_writes_outside_pkg]
-  evaluator_pipeline:
-    - load_plan
-    - run rule_registry.all_rules()
-    - aggregate_issues
-    - attach_fixpack_metadata
-    - compute_severity_totals
-    - compute_quick_score_mode
-    - build_metadata
-    - canonicalize_output
-    - validate_schema_attach_errors
-  cli:
-    commands: [scan, validate, rules]
-    flags: [--json, --stdin, --quiet, --version, --output json]
-    scan_output: "canonical JSON + latency_ms"
-    validate_output: "same + schema_validation_error"
+determinism: [no_random, no_timestamps_except_latency, no_uuid, stable_sort_severity_then_id, registry_order_rules]
+wasm_safe: [no_dynamic_imports, no_network, no_subprocess, no_fs_writes_outside_pkg]
+evaluator_pipeline:
+- load_plan
+- run rule_registry.all_rules()
+- aggregate_issues
+- attach_fixpack_metadata
+- compute_severity_totals
+- compute_quick_score_mode
+- build_metadata
+- canonicalize_output
+- validate_schema_attach_errors
+cli:
+commands: [scan, validate, rules]
+flags: [--json, --stdin, --quiet, --version, --output json]
+scan_output: "canonical JSON + latency_ms"
+validate_output: "same + schema_validation_error"
 
 canonical_schema:
-  required_issue_fields:
-    - id, severity, title, description, resource_address
-    - attributes, remediation_hint, remediation_difficulty
-  severity: [critical, high, medium, low]
-  evaluator_output_required:
-    - pillar, scan_version, canonical_schema_version
-    - guardscore_rules_version, environment, issues
-    - severity_totals, latency_ms
-    - quick_score_mode, badge_eligible
-    - metadata, schema_validation_error
+required_issue_fields:
+- id, severity, title, description, resource_address
+- attributes, remediation_hint, remediation_difficulty
+severity: [critical, high, medium, low]
+evaluator_output_required:
+- pillar, scan_version, canonical_schema_version
+- guardscore_rules_version, environment, issues
+- severity_totals, latency_ms
+- quick_score_mode, badge_eligible
+- metadata, schema_validation_error
 
 rules:
-  signature: "rule(plan) -> list[IssueDict]"
-  constraints: [pure, deterministic, no_io, no_global_mutation]
-  registry:
-    file: src/pillar/rules/registry.py
-    must: [register(rule), all_rules_ordered, no_duplicates]
-  recommended_issue_template: |
-    {
-      "id": "PILLAR-XXX-000",
-      "severity": "medium",
-      "title": "",
-      "description": "",
-      "resource_address": "",
-      "attributes": {},
-      "remediation_hint": "fixpack:PILLAR-XXX-000",
-      "remediation_difficulty": "low"
-    }
+signature: "rule(plan) -> list[IssueDict]"
+constraints: [pure, deterministic, no_io, no_global_mutation]
+registry:
+file: src/pillar/rules/registry.py
+must: [register(rule), all_rules_ordered, no_duplicates]
+recommended_issue_template: |
+{
+"id": "PILLAR-XXX-000",
+"severity": "medium",
+"title": "",
+"description": "",
+"resource_address": "",
+"attributes": {},
+"remediation_hint": "fixpack:PILLAR-XXX-000",
+"remediation_difficulty": "low"
+}
 
 fixpack:
-  loader_file: src/pillar/fixpack/loader.py
-  loader_must: [exists(issue_id), load(issue_id)_returns_metadata]
-  naming: "fixpack/<ISSUE_ID>.hcl"
-  hint_format: "fixpack:<ISSUE_ID>"
-  required_stub_fields: [id, summary, difficulty]
+loader_file: src/pillar/fixpack/loader.py
+loader_must: [exists(issue_id), load(issue_id)_returns_metadata]
+naming: "fixpack/<ISSUE_ID>.hcl"
+hint_format: "fixpack:<ISSUE_ID>"
+required_stub_fields: [id, summary, difficulty]
 
 error_model:
-  evaluator: [never_raise_schema_errors, attach_schema_errors, continue_processing]
-  cli: [wrap_exceptions, exit_1_on_user_error, deterministic_json]
+evaluator: [never_raise_schema_errors, attach_schema_errors, continue_processing]
+cli: [wrap_exceptions, exit_1_on_user_error, deterministic_json]
 
 testing:
-  required: [unit, integration, snapshots, schema, remediation, quickscore, deterministic]
-  fixture_minimal_plan: tests/fixtures/minimal_plan.json
-  snapshot_update_only_when_instructed: true
+required: [unit, integration, snapshots, schema, remediation, quickscore, deterministic]
+fixture_minimal_plan: tests/fixtures/minimal_plan.json
+snapshot_update_only_when_instructed: true
 
 copilot_behavior:
-  must: [follow_yaml_strictly, modify_only_requested_dirs, run_pytest_after_changes,
-         update_snapshots_when_allowed, preserve_determinism, preserve_formatting]
-  must_not: [reorganize_repo, rename_modules, modify_schema_keys, delete_tests_unless_instructed]
+must: [follow_yaml_strictly, modify_only_requested_dirs, run_pytest_after_changes,
+update_snapshots_when_allowed, preserve_determinism, preserve_formatting]
+must_not: [reorganize_repo, rename_modules, modify_schema_keys, delete_tests_unless_instructed]
 
 ai_dev:
-  description: "/ai-dev triggers a single mandatory Copilot instruction block."
-  block_format:
-    begin: "--- BEGIN COPILOT INSTRUCTIONS ---"
-    end: "--- END COPILOT INSTRUCTIONS ---"
-  expected_copilot_outputs:
-    - ANALYSIS_COMPLETE: true
-    - ANALYSIS_COMPLETE: false
-    - MIGRATION_PHASE_*_COMPLETE: true
-  when_false: "Return numbered list of fixes."
-  rules: [one_block_only, no_extra_text, no_summary, ask_for_missing_paths_only]
+description: "/ai-dev triggers a single mandatory Copilot instruction block."
+block_format:
+begin: "--- BEGIN COPILOT INSTRUCTIONS ---"
+end: "--- END COPILOT INSTRUCTIONS ---"
+expected_copilot_outputs:
+- ANALYSIS_COMPLETE: true
+- ANALYSIS_COMPLETE: false
+- MIGRATION_PHASE_*_COMPLETE: true
+when_false: "Return numbered list of fixes."
+rules: [one_block_only, no_extra_text, no_summary, ask_for_missing_paths_only]
+
+NEW RULE: Behavior for the Audit Command (Synchronized with Architect)
+
+ai_dev_report:
+description: "Generated by the Architect when user types /ai-dev-report."
+action: "Scan the repository, validate against the Master Spec, and check checklist progress."
+required_output: "Must return a comprehensive #FEEDBACK_CONTRACT summarizing project status, structural drift, spec alignment issues, and errors found."
+allowed_action: "May update progress tracking files (e.g., checklist) if instructed by the Architect to do so during the audit."
 
 revision:
-  locked: true
-  user_confirmation_required: true
+locked: true
+user_confirmation_required: true
 
 end_of_file: true

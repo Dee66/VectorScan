@@ -41,9 +41,12 @@ def _run_cli_from_bundle(bundle_root: Path, plan: Path, base_env: dict[str, str]
     return json.loads(result.stdout)
 
 
-def test_end_to_end_happy_path(tmp_path, capsys):
+def test_end_to_end_happy_path(tmp_path, capsys, monkeypatch):
     # Full flow: PASS plan -> PASS exit, optional local lead capture file is written
     plan = _ROOT / "examples" / "aws-pgvector-rag" / "tfplan-pass.json"
+
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
 
     # Pre-count capture files
     captures_dir = _TOOLS_VSCAN / "captures"
@@ -85,6 +88,9 @@ def test_end_to_end_partial_failure(monkeypatch, capsys):
     from urllib import error
 
     plan = _ROOT / "examples" / "aws-pgvector-rag" / "tfplan-pass.json"
+
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
 
     # Force urlopen to raise immediately (simulate endpoint outage) to keep test fast
     def boom(*args, **kwargs):

@@ -54,3 +54,34 @@ reasoning:
 required_actions:
   - Preserve the catalog entries and remediation metadata; additions must follow the same deterministic structure and ordering.
   - Continue exposing rules via `issue_catalog()` / `get_rules()` without introducing dynamic imports or side effects.
+
+---
+status: completed
+files_modified:
+  - src/pillar/compat/normalization.py
+  - tests/golden/pass_output.json
+  - tests/golden/fail_output.json
+  - tests/golden/iam_drift_output.json
+  - tests/golden/pass_explain_output.json
+  - tests/golden/fail_explain_output.json
+  - tests/golden/iam_drift_explain_output.json
+  - tests/golden/pass_diff_output.json
+  - tests/golden/fail_diff_output.json
+  - tests/golden/iam_drift_diff_output.json
+  - tests/golden/fail_resource_output.json
+  - tests/golden/module_resource_output.json
+  - tests/golden/fail_preview_output.json
+  - tests/golden/plan_compare_output.json
+  - tests/snapshots/pass_output.json
+  - tests/snapshots/fail_output.json
+  - tests/snapshots/iam_drift_output.json
+  - tests/snapshots/pass_explain_output.json
+  - tests/snapshots/fail_explain_output.json
+  - tests/snapshots/iam_drift_explain_output.json
+  - tests/snapshots/pass_diff_output.json
+  - tests/snapshots/fail_diff_output.json
+  - tests/snapshots/iam_drift_diff_output.json
+  - tests/snapshots/fail_resource_output.json
+  - tests/snapshots/module_resource_output.json
+  - tests/snapshots/fail_preview_output.json
+  - tests/snapshots/plan_compare_output.json

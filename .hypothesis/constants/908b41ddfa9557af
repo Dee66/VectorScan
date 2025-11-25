@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/src/vectorscan/rules/base.py
-# hypothesis_version: 6.148.1
-
-['UNSET', 'attributes', 'description', 'id', 'low', 'medium', 'remediation_hint', 'resource_address', 'severity', 'title']

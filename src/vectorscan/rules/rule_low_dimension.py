@@ -34,7 +34,6 @@ class LowDimensionRule(Rule):
                     description=f"Vector dimension={dimension_value} may indicate misconfiguration.",
                     resource_address=resource.get("address", ""),
                     attributes={"dimension": dimension_value},
-                    remediation_hint="fixpack:P-VEC-004",
                     remediation_difficulty="medium",
                 )
             )

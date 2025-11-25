@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/tools/vectorscan/entrypoint_shim.py
+# hypothesis_version: 6.147.0
+
+['__main__', 'compare', 'main', 'pillar.cli', 'policy_manifest', 'rules', 'run_rules_manifest', 'scan', 'validate']

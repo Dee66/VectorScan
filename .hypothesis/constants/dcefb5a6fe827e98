@@ -1,4 +1,4 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/copilot_determinism_guard.py
-# hypothesis_version: 6.148.1
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/tools/vectorscan/copilot_determinism_guard.py
+# hypothesis_version: 6.147.0
 
 ['+', '--base-path', '--fixtures', '--json', '0', '1', '1704067200', '2024-01-01T00:00:00Z', 'VSCAN_CLOCK_EPOCH', 'VSCAN_CLOCK_ISO', 'VSCAN_FORCE_PARSE_MS', 'VSCAN_NO_COLOR', 'VSCAN_OFFLINE', '__main__', 'tools', 'utf-8', 'vectorscan', 'vectorscan.py']

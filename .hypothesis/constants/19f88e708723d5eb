@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/pillar/evaluator.py
+# hypothesis_version: 6.147.0
+
+['FAIL', '_canonical_metadata', '_control_flags', 'badge_eligible', 'control', 'critical', 'environment', 'environment_label', 'error', 'evaluation', 'exit_code', 'flags', 'high', 'id', 'issues', 'latency_ms', 'low', 'medium', 'metadata', 'pillar', 'plan', 'plan_metadata', 'quick_score_mode', 'remediation_hint', 'remediation_metadata', 'resource_address', 'resources', 'scan_version', 'severity', 'severity_summary', 'status', 'vectorscan']

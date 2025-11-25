@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/vectorscan/tools/generate_docs.py
+# hypothesis_version: 6.147.0
+
+[' - ', '## Nested Structures', '## Severity Totals', '**Exit Codes**', '.', 'NFKD', 'VectorScan.txt', '\\s{2,}', '\\s{2,}|\\t', '__main__', 'ascii', 'attributes', 'badge_eligible', 'code', 'critical', 'description', 'docs', 'environment', 'exit codes', 'high', 'id', 'ignore', 'issues', 'latency_ms', 'low', 'medium', 'metadata', 'output_schema.md', 'pillar', 'pillar_score_inputs', 'quick_score_mode', 'remediation_hint', 'required', 'resource_address', 'scan_version', 'schemas', 'severity', 'severity_keys', 'severity_totals', 'title', 'utf-8', 'vectorscan_spec.md', '| --- | --- |']

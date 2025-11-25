@@ -1,0 +1,77 @@
+checklist_version: 1.0.0
+product: vectorscan
+purpose: "Primary execution driver for Architect–Implementor workflow."
+
+items:
+  - id: VS-001
+    title: "Normalization pipeline parity"
+    description: "Implement the GuardTemplate stage order (flatten → metadata → IAM drift → canonical_issue_collect) with deterministic resource ordering."
+    expected_outputs:
+      - "src/pillar/compat/normalization.py mirrors the canonical stage sequence"
+      - "Unit tests cover deterministic plan/resource normalization"
+  - id: VS-002
+    title: "Metadata builder implementation"
+    description: "Author src/pillar/metadata.py helpers that assemble environment + plan metadata blocks for evaluator consumption."
+    expected_outputs:
+      - "metadata builder module returns canonical environment + plan structures"
+      - "Evaluator imports metadata helpers and snapshots updated"
+  - id: VS-003
+    title: "Evaluator canonical payload"
+    description: "Rewire evaluator output to include pillar, scan_version, guardscore_rules_version, canonical_schema_version, environment, metadata, badge_eligible, quick_score_mode, latency_ms, schema_validation_error."
+    expected_outputs:
+      - "src/pillar/evaluator.py matches canonical schema keys"
+      - "tests/test_json_output.py updated for new payload"
+  - id: VS-004
+    title: "Quick score + latency stage"
+    description: "Compute quick_score_mode thresholds and deterministic latency_ms, persisting the values into evaluation metadata and top-level payload."
+    expected_outputs:
+      - "Helper calculating quick_score_mode using resource count + plan size"
+      - "Latency measured via monotonic clock and asserted in tests"
+  - id: VS-005
+    title: "Schema alignment + validator"
+    description: "Refresh schemas/guardsuite_pillar_schema.json and add schema validation step that records schema_validation_error while emitting payload."
+    expected_outputs:
+      - "Updated schema file including remediation ledger + issue fields"
+      - "Schema validator wired into evaluator with regression coverage"
+  - id: VS-006
+    title: "Rule registry determinism"
+    description: "Ensure src/pillar/rules/registry.py defines the canonical catalog with severity-ranked ordering and metadata derived from the master spec."
+    expected_outputs:
+      - "Registry sorted by severity → id with complete metadata"
+      - "Rule catalog documented in product/spec.yml references"
+  - id: VS-007
+    title: "Rule engine contract"
+    description: "Refactor rule engine to evaluate pure deterministic functions, honoring match metadata and returning normalized IssueDicts."
+    expected_outputs:
+      - "evaluate_rules enforces severity/id ordering"
+      - "Unit tests verify pure evaluation against fixtures"
+  - id: VS-008
+    title: "Remediation metadata + ledger"
+    description: "Propagate remediation_hint/difficulty/metadata for every issue and emit remediation_ledger + audit ledger remediation_summary."
+    expected_outputs:
+      - "Issues include remediation_metadata with fixpack_id/summary/terraform_patch"
+      - "Payload + evaluation expose remediation_ledger in golden fixtures"
+  - id: VS-009
+    title: "Fixpack loader + assets"
+    description: "Implement src/pillar/fixpack/loader.py and align fixpack/<ISSUE_ID>.hcl artifacts with PILLAR rule IDs."
+    expected_outputs:
+      - "Fixpack loader resolves hint + metadata for each rule"
+      - "Fixpack directory renamed/populated per fixpack:<ISSUE_ID> convention"
+  - id: VS-010
+    title: "CLI convergence"
+    description: "Update src/pillar/cli.py to expose commands [scan, validate, rules] with flags --json, --stdin, --quiet, --version, --output json and deterministic JSON output."
+    expected_outputs:
+      - "CLI flag surface matches master spec"
+      - "CLI tests cover --json/--output json/--version scenarios"
+  - id: VS-011
+    title: "Documentation alignment"
+    description: "Refresh docs/output_schema_reference.md, product/spec.yml references, and README snippets to describe canonical schema + CLI contract."
+    expected_outputs:
+      - "Docs include remediation ledger, quick_score_mode, schema_validation_error"
+      - "README/spec sections cite GuardSuite master spec alignment"
+  - id: VS-012
+    title: "Test + snapshot coverage"
+    description: "Create required unit, integration, snapshot, remediation, schema, quickscore, and deterministic tests using fixtures (e.g., tests/fixtures/minimal_plan.json)."
+    expected_outputs:
+      - "tests/snapshots/ directory populated with canonical outputs"
+      - "pytest suite enforces remediation + schema invariants"

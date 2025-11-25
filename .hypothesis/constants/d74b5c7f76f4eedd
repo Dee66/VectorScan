@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/plan_risk.py
-# hypothesis_version: 6.147.0
-
-['FAIL', 'PASS', 'RISK_LEVELS', 'compliance_score', 'critical', 'factors', 'high', 'iam_drift', 'iam_risky_actions', 'low', 'medium', 'open_sg_count', 'profile', 'status']

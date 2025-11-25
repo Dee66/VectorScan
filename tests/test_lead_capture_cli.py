@@ -21,7 +21,8 @@ def _basic_plan():
 def test_local_capture_writes_file_with_timestamp(monkeypatch, tmp_path, capsys):
     plan_path = write_plan(tmp_path, _basic_plan())
     set_deterministic_clock(monkeypatch)
-    monkeypatch.delenv("VSCAN_OFFLINE", raising=False)
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
     monkeypatch.delenv("VSCAN_LEAD_ENDPOINT", raising=False)
 
     created = {}
@@ -44,10 +45,17 @@ def test_local_capture_writes_file_with_timestamp(monkeypatch, tmp_path, capsys)
 
     assert code == 0, captured.err
     path = created["path"]
-    assert path.exists()
-    assert path.parent.name == "captures"
+    local_path = Path(path)
+    directory = local_path.parent
+    assert directory.exists()
+    assert directory.name in {"captures", "vectorscan-captures"}
+    # Symbolic links on some platforms keep parents under .tmp directories. Resolve for safety.
+    resolved_parent = directory.resolve()
+    assert resolved_parent.name in {"captures", "vectorscan-captures"}
 
-    data = json.loads(path.read_text())
+    assert local_path.exists()
+
+    data = json.loads(local_path.read_text())
     assert data["email"] == "unit@example.com"
     assert data["result"]["status"] == "PASS"
     assert isinstance(data["timestamp"], int)
@@ -76,6 +84,8 @@ def test_remote_capture_posts_payload_when_endpoint_set(monkeypatch, tmp_path):
 
     monkeypatch.setattr(vs, "_write_local_capture", fake_local)
     monkeypatch.setattr(vs, "_maybe_post", fake_remote)
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
     monkeypatch.setenv("VSCAN_LEAD_ENDPOINT", "https://example.com/capture")
 
     code = vs.main([str(plan_path), "--email", "remote@example.com"])
@@ -106,6 +116,8 @@ def test_remote_capture_errors_are_graceful(monkeypatch, tmp_path, capsys):
 
     monkeypatch.setattr(vs, "_write_local_capture", fake_local)
     monkeypatch.setattr(vs, "_maybe_post", failing_remote)
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
     monkeypatch.setenv("VSCAN_LEAD_ENDPOINT", "https://example.com/capture")
 
     capsys.readouterr()

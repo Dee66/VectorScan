@@ -51,6 +51,7 @@ def test_cli_exit_codes_pass_fail():
     assert summary == {"critical": 0, "high": 0, "medium": 0, "low": 0}
     assert isinstance(pass_payload["metrics"].get("scan_duration_ms"), int)
     assert pass_payload["metrics"]["scan_duration_ms"] >= 0
+    assert pass_payload["badge_eligible"] is True
 
     # FAIL plan -> exit code 3
     res_fail = run_cli(FIXTURES / "tfplan_fail.json")
@@ -62,6 +63,25 @@ def test_cli_exit_codes_pass_fail():
     assert fail_summary == {"critical": 1, "high": 1, "medium": 0, "low": 0}
     assert isinstance(payload["metrics"].get("scan_duration_ms"), int)
     assert payload["metrics"]["scan_duration_ms"] >= 0
+    assert payload["badge_eligible"] is False
+    issue = payload["issues"][0]
+    required_fields = {
+        "id",
+        "severity",
+        "title",
+        "description",
+        "resource_address",
+        "attributes",
+        "remediation_hint",
+        "remediation_difficulty",
+        "remediation_metadata",
+    }
+    assert required_fields.issubset(issue.keys())
+    assert isinstance(issue["remediation_metadata"], dict)
+    ledger = payload.get("remediation_ledger")
+    assert isinstance(ledger, dict)
+    assert ledger.get("remediation_rule_index") == ledger.get("rule_ids")
+    assert ledger.get("remediation_summary") == ledger.get("per_severity")
 
 
 def test_cli_invalid_json_exit_code():
@@ -120,7 +140,7 @@ def test_cli_policy_filter_limits_checks():
             "P-FIN-001",
         ]
     )
-    assert res.returncode == 3, res.stdout + "\n" + res.stderr
+    assert res.returncode == 2, res.stdout + "\n" + res.stderr
     payload = json.loads(res.stdout)
     assert payload["checks"] == ["P-FIN-001"]
     assert all(v.startswith("P-FIN-001") for v in payload["violations"])
@@ -206,3 +226,28 @@ def test_cli_preview_manifest_skip_verify_allows_override(tmp_path):
     assert payload["preview_manifest"]["signature"] == "sha256:deadbeef"
     assert payload["preview_manifest"]["verified"] is True
     assert payload["preview_policies"][0]["id"] == "P-SEC-999"
+
+
+def test_cli_remediation_ledger_consistent_across_modes():
+    plan = FIXTURES / "tfplan_fail.json"
+    compare_path = plan  # reuse the same plan to isolate ledger deltas
+    commands = {
+        "json": ([str(plan), "--json"], 3),
+        "explain": ([str(plan), "--json", "--explain"], 3),
+        "diff": ([str(plan), "--json", "--diff"], 3),
+        "preview": ([str(plan), "--json", "--preview-vectorguard"], 10),
+        "compare": (["--json", "--compare", str(compare_path), str(compare_path)], 0),
+    }
+
+    ledgers: dict[str, dict] = {}
+    for label, (args, expected_code) in commands.items():
+        result = _run_cli(args)
+        assert result.returncode == expected_code, f"{label} stderr: {result.stderr}"
+        payload = json.loads(result.stdout)
+        ledger = payload.get("remediation_ledger")
+        assert isinstance(ledger, dict), f"{label} missing remediation ledger"
+        ledgers[label] = ledger
+
+    baseline = ledgers["json"]
+    for label, ledger in ledgers.items():
+        assert ledger == baseline, f"ledger drift detected for {label}"

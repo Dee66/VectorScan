@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/src/vectorscan/renderer.py
-# hypothesis_version: 6.148.1
-
-[100, '  Terraform patch:', '-', 'N/A', 'No issues detected.', 'Summary:', 'UNKNOWN', 'critical', 'description', 'eligible', 'guardscore_badge', 'high', 'id', 'issues', 'low', 'medium', 'pillar_score_inputs', 'remediation_hint', 'remediation_metadata', 'resource_address', 'severity', 'terraform_patch', 'title', 'unknown']

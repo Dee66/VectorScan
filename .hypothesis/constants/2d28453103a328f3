@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/vectorscan/renderer.py
+# hypothesis_version: 6.147.0
+
+[b'\n', 100, '-', 'N/A', 'No issues detected.', 'Summary:', 'UNKNOWN', 'buffer', 'critical', 'description', 'eligible', 'guardscore_badge', 'high', 'id', 'issues', 'low', 'medium', 'pillar_score_inputs', 'remediation_hint', 'replace', 'resource_address', 'severity', 'strict', 'surrogatepass', 'title', 'unknown', 'utf-16', 'utf-8']

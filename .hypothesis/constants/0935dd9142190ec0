@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/src/vectorscan/rules/__init__.py
-# hypothesis_version: 6.148.1
-
-['description', 'file_path', 'fixpack', 'id', 'python_class', 'severity']

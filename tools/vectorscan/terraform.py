@@ -24,6 +24,36 @@ from tools.vectorscan.constants import (
     REQUIRED_TERRAFORM_VERSION,
 )
 from tools.vectorscan.constants import ROOT_DIR as _ROOT_DIR
+from tools.vectorscan.env_flags import env_truthy
+_STUB_VERSION = os.getenv("VSCAN_TERRAFORM_STUB_VERSION", "1.6.0")
+_STUB_BINARY = "terraform-stub"
+
+
+def _stub_mode_enabled() -> bool:
+    return env_truthy(os.getenv("VSCAN_TERRAFORM_STUB"))
+
+
+def _offline_stub_report(status: str, *, message: str) -> Dict[str, Any]:
+    normalized = status.upper()
+    if normalized not in {"PASS", "FAIL", "SKIP", "ERROR"}:
+        normalized = "SKIP"
+    default_return = 0
+    if normalized == "FAIL":
+        default_return = 1
+    elif normalized == "ERROR":
+        default_return = 2
+    return {
+        "status": normalized,
+        "returncode": default_return,
+        "stdout": "[terraform-stub] offline execution",
+        "stderr": "",
+        "message": message,
+        "version": _STUB_VERSION,
+        "binary": _STUB_BINARY,
+        "source": "stub",
+        "strategy": "stub",
+        "plan_output": "mock-plan-output",
+    }
 
 
 def _parse_semver(value: str) -> Tuple[int, int, int]:
@@ -444,11 +474,15 @@ def run_terraform_tests(override_bin: Optional[str], auto_download: bool) -> Dic
     try:
         resolution = manager.ensure(override_bin)
     except TerraformNotFoundError as exc:
+        if _stub_mode_enabled():
+            return _offline_stub_report("SKIP", message=str(exc))
         return {
             "status": "SKIP",
             "message": str(exc),
         }
     except TerraformManagerError as exc:
+        if _stub_mode_enabled():
+            return _offline_stub_report("ERROR", message=str(exc))
         return {
             "status": "ERROR",
             "message": str(exc),

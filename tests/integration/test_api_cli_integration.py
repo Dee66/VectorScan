@@ -49,6 +49,8 @@ def test_cli_to_api_lead_capture(tmp_path, monkeypatch):
     plan_path = make_plan(tmp_path, [])
     os.environ["LEAD_CAPTURE_ENABLED"] = "1"
     os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
 
     import urllib.request as ur
 
@@ -62,6 +64,8 @@ def test_cli_to_api_lead_capture(tmp_path, monkeypatch):
         ur.urlopen = original
         os.environ.pop("LEAD_CAPTURE_ENABLED", None)
         os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+        monkeypatch.delenv("VSCAN_ALLOW_NETWORK", raising=False)
+        monkeypatch.delenv("VSCAN_OFFLINE", raising=False)
 
     assert code == 0
     assert _fake_urlopen_payload is not None

@@ -22,23 +22,14 @@ def _parse_trailing_json(text: str):
     return json.loads(text[idx:])
 
 
-def test_terraform_tests_error_no_download(capsys, monkeypatch):
+def test_terraform_tests_error_no_download(capsys, monkeypatch, terraform_mocks):
     # Monkeypatch run_terraform_tests to simulate an ERROR (e.g., no terraform and downloads disabled)
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
     import tools.vectorscan.entrypoint_shim as vs
 
     def fake_run_terraform_tests(override_bin, auto_download):
-        return {
-            "status": "ERROR",
-            "message": "Terraform CLI not found and auto-download disabled.",
-            "version": None,
-            "binary": None,
-            "source": None,
-            "strategy": "base",
-            "stdout": "",
-            "stderr": "",
-        }
+        return terraform_mocks.error_report(message="Terraform CLI not found and auto-download disabled.")
 
     monkeypatch.setattr(vs, "run_terraform_tests", fake_run_terraform_tests)
     code = vs.main([str(PASS_PLAN), "--json", "--terraform-tests"])
@@ -49,7 +40,7 @@ def test_terraform_tests_error_no_download(capsys, monkeypatch):
     assert code == 6
 
 
-def test_terraform_tests_fail_integration(capsys, monkeypatch):
+def test_terraform_tests_fail_integration(capsys, monkeypatch, terraform_mocks):
     # Monkeypatch run_terraform_tests to simulate a FAIL
     # Ensure repo root import works
     if str(ROOT) not in sys.path:
@@ -57,16 +48,14 @@ def test_terraform_tests_fail_integration(capsys, monkeypatch):
     import tools.vectorscan.entrypoint_shim as vs
 
     def fake_run_terraform_tests(override_bin, auto_download):
-        return {
-            "status": "FAIL",
-            "returncode": 1,
-            "stdout": "",
-            "stderr": "",
-            "version": "1.8.0",
-            "binary": "/fake/bin/terraform",
-            "source": "system",
-            "strategy": "modern",
-        }
+        return terraform_mocks.fail_report(
+            stdout="",
+            stderr="",
+            version="1.8.0",
+            binary="/fake/bin/terraform",
+            source="system",
+            strategy="modern",
+        )
 
     monkeypatch.setattr(vs, "run_terraform_tests", fake_run_terraform_tests)
     code = vs.main([str(PASS_PLAN), "--json", "--terraform-tests"])
@@ -77,21 +66,20 @@ def test_terraform_tests_fail_integration(capsys, monkeypatch):
     assert code == 5
 
 
-def test_terraform_tests_skip_legacy(capsys, monkeypatch):
+def test_terraform_tests_skip_legacy(capsys, monkeypatch, terraform_mocks):
     # Monkeypatch run_terraform_tests to simulate a SKIP (legacy)
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
     import tools.vectorscan.entrypoint_shim as vs
 
     def fake_run_terraform_tests(override_bin, auto_download):
-        return {
-            "status": "SKIP",
-            "message": "legacy terraform",
-            "version": "1.0.0",
-            "binary": "/fake/bin/terraform",
-            "source": "system",
-            "strategy": "legacy-skip",
-        }
+        return terraform_mocks.skip_report(
+            message="legacy terraform",
+            version="1.0.0",
+            binary="/fake/bin/terraform",
+            source="system",
+            strategy="legacy-skip",
+        )
 
     monkeypatch.setattr(vs, "run_terraform_tests", fake_run_terraform_tests)
     code = vs.main([str(PASS_PLAN), "--json", "--terraform-tests"])

@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/terraform.py
-# hypothesis_version: 6.147.0
-
-[4000, '\n... (truncated)', '#', '-input=false', '-json', '.', 'ERROR', 'FAIL', 'PASS', 'ROOT_DIR', 'SKIP', 'TerraformManager', 'TerraformResolution', 'VSCAN_TERRAFORM_BIN', '_safe_chdir_flag', '_select_strategy', '_truncate_output', 'aarch64', 'amd64', 'arm64', 'base', 'binary', 'command', 'darwin', 'download', 'init', 'init_command', 'init_returncode', 'legacy-skip', 'linux', 'message', 'modern', 'name', 'override', 'returncode', 'run_terraform_tests', 'source', 'status', 'stderr', 'stdout', 'strategy', 'system', 'terraform', 'terraform v', 'terraform-download-', 'terraform.exe', 'terraform_version', 'test', 'tests', 'tf-tests', 'unknown', 'utf-8', 'v', 'vectorscan', 'version', 'windows', 'x86_64', '{}']

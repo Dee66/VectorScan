@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/policies/__init__.py
-# hypothesis_version: 6.147.0
-
-['BasePolicy', 'PolicyMetadata', 'get_policies', 'get_policy', 'get_policy_metadata', 'register_policy']

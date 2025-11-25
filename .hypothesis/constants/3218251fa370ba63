@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/tools/vectorscan/terraform.py
+# hypothesis_version: 6.148.2
+
+[4000, '\n... (truncated)', '#', '-input=false', '-json', '.', '/', '1.6.0', 'ERROR', 'FAIL', 'PASS', 'ROOT_DIR', 'SKIP', 'TerraformManager', 'TerraformResolution', 'VSCAN_TERRAFORM_BIN', 'VSCAN_TERRAFORM_STUB', '\\', '__file__', '_safe_chdir_flag', '_select_strategy', '_truncate_output', 'aarch64', 'amd64', 'arm64', 'base', 'binary', 'command', 'darwin', 'download', 'init', 'init_command', 'init_returncode', 'legacy-skip', 'linux', 'message', 'mock-plan-output', 'modern', 'name', 'override', 'plan_output', 'returncode', 'run_terraform_tests', 'source', 'status', 'stderr', 'stdout', 'strategy', 'stub', 'system', 'terraform', 'terraform v', 'terraform-download-', 'terraform-stub', 'terraform.exe', 'terraform_version', 'test', 'tests', 'tf-tests', 'unknown', 'utf-8', 'v', 'vectorscan', 'version', 'windows', 'x86_64', '{}']

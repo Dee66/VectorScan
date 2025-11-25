@@ -150,10 +150,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 
 def _handle_scan(plan: Optional[Path], stdin: bool, options: ScanOptions) -> int:
+	strict_mode_active = legacy.strict_mode_enabled()
 	try:
 		plan_payload, source_path, raw_size = _load_plan_payload(plan, stdin)
 	except PlanLoadError as exc:
-		_return_plan_error(str(exc))
+		_return_plan_error(str(exc), strict_mode_active=strict_mode_active)
 	return _execute_scan(plan_payload, source_path, raw_size, options)
 
 
@@ -195,6 +196,7 @@ def _execute_scan(
 def _emit_scan_output(result: NormalizationResult, options: ScanOptions) -> None:
 	payload = result.payload
 	safe_payload = legacy._sanitize_for_json(payload)
+	_ensure_cli_metadata_alignment(payload, safe_payload)
 	if options.as_json:
 		_SAFE_PRINT(
 			json.dumps(
@@ -289,6 +291,50 @@ def _emit_human_output(result: NormalizationResult, options: ScanOptions) -> Non
 	_SAFE_PRINT(f"[VectorScan] completed scan_version={pillar_constants.SCAN_VERSION}")
 
 
+def _ensure_cli_metadata_alignment(raw_payload: Any, safe_payload: Any) -> None:
+	if not isinstance(raw_payload, dict) or not isinstance(safe_payload, dict):
+		return
+	raw_issues = raw_payload.get("issues")
+	safe_issues = safe_payload.get("issues")
+	if not isinstance(raw_issues, list) or not isinstance(safe_issues, list):
+		return
+	limit = min(len(raw_issues), len(safe_issues))
+	for idx in range(limit):
+		raw_issue = raw_issues[idx]
+		safe_issue = safe_issues[idx]
+		template = _ordered_metadata_from_issue(safe_issue) or _ordered_metadata_from_issue(raw_issue)
+		_apply_metadata_template(raw_issue, template)
+		_apply_metadata_template(safe_issue, template)
+	for idx in range(limit, len(raw_issues)):
+		_apply_metadata_template(raw_issues[idx], None)
+	for idx in range(limit, len(safe_issues)):
+		_apply_metadata_template(safe_issues[idx], None)
+
+
+def _ordered_metadata_from_issue(issue: Any) -> Optional[Dict[str, Any]]:
+	if not isinstance(issue, dict):
+		return None
+	metadata = issue.get("remediation_metadata")
+	if not isinstance(metadata, dict):
+		return None
+	ordered: Dict[str, Any] = {}
+	for key in sorted(metadata.keys()):
+		ordered[key] = metadata[key]
+	return ordered or None
+
+
+def _apply_metadata_template(issue: Any, template: Optional[Dict[str, Any]]) -> None:
+	if not isinstance(issue, dict):
+		return
+	canonical_issue = _ordered_metadata_from_issue(issue)
+	if template is None:
+		template = canonical_issue
+	if template is None:
+		return
+	if canonical_issue != template:
+		issue["remediation_metadata"] = dict(template)
+
+
 def _handle_lead_capture(
 	result: NormalizationResult,
 	safe_payload: Dict[str, Any],
@@ -305,10 +351,11 @@ def _handle_lead_capture(
 		or options.endpoint
 		or os.getenv("VSCAN_LEAD_ENDPOINT")
 	)
-	if not wants_capture or offline_mode:
+	if not wants_capture:
 		return
 	output_stream = sys.stderr if options.as_json else sys.stdout
-	if options.force_no_network or not allow_network_capture:
+	no_network_active = offline_mode or options.force_no_network or not allow_network_capture
+	if no_network_active:
 		_SAFE_PRINT(error_text.NO_NETWORK_MESSAGE, stream=output_stream)
 		return
 	lead = {
@@ -361,9 +408,12 @@ def _load_plan_payload(
 	return payload, plan, len(text.encode("utf-8"))
 
 
-def _return_plan_error(message: str) -> None:
-	_SAFE_PRINT(message, stream=sys.stderr)
-	_SAFE_PRINT("", stream=sys.stderr)
+def _return_plan_error(message: str, *, strict_mode_active: bool = False) -> None:
+	if strict_mode_active:
+		emit_strict_mode_banner(message)
+	else:
+		_SAFE_PRINT(message, stream=sys.stderr)
+		_SAFE_PRINT("", stream=sys.stderr)
 	raise SystemExit(EXIT_INVALID_INPUT)
 
 

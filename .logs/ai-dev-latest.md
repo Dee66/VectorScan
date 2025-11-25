@@ -35,6 +35,60 @@
       "resource_address": "src/pillar/evaluator.py"
     },
     "files_changed": [],
+    },
+    {
+      "id": "VS-022",
+      "summary": {
+        "severity": "low",
+        "title": "VS-022 fixpack metadata parity",
+        "description": "Reconciled the fixpack loader across evaluator + CLI by ordering metadata merges after rule aggregation, sorting canonical issues, and surfacing loader-backed availability in --explain/--diff human output.",
+        "resource_address": "src/pillar/evaluator.py"
+      },
+      "files_changed": [
+        "src/pillar/fixpack/loader.py",
+        "src/pillar/evaluator.py",
+        "src/pillar/cli.py"
+      ],
+      "tests": {
+        "tests_run": 42,
+        "failures": 0,
+        "duration_s": 11.58,
+        "test_suites": [
+          "pytest -q tests/test_json_output.py tests/test_cli.py tests/snapshots/test_snapshots.py"
+        ]
+      },
+      "notes": {
+        "remediation_hint": "fixpack:VS-022",
+        "remediation_difficulty": "low"
+      }
+    }
+      "id": "VS-021",
+      "summary": {
+        "severity": "low",
+        "title": "VS-021 fixpack loader reconciliation",
+        "description": "Implemented src/pillar/fixpack/loader.py with deterministic disk + placeholder handling, wired the evaluator + normalization pipeline to source remediation metadata from the loader, and synced the rule registry hints so fixpack:<ISSUE_ID> references stay aligned with on-disk fixpacks.",
+        "resource_address": "src/pillar/fixpack/loader.py"
+      },
+      "files_changed": [
+        "src/pillar/fixpack/loader.py",
+        "src/pillar/fixpack/__init__.py",
+        "src/pillar/compat/normalization.py",
+        "src/pillar/evaluator.py",
+        "src/pillar/rules/registry.py"
+      ],
+      "tests": {
+        "tests_run": 42,
+        "failures": 0,
+        "duration_s": 8.63,
+        "test_suites": [
+          "pytest -q tests/test_json_output.py tests/test_cli.py tests/snapshots/test_snapshots.py"
+        ]
+      },
+      "notes": {
+        "remediation_hint": "fixpack:VS-021",
+        "remediation_difficulty": "low"
+      }
+    }
     "tests": {
       "tests_run": 24,
       "failures": 0,
@@ -621,6 +675,121 @@
     },
     "notes": {
       "remediation_hint": "fixpack:VS-015",
+      "remediation_difficulty": "low"
+    }
+  },
+  {
+    "id": "VS-020",
+    "summary": {
+      "severity": "low",
+      "title": "VS-020 snapshot path normalization",
+      "description": "Documented the canonical snapshot suite path, taught the scaffolder to ensure tests/snapshots/test_snapshots.py exists, and updated the regression command reference so targeted pytest invocations include the snapshots module.",
+      "resource_address": "tests/snapshots/test_snapshots.py"
+    },
+    "files_changed": [
+      "tools/vectorscan/copilot_scaffolder.py",
+      "docs/TestSpec.txt",
+      "docs/test-checklist.md",
+      "docs/checklist.md"
+    ],
+    "tests": {
+      "tests_run": 42,
+      "failures": 0,
+      "duration_s": 6.53,
+      "test_suites": [
+        "pytest -q tests/test_json_output.py tests/test_cli.py tests/snapshots/test_snapshots.py"
+      ]
+    },
+    "notes": {
+      "remediation_hint": "fixpack:VS-020",
+      "remediation_difficulty": "low"
+    }
+  },
+  {
+    "id": "VS-024",
+    "summary": {
+      "severity": "low",
+      "title": "VS-024 remediation-ledger audit",
+      "description": "Added an integration suite guarding remediation-ledger ordering, ensured CLI pathways (json/explain/diff/preview/compare) surface identical ledger metadata, and re-affirmed normalization attaches the ledger between rule aggregation and schema validation.",
+      "resource_address": "tests/integration/test_remediation_ledger_integration.py"
+    },
+    "files_changed": [
+      "tests/integration/test_remediation_ledger_integration.py",
+      "tests/test_cli.py"
+    ],
+    "tests": {
+      "tests_run": 44,
+      "failures": 0,
+      "duration_s": 12.23,
+      "test_suites": [
+        "/home/dee/workspace/AI/GuardSuite/VectorScan/.venv/bin/python -m pytest -q tests/test_json_output.py",
+        "/home/dee/workspace/AI/GuardSuite/VectorScan/.venv/bin/python -m pytest -q tests/test_cli.py",
+        "/home/dee/workspace/AI/GuardSuite/VectorScan/.venv/bin/python -m pytest -q tests/snapshots/test_snapshots.py",
+        "/home/dee/workspace/AI/GuardSuite/VectorScan/.venv/bin/python -m pytest -q tests/integration/test_remediation_ledger_integration.py"
+      ]
+    },
+    "notes": {
+      "remediation_hint": "fixpack:VS-024",
+      "remediation_difficulty": "low"
+    }
+  },
+  {
+    "id": "VS-023",
+    "summary": {
+      "severity": "low",
+      "title": "VS-023 fixpack regression verification",
+      "description": "Re-ran the json_output, cli, and snapshot regression suites after the fixpack loader/evaluator/CLI updates to confirm remediation metadata parity and deterministic ordering remain intact.",
+      "resource_address": "tests/test_json_output.py"
+    },
+    "files_changed": [
+      "src/pillar/fixpack/loader.py",
+      "src/pillar/evaluator.py",
+      "src/pillar/cli.py"
+    ],
+    "tests": {
+      "tests_run": 42,
+      "failures": 0,
+      "duration_s": 11.86,
+      "test_suites": [
+        "pytest -q tests/test_json_output.py",
+        "pytest -q tests/test_cli.py",
+        "pytest -q tests/snapshots/test_snapshots.py"
+      ]
+    },
+    "notes": {
+      "remediation_hint": "fixpack:VS-023",
+      "remediation_difficulty": "low"
+    }
+  },
+  {
+    "id": "VS-024",
+    "summary": {
+      "severity": "low",
+      "title": "VS-024 remediation-ledger integration",
+      "description": "Added remediation-ledger integration tests, enforced loader ordering for remediation metadata, alphabetized environment/control blocks, and wired compare-mode CLI output so scan/explain/diff/preview/compare pathways expose identical remediation ledgers and canonical issues.",
+      "resource_address": "tests/integration/test_remediation_ledger_integration.py"
+    },
+    "files_changed": [
+      "src/pillar/compat/normalization.py",
+      "src/pillar/evaluator.py",
+      "tools/vectorscan/vectorscan.py",
+      "tests/integration/test_remediation_ledger_integration.py",
+      "tests/test_cli.py",
+      "tests/test_json_output.py"
+    ],
+    "tests": {
+      "tests_run": 44,
+      "failures": 0,
+      "duration_s": 19.66,
+      "test_suites": [
+        "pytest -q tests/test_json_output.py",
+        "pytest -q tests/test_cli.py",
+        "pytest -q tests/snapshots/test_snapshots.py",
+        "pytest -q tests/integration/test_remediation_ledger_integration.py"
+      ]
+    },
+    "notes": {
+      "remediation_hint": "fixpack:VS-024",
       "remediation_difficulty": "low"
     }
   }

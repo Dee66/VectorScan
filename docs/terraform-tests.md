@@ -13,7 +13,7 @@ VectorScan can optionally run module-level Terraform tests and include their res
 
 Notes
 - Running `--terraform-tests` now requires either a user-provided binary (`--terraform-bin` / `VSCAN_TERRAFORM_BIN`) or the explicit opt-in described above; downloads never happen silently.
-- Exit codes remain consistent: 0=PASS, 2=invalid input, 3=policy FAIL, 4=policy pack load error, 5=terraform test fail, 6=terraform error.
+- Scan exit codes are severity-aware: 0=no violations, 1=medium-only violations, 2=high-only violations (also used for invalid/unsatisfied input), 3=critical violations. Operational exits remain unchanged (4=policy pack load error, 5=Terraform test failure, 6=configuration/Terraform errors, 10=preview mode).
 - The main CI workflow (`.github/workflows/vectorscan.yml`) provisions Terraform 1.13.5 and runs `vectorscan --terraform-tests` against `examples/aws-pgvector-rag/tfplan-pass.json` so regressions are caught automatically whenever the flag is enabled.
 
 Example (JSON mode)

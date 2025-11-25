@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/build_vectorscan_package.py
-# hypothesis_version: 6.147.0
-
-[8192, '--bundle-name', '-legacy', '.sha256', '1.6.0', 'LICENSE_FREE.txt', 'README.md', '__main__', 'dist', 'download', 'free_policies.rego', 'rb', 'tools', 'utf-8', 'vectorscan', 'vectorscan-free', 'vectorscan.py', 'vectorscan_packaging', 'w']

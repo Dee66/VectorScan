@@ -10,7 +10,7 @@ VectorScan_Audit_Ledger:
     terraform_version: not-run
     terraform_source: not-run
     strict_mode: false
-    offline_mode: false
+    offline_mode: true
   plan_metadata:
     resource_count: 1
     module_count: 1

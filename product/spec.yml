@@ -1,0 +1,44 @@
+product: vectorscan
+version: 1.0.0
+product_type: free_scanner
+purpose: "Defines the full VectorScan pillar architecture, pipeline, schema, rule engine, fixpacks, and CLI contract."
+
+architecture_overview:
+  - "VectorScan inherits the GuardSuite pillar template, so the evaluator, CLI, and registry obey determinism, wasm_safe execution, and no-network-call invariants."
+  - "All rule functions remain pure and emit issues sorted by severity → id with the required fields (id, severity, title, description, resource_address, attributes, remediation_hint, remediation_difficulty)."
+  - "Canonical evaluator outputs must include pillar, scan_version, guardscore_rules_version, canonical_schema_version, environment, quick_score_mode, latency_ms, issues, severity_totals, badge_eligible, metadata, and schema_validation_error."
+
+normalization_pipeline:
+  - "Pipeline stages must run in order: flatten plan → inject metadata → derive IAM drift → canonical_issue_collect → evaluate rules → severity aggregate → audit ledger synthesis → payload emission."
+  - "Every stage preserves determinism (stable resource sorting, deterministic timestamps, deterministic remediation ordering)."
+  - "Offline/strict environment flags propagate through the pipeline alongside plan metadata, mirroring GuardTemplate behavior."
+
+evaluator_contract:
+  - "Evaluator builds the canonical payload with required keys plus severity_totals, pillar_score inputs, metadata.environment, and metadata.plan as mandated by the master spec."
+  - "quick_score_mode toggles on large plans (>1k resources or >40MB) and must be stored alongside latency_ms measured in milliseconds."
+  - "Schema validation errors bubble into schema_validation_error while still emitting the deterministic payload frame."
+
+rule_engine_contract:
+  - "Rules live under src/pillar/rules with registry ordering enforced (severity rank then id)."
+  - "Rule files expose pure evaluate() functions that accept normalized resources and never perform IO or global mutation."
+  - "Registry catalog mirrors the master spec: deterministic rule registration, match metadata, and stable evaluation order."
+
+remediation_metadata_contract:
+  - "Each IssueDict surfaces remediation_hint formatted as fixpack:<ISSUE_ID> and remediation_difficulty ∈ {low, medium, high}."
+  - "Deterministic remediation_metadata blocks must include fixpack_id, summary, and terraform_patch sorted by key and feed both payload issues and remediation ledger paths."
+  - "Remediation ledger aggregates per_severity counts plus ordered rule_ids/paths for audit exports."
+
+fixpack_contract:
+  - "Fixpacks live at fixpack/<ISSUE_ID>.hcl and map 1:1 with rule IDs from the registry."
+  - "Fixpack loader resolves metadata (summary, terraform_patch) for remediation_metadata and stays deterministic/IO-bounded inside the package."
+  - "Future fixpack_ai integrations must still honor the hint format and deterministic metadata contract."
+
+cli_contract:
+  - "CLI exposes commands [scan, validate, rules] and must support flags --json, --stdin, --quiet, --version, and --output json per cross-repo alignment rules."
+  - "scan emits canonical JSON (with latency_ms) or human output, validate performs schema guardrails, and rules prints the policy manifest."
+  - "CLI inherits GuardSuite status badge conventions and must honor offline-mode/environment flags."
+
+pillar_schema_requirements:
+  - "Issues sorted by severity → id with severity levels [critical, high, medium, low]."
+  - "Metadata block requires template_version, schema_version, rule_count, severity_totals, quick_score_mode, and plan_size_bytes."
+  - "Environment schema tracks cloud, provider, region, and terraform_version; remediation metadata is mandatory for every issue."

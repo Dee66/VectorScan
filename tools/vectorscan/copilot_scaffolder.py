@@ -290,6 +290,7 @@ _TEST_PLACEHOLDERS: dict[str, str] = {
     "tests/test_error_handling.py": _test_template("tests/test_error_handling.py"),
     "tests/test_lead_capture_cli.py": _test_template("tests/test_lead_capture_cli.py"),
     "tests/test_terraform_cli.py": _test_template("tests/test_terraform_cli.py"),
+    "tests/snapshots/test_snapshots.py": _test_template("tests/snapshots/test_snapshots.py"),
 }
 
 
@@ -304,6 +305,7 @@ def _build_required_items() -> tuple[ScaffoldItem, ...]:
         ScaffoldItem(Path("tests"), "directory"),
         ScaffoldItem(Path("tests/fixtures"), "directory"),
         ScaffoldItem(Path("tests/golden"), "directory"),
+        ScaffoldItem(Path("tests/snapshots"), "directory"),
         ScaffoldItem(Path("tests/unit"), "directory"),
         ScaffoldItem(Path("tests/integration"), "directory"),
         ScaffoldItem(Path("tests/e2e"), "directory"),

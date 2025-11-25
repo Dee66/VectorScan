@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/aggregate_metrics.py
-# hypothesis_version: 6.147.0
-
-['*.json', '--glob', '--out', ':', 'FAIL', 'P', 'PASS', 'Severity Totals:', '__main__', 'append', 'avg', 'captures', 'count', 'critical', 'fail', 'globs', 'high', 'low', 'max', 'medium', 'metrics', 'min', 'out', 'pass', 'result', 'runs', 'scan_duration_ms', 'status', 'tools', 'utf-8', 'vectorscan', 'vectorscan-*.json', 'violations', 'violations_by_policy']

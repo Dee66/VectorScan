@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/vectorscan/rules/rule_missing_encryption.py
+# hypothesis_version: 6.147.0
+
+['Encryption disabled', 'P-VEC-002', 'address', 'encryption_enabled', 'high', 'medium', 'resources', 'type', 'vector_index']

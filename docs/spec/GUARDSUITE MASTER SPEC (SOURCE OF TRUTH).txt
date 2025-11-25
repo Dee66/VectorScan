@@ -1,0 +1,282 @@
+Authoritative GuardSuite master specification. Source of truth for audits. Restored via SPEC-RESTORE-001.
+
+version: 1.0.0
+title: "GuardSuite — Master Product Specification"
+last_updated: 2025-11-20
+status: authoritative_source_of_truth
+
+# ============================================================
+# 0. OVERVIEW
+# ============================================================
+guardsuite:
+  description: >
+    GuardSuite is a unified security, governance & infrastructure_quality
+    platform composed of scanners, guards, scoring engines, dashboards,
+    fixpacks, template tooling, and an ML-augmented governance layer.
+  pillars:
+    - vector
+    - compute
+    - pipeline
+  primary_components:
+    - scanners
+    - guards
+    - guardscore
+    - guardboard
+    - fixpack
+    - core engines
+    - template
+    - ai systems (future)
+    - marketplace (future)
+
+# ============================================================
+# 1. PRODUCT CATALOG (FULL UNIVERSE)
+# ============================================================
+products:
+
+  # ---------------------------------------
+  # 1.1 Free Scanners (Top-of-Funnel)
+  # ---------------------------------------
+  scanners:
+    vector_scan:
+      id: vectorscan
+      type: scanner
+      pillar: vector
+      description: Terraform infra scan (free)
+    compute_scan:
+      id: computescan
+      type: scanner
+      pillar: compute
+      description: Compute, waste, and AWS resource analysis
+    pipeline_scan:
+      id: pipelinescan
+      type: scanner
+      pillar: pipeline
+      description: CI/CD pipeline security checks
+    playground:
+      id: playground
+      type: browser_scanner
+      description: WASM scanner running in browser
+
+  # ---------------------------------------
+  # 1.2 Paid Guards (Policy Enforcement)
+  # ---------------------------------------
+  guards:
+    vector_guard:
+      pillar: vector
+      type: policy_engine
+    compute_guard:
+      pillar: compute
+      type: policy_engine
+    pipeline_guard:
+      pillar: pipeline
+      type: policy_engine
+
+  # ---------------------------------------
+  # 1.3 Scoring, Dashboard, Governance
+  # ---------------------------------------
+  governance:
+    guardscore:
+      type: scoring_engine
+      description: Unified cross-pillar security & quality score
+    guardscore_badge:
+      type: badge
+      description: Public SVG badge for repos
+    guardboard:
+      type: dashboard
+      description: Unified risk & governance UI
+    guardboard_lite:
+      type: lightweight_dashboard
+      description: Embedded playground/dashboard hybrid
+
+  # ---------------------------------------
+  # 1.4 Remediation System
+  # ---------------------------------------
+  remediation:
+    fixpack_lite:
+      type: deterministic_hcl_remediation
+      rule: "fixpack:<ISSUE_ID>"
+    fixpack_ai:
+      type: ai_remediation
+      status: future
+
+  # ---------------------------------------
+  # 1.5 Future Premium Products
+  # ---------------------------------------
+  future:
+    modelguard:
+      type: llm_governance_engine
+    driftguard:
+      type: drift_detection
+    costguard:
+      type: deep_cost_governance
+    configguard:
+      type: config_policy_engine
+    policyhub:
+      type: policy_marketplace
+    blueprintgen_ai:
+      type: infra_pattern_generator
+    riskrank_ai:
+      type: advanced_risk_scoring
+
+# ============================================================
+# 2. SHARED ARCHITECTURE RULES
+# ============================================================
+architecture:
+  invariants:
+    determinism: true
+    wasm_safe: true
+    no_network_calls: true
+    no_dynamic_imports: true
+    pure_rule_functions: true
+    stable_sort_order: "severity → id"
+    canonical_output: true
+
+  canonical_evaluator_fields:
+    - pillar
+    - scan_version
+    - guardscore_rules_version
+    - canonical_schema_version
+    - environment
+    - quick_score_mode
+    - latency_ms
+    - issues
+    - severity_totals
+    - badge_eligible
+    - metadata
+    - schema_validation_error
+
+  required_issue_fields:
+    - id
+    - severity
+    - title
+    - description
+    - resource_address
+    - attributes
+    - remediation_hint
+    - remediation_difficulty
+
+  severity_levels:
+    - critical
+    - high
+    - medium
+    - low
+
+# ============================================================
+# 3. GUARDSUITE TEMPLATE ENGINE (guard_pillar)
+# ============================================================
+template_engine:
+  source_repo: GuardTemplate
+  description: >
+    Canonical pillar template used to generate all scanners & guards.
+  components:
+    - cli
+    - evaluator
+    - loader
+    - rule_registry
+    - metadata_builder
+    - fixpack_loader
+    - schema_validator
+    - snapshot tests
+  guarantees:
+    - deterministic evaluator pipeline
+    - WASM-safe execution path
+    - dynamic rule registration
+    - fixpack integration
+    - scaffold generator
+    - fully tested baseline (60+ tests)
+
+# ============================================================
+# 4. CROSS-REPO ALIGNMENT RULES
+# ============================================================
+cross_repo:
+  conventions:
+    directory_structure:
+      - src/<pillar>/
+      - src/<pillar>/rules/
+      - src/<pillar>/fixpack/
+      - tests/unit
+      - tests/integration
+      - tests/snapshots
+      - product/spec.yml
+    cli_contract:
+      commands: [scan, validate, rules]
+      flags: [--json, --stdin, --quiet, --version, --output json]
+    fixpack_convention: "fixpack/<ISSUE_ID>.hcl"
+    rule_file_pattern: "rule_*.py"
+    registry_file: "src/<pillar>/rules/registry.py"
+    evaluator: "src/<pillar>/evaluator.py"
+    metadata: "src/<pillar>/metadata.py"
+
+# ============================================================
+# 5. DATA CONTRACTS (CANONICAL SCHEMA)
+# ============================================================
+canonical_schema:
+  issues_sorted_by: "severity → id"
+  environment_schema:
+    - cloud
+    - provider
+    - region
+    - terraform_version
+  metadata_block:
+    required:
+      - template_version
+      - schema_version
+      - rule_count
+      - severity_totals
+      - quick_score_mode
+      - plan_size_bytes
+  remediation:
+    hint_format: "fixpack:<ISSUE>"
+    metadata_required: true
+
+# ============================================================
+# 6. TESTING REQUIREMENTS
+# ============================================================
+testing:
+  suites:
+    - unit
+    - integration
+    - snapshot
+    - remediation
+    - schema
+    - quickscore
+    - deterministic
+  fixtures:
+    - tests/fixtures/minimal_plan.json
+  snapshot_rules:
+    - snapshots may update only when instructed
+    - must compare canonical evaluator output
+
+# ============================================================
+# 7. RELEASE STRATEGY
+# ============================================================
+release:
+  template_versioning:
+    - template_version
+    - template_schema_version
+    - release_lock_file: "TEMPLATE_RELEASE_LOCK.md"
+  pillar_release_requirements:
+    - all tests pass
+    - canonical snapshot up-to-date
+    - CI schema validator green
+    - fixpack mapping complete
+
+# ============================================================
+# 8. ROADMAP (EXPANDABLE)
+# ============================================================
+roadmap:
+  near_term:
+    - migrate ComputeGuard to template
+    - migrate PipelineGuard to template
+    - complete GuardScore integration
+  mid_term:
+    - GuardBoard full release
+    - FixPack Pro
+    - PolicyHub beta
+  future:
+    - ModelGuard
+    - RiskRank AI
+    - DriftGuard
+    - Board AI copilot
+
+end_of_file: true

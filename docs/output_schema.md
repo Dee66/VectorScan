@@ -28,7 +28,7 @@
 | `description` | Detailed description of the detected risk. |
 | `resource_address` | Terraform address pointing to the offending resource. |
 | `attributes` | Structured context for remediation (resource metadata). |
-| `remediation_hint` | Fixpack reference such as fixpack:P-VEC-001. |
+| `remediation_hint` | Placeholder guidance string (upgrade to VectorGuard for full remediation). |
 | `remediation_difficulty` | low / medium / high remediation effort guidance. |
 
 The `issues` array must contain dictionaries with the fields listed above. Each field is required across the GuardSuite pillars so downstream tooling can present remediation guidance consistently.

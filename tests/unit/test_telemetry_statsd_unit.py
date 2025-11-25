@@ -90,6 +90,9 @@ def test_main_statsd_toggle_and_csv_idempotency(monkeypatch):
     mod_path = repo_root / "scripts" / "telemetry_consumer.py"
     tc = load_module_from_path("telemetry_consumer", mod_path)
 
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
+
     # Create a minimal summary file
     summary = {
         "generated_at": "2025-11-14T08:00:00+00:00",
@@ -179,6 +182,9 @@ def test_main_warns_when_statsd_unreachable(monkeypatch, capsys):
     mod_path = repo_root / "scripts" / "telemetry_consumer.py"
     tc = load_module_from_path("telemetry_consumer", mod_path)
 
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
+
     summary = {
         "generated_at": "2025-11-14T08:00:00+00:00",
         "entries": 1,
@@ -224,6 +230,9 @@ def test_statsd_disable_env_flag(monkeypatch, capsys):
     repo_root = Path(__file__).resolve().parents[2]
     mod_path = repo_root / "scripts" / "telemetry_consumer.py"
     tc = load_module_from_path("telemetry_consumer", mod_path)
+
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
 
     summary = {
         "generated_at": "2025-11-14T08:00:00+00:00",

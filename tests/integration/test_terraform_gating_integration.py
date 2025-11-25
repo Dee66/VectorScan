@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -54,11 +55,15 @@ def test_terraform_tests_gating_runs(fixture):
     cli = repo_root / "tools" / "vectorscan" / "vectorscan.py"
     plan = repo_root / "examples" / "aws-pgvector-rag" / fixture
 
+    env = os.environ.copy()
+    env["VSCAN_TERRAFORM_STUB"] = "0"
+    env["VSCAN_ALLOW_NETWORK"] = "1"
+    env["VSCAN_OFFLINE"] = "0"
     cmd = [sys.executable, str(cli), str(plan), "--terraform-tests", "--json"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
 
-    # CLI returns 0 on PASS, 3 on FAIL; both are acceptable here
-    assert result.returncode in (0, 3)
+    # CLI exit codes map to severity counts; values 0-3 indicate a successful scan execution
+    assert result.returncode in (0, 1, 2, 3)
 
     combined = (result.stdout or "") + (result.stderr or "")
     data = _extract_first_json(combined)

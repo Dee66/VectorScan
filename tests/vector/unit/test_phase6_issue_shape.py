@@ -21,4 +21,5 @@ def test_issue_factory_shape():
         "attributes",
         "remediation_hint",
         "remediation_difficulty",
+        "remediation_metadata",
     }

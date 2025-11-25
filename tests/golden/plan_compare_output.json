@@ -1,4 +1,5 @@
 {
+  "issues": [],
   "mode": "compare",
   "plan_evolution": {
     "delta": {
@@ -75,6 +76,11 @@
   },
   "scan_version": "v2.0.0",
   "schema_version": "1.2.0",
-  "status": "ALERT",
+  "severity_totals": {
+    "critical": 0,
+    "high": 0,
+    "low": 0,
+    "medium": 0
+  },
   "vectorscan_version": "0.1.0"
 }

@@ -13,6 +13,7 @@ class Rule:
 
     @classmethod
     def evaluate(cls, plan: Dict[str, Any]) -> List[Dict[str, Any]]:
+        _ = plan  # placeholder hook for subclasses
         return []
 
 
@@ -36,4 +37,5 @@ def build_issue(
         "attributes": attributes or {},
         "remediation_hint": remediation_hint,
         "remediation_difficulty": remediation_difficulty,
+        "remediation_metadata": {},
     }

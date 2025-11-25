@@ -7,6 +7,7 @@ if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))
 
 from tests.helpers.plan_helpers import write_plan
+from tools.vectorscan import entrypoint_shim as shim
 from tools.vectorscan import vectorscan as vs
 
 
@@ -23,15 +24,19 @@ def _load_json_output(raw: str) -> dict:
 def test_cli_includes_terraform_tests_payload(monkeypatch, tmp_path, capsys):
     plan_path = write_plan(tmp_path, _empty_plan())
     long_stdout = "x" * 4100
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
+    monkeypatch.setenv("VSCAN_TERRAFORM_STUB", "0")
+    monkeypatch.setenv("VSCAN_TERRAFORM_AUTO_DOWNLOAD", "1")
 
     def fake_run(override_bin, auto_download):
         assert override_bin is None
         assert auto_download is True
         return {
             "status": "PASS",
-            "version": "1.5.7",
+            "version": "1.13.5",
             "binary": "/usr/bin/terraform",
-            "source": "system",
+            "source": "download",
             "strategy": "modern",
             "stdout": long_stdout,
             "stderr": "terraform stderr sample",
@@ -39,7 +44,7 @@ def test_cli_includes_terraform_tests_payload(monkeypatch, tmp_path, capsys):
             "returncode": 0,
         }
 
-    monkeypatch.setattr(vs, "run_terraform_tests", fake_run)
+    monkeypatch.setattr(shim, "run_terraform_tests", fake_run)
 
     capsys.readouterr()
     code = vs.main([str(plan_path), "--json", "--terraform-tests"])
@@ -49,18 +54,21 @@ def test_cli_includes_terraform_tests_payload(monkeypatch, tmp_path, capsys):
     payload = _load_json_output(captured.out)
     block = payload["terraform_tests"]
     assert block["status"] == "PASS"
-    assert block["version"] == "1.5.7"
-    assert block["source"] == "system"
+    assert block["version"] == "1.13.5"
+    assert block["source"] == "download"
     assert block["strategy"] == "modern"
     assert block["stdout"].endswith("... (truncated)")
     assert block["stderr"] == "terraform stderr sample"
     env_block = payload["environment"]
-    assert env_block["terraform_version"] == "1.5.7"
-    assert env_block["terraform_source"] == "system"
+    assert env_block["terraform_version"] == block["version"]
+    assert env_block["terraform_source"] == block["source"]
 
 
 def test_cli_exit_code_5_when_terraform_tests_fail(monkeypatch, tmp_path, capsys):
     plan_path = write_plan(tmp_path, _empty_plan())
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
+    monkeypatch.setenv("VSCAN_TERRAFORM_STUB", "0")
 
     def fake_run(_override_bin, _auto_download):
         return {
@@ -75,7 +83,7 @@ def test_cli_exit_code_5_when_terraform_tests_fail(monkeypatch, tmp_path, capsys
             "returncode": 1,
         }
 
-    monkeypatch.setattr(vs, "run_terraform_tests", fake_run)
+    monkeypatch.setattr(shim, "run_terraform_tests", fake_run)
 
     capsys.readouterr()
     code = vs.main([str(plan_path), "--json", "--terraform-tests"])
@@ -89,6 +97,9 @@ def test_cli_exit_code_5_when_terraform_tests_fail(monkeypatch, tmp_path, capsys
 
 def test_cli_exit_code_6_when_terraform_tests_error(monkeypatch, tmp_path, capsys):
     plan_path = write_plan(tmp_path, _empty_plan())
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
+    monkeypatch.setenv("VSCAN_TERRAFORM_STUB", "0")
 
     def fake_run(_override_bin, _auto_download):
         return {
@@ -103,7 +114,7 @@ def test_cli_exit_code_6_when_terraform_tests_error(monkeypatch, tmp_path, capsy
             "returncode": None,
         }
 
-    monkeypatch.setattr(vs, "run_terraform_tests", fake_run)
+    monkeypatch.setattr(shim, "run_terraform_tests", fake_run)
 
     capsys.readouterr()
     code = vs.main([str(plan_path), "--json", "--terraform-tests"])

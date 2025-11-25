@@ -33,6 +33,8 @@ LEDGER_ENV.update(
         "VSCAN_ENV_TERRAFORM_VERSION": "not-run",
         "VSCAN_ENV_TERRAFORM_SOURCE": "not-run",
         "VSCAN_ENV_VECTORSCAN_VERSION": "0.1.0",
+        "VSCAN_OFFLINE": "1",
+        "VSCAN_ALLOW_NETWORK": "0",
     }
 )
 

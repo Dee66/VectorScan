@@ -26,6 +26,6 @@ def test_rules_manifest_command_lists_all_rules():
         assert rule_id in manifest_by_id
         entry = manifest_by_id[rule_id]
         assert entry["severity"] == severity
-        assert entry["fixpack"] == f"fixpack:{rule_id}"
+        assert not entry.get("fixpack")
         assert entry["python_class"]
         assert entry["file_path"]

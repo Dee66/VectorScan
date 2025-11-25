@@ -34,7 +34,7 @@ This living checklist mirrors the structure of the implementation tracker and ke
 - [x] Confirm CLI entry point (`vectorscan.py`) is importable and executable. _(See `tests/e2e/test_full_user_journey.py`, `tests/test_cli.py`, direct `vectorscan.main` calls.)_
 - [x] Ensure human, JSON, and YAML ledger output modes work. _(Covered by `tests/test_end_to_end_scenarios.py`, `tests/test_json_output.py`, `tests/test_audit_ledger.py`.)_
 - [x] Validate streaming plan parser feature flag: fast-path iterator is default and automatically falls back to the legacy loader when `VSCAN_STREAMING_DISABLE=1` or parser errors occur. _(See `tests/unit/test_plan_streaming_toggle.py`.)_
-- [x] Confirm exit codes match spec (0, 2, 3, 4, 5, 6, 10). _(See `tests/test_cli.py`, `tests/test_error_handling.py`, `tests/test_terraform_cli.py`, `tests/test_json_output.py`.)_
+- [x] Confirm exit codes match spec (severity-based 0/1/2/3 plus 4/5/6/10 for operational errors). _(See `tests/test_cli.py`, `tests/test_error_handling.py`, `tests/test_terraform_cli.py`, `tests/test_json_output.py`.)_
 - [x] Ensure internal functions accept JSON-loaded plans. _(Property tests in `tests/unit/test_vectorscan_unit.py` exercise iterators/policies on raw JSON payloads.)_
 - [x] Provide an injectable clock for deterministic timestamps. _(All golden comparisons rely on `VSCAN_CLOCK_*` env overrides; see `tests/test_json_output.py` & `tests/test_audit_ledger.py`.)_
 - [x] Disable network calls by default. _(Covered by `tests/unit/test_offline_mode_unit.py`, `tests/unit/test_lead_capture_unit.py::test_lead_capture_skipped_in_offline_mode`, and CLI flag coverage in `tests/unit/test_vectorscan.py`.)_
@@ -74,6 +74,9 @@ This living checklist mirrors the structure of the implementation tracker and ke
 - [x] `tests/test_error_handling.py`
 - [x] `tests/test_lead_capture_cli.py` (covers CLI + remote/local capture flows).
 - [x] `tests/test_terraform_cli.py` (Terraform integration behavior & exit codes).
+- [x] `tests/snapshots/test_snapshots.py` (canonical JSON snapshot enforcement suite).
+
+> Targeted regression command: `pytest -q tests/test_json_output.py tests/test_cli.py tests/snapshots/test_snapshots.py`
 
 ## Section 3 – CLI Entry Tests
 - [x] Implement argument parser smoke tests. _(Implicit throughout `tests/test_cli.py`, `tests/test_json_output.py`, `tests/test_error_handling.py`.)_

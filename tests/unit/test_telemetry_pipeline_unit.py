@@ -45,6 +45,9 @@ def test_full_telemetry_pipeline_statsd_toggle(monkeypatch):
     summary_path = repo_root / "scripts" / "metrics_summary.py"
     consumer_path = repo_root / "scripts" / "telemetry_consumer.py"
 
+    monkeypatch.setenv("VSCAN_OFFLINE", "0")
+    monkeypatch.setenv("VSCAN_ALLOW_NETWORK", "1")
+
     collect_mod = load_module_from_path("collect_metrics", collect_path)
     summary_mod = load_module_from_path("metrics_summary", summary_path)
     consumer_mod = load_module_from_path("telemetry_consumer", consumer_path)

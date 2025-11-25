@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/iam_drift.py
-# hypothesis_version: 6.147.0
-
-['*', ':*', '<unnamed>', 'Action', 'Actions', 'Allow', 'Effect', 'FAIL', 'NotAction', 'NotActions', 'NotResource', 'NotResources', 'PASS', 'Resource', 'Resources', 'Statement', 'actions', 'after', 'aws_iam_group_policy', 'aws_iam_policy', 'aws_iam_role_policy', 'aws_iam_user_policy', 'before', 'change', 'counts', 'global', 'high', 'items', 'limitations', 'medium', 'name', 'notes', 'policy', 'resource_changes', 'resource_name', 'resource_type', 'risky_additions', 'risky_changes', 'scoped', 'severity_by_action', 'status', 'type']

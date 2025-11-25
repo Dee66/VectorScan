@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/vectorscan/rules/rule_low_dimension.py
+# hypothesis_version: 6.147.0
+
+['P-VEC-004', 'address', 'dimension', 'low', 'medium', 'resources', 'type', 'vector_index']

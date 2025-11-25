@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from tests import canonicalize_snapshot
+
 SNAPSHOT_DIR = Path(__file__).resolve().parent
 GOLDEN_DIR = SNAPSHOT_DIR.parent / "golden"
 SNAPSHOT_FILES = [
@@ -27,14 +29,6 @@ SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 
 def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
-
-
-def _canonicalize(value):
-    if isinstance(value, dict):
-        return {key: _canonicalize(value[key]) for key in sorted(value)}
-    if isinstance(value, list):
-        return [_canonicalize(item) for item in value]
-    return value
 
 
 def _assert_schema_fields(payload: dict) -> None:
@@ -91,10 +85,11 @@ def test_snapshot_matches_golden(filename: str) -> None:
 
     snapshot_payload = _load_json(snapshot_path)
     golden_payload = _load_json(golden_path)
+    allow_compare = filename == "plan_compare_output.json"
+    canonical_snapshot = canonicalize_snapshot(snapshot_payload, allow_compare_mode=allow_compare)
+    canonical_golden = canonicalize_snapshot(golden_payload, allow_compare_mode=allow_compare)
 
-    assert _canonicalize(snapshot_payload) == _canonicalize(
-        golden_payload
-    ), f"Snapshot diverged from golden: {filename}"
+    assert canonical_snapshot == canonical_golden, f"Snapshot diverged from golden: {filename}"
 
     _assert_schema_fields(snapshot_payload)
     _assert_metadata_order(snapshot_payload)

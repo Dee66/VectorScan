@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/vectorscan/rules/__init__.py
+# hypothesis_version: 6.147.0
+
+['description', 'file_path', 'id', 'python_class', 'severity']

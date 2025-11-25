@@ -1,4 +1,6 @@
+-e vendor/guardsuite_core
 fastapi>=0.104
 pydantic>=2,<3
 uvicorn
 email-validator
+guardsuite-core>=2.3.0,<3.0.0

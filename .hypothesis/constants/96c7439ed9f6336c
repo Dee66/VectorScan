@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/vectorscan/rules/rule_unrestricted_network.py
+# hypothesis_version: 6.147.0
+
+['0.0.0.0/0', 'P-VEC-003', 'address', 'allowed_cidrs', 'medium', 'resources', 'type', 'vector_index']

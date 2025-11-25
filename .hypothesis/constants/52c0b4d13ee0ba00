@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/vectorscan/cli.py
+# hypothesis_version: 6.147.0
+
+['--manifest', '--quiet', '--stdin', 'Suppress scan output', '__main__', 'json_output', 'plan', 'stdin', 'utf-8']

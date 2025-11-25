@@ -9,6 +9,8 @@
     "violations": 0
   },
   "environment": {
+    "allow_network": false,
+    "allow_network_capture": false,
     "offline_mode": false,
     "platform": "linux",
     "platform_release": "unit-kernel",
@@ -38,12 +40,15 @@
   "latency_ms": 123,
   "metadata": {
     "control": {
+      "allow_network": false,
       "allow_network_capture": false,
       "auto_download": false,
       "offline_mode": false,
       "terraform_outcome": "SKIP"
     },
     "environment": {
+      "allow_network": false,
+      "allow_network_capture": false,
       "offline_mode": false,
       "platform": "linux",
       "platform_release": "unit-kernel",

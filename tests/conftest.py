@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 import os
 import sys
 from pathlib import Path
@@ -36,6 +37,59 @@ def _load_canonical_vectorscan_package() -> None:
 _load_canonical_vectorscan_package()
 
 
+def pytest_addoption(parser) -> None:
+    """Register project-specific pytest flags."""
+
+    parser.addoption(
+        "--update-snapshots",
+        action="store_true",
+        default=False,
+        help="Regenerate canonical VectorScan golden and snapshot fixtures.",
+    )
+
+
+def pytest_configure(config) -> None:
+    """Propagate snapshot update flag to the test environment."""
+
+    if config.getoption("--update-snapshots"):
+        os.environ["VSCAN_UPDATE_SNAPSHOTS"] = "1"
+
+
+@pytest.fixture(scope="session")
+def snapshot_updater(pytestconfig):
+    """Return a helper to write canonical snapshot payloads when requested."""
+
+    update_mode = pytestconfig.getoption("--update-snapshots")
+    return SnapshotWriter(enabled=bool(update_mode), repo_root=_REPO_ROOT)
+
+
+class SnapshotWriter:
+    """Helper that rewrites snapshot files with canonical payloads when enabled."""
+
+    def __init__(self, *, enabled: bool, repo_root: Path) -> None:
+        self.enabled = enabled
+        self.repo_root = repo_root
+        self._golden_dir = (self.repo_root / "tests" / "golden").resolve()
+        self._snapshots_dir = (self.repo_root / "tests" / "snapshots").resolve()
+
+    def maybe_write(self, path: Path, payload: dict) -> None:
+        if not self.enabled:
+            return
+        target_path = Path(path)
+        if not target_path.is_absolute():
+            target_path = (self.repo_root / target_path).resolve()
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        serialized = json.dumps(payload, indent=2, sort_keys=True)
+        target_path.write_text(serialized, encoding="utf-8")
+        try:
+            relative = target_path.relative_to(self._golden_dir)
+        except ValueError:
+            return
+        snapshot_path = self._snapshots_dir / relative
+        snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+        snapshot_path.write_text(serialized, encoding="utf-8")
+
+
 def pytest_sessionstart(session):
     """Ensure no stale shim remains cached before tests import vectorscan."""
 
@@ -57,3 +111,34 @@ def _stable_scan_duration_env() -> None:
     if os.getenv("VSCAN_FORCE_DURATION_MS"):
         return
     os.environ["VSCAN_FORCE_DURATION_MS"] = _STABLE_DURATION_MS
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _terraform_stubbed_environment():
+    """Ensure Terraform interactions stay offline and deterministic."""
+
+    tracked = {
+        "VSCAN_ALLOW_NETWORK": os.environ.get("VSCAN_ALLOW_NETWORK"),
+        "VSCAN_TERRAFORM_AUTO_DOWNLOAD": os.environ.get("VSCAN_TERRAFORM_AUTO_DOWNLOAD"),
+        "VSCAN_TERRAFORM_STUB": os.environ.get("VSCAN_TERRAFORM_STUB"),
+    }
+    os.environ.setdefault("VSCAN_ALLOW_NETWORK", "0")
+    os.environ.setdefault("VSCAN_TERRAFORM_AUTO_DOWNLOAD", "0")
+    os.environ.setdefault("VSCAN_TERRAFORM_STUB", "1")
+    try:
+        yield
+    finally:
+        for key, value in tracked.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+@pytest.fixture(scope="session")
+def terraform_mocks():
+    """Provide reusable Terraform test reports for monkeypatch helpers."""
+
+    from tests.fixtures import terraform_mocks as helpers
+
+    return helpers

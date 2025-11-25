@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/pillar/terraform_shim.py
+# hypothesis_version: 6.147.0
+
+['?', 'ERROR', 'FAIL', 'PASS', 'SKIP', 'VSCAN_TERRAFORM_BIN', 'message', 'source', 'status', 'stderr', 'stdout', 'terraform', 'terraform_bin', 'terraform_tests', 'version']

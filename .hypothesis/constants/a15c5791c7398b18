@@ -1,4 +1,0 @@
-# file: /home/dee/workspace/AI/VectorScan/tools/vectorscan/lead_api.py
-# hypothesis_version: 6.147.0
-
-[401, 429, 500, '*', ',', '/lead', '0.1.0', '1', 'Bearer ', 'LEAD_API_ENABLE_CORS', 'LEAD_API_OUTPUT_DIR', 'LEAD_API_TOKEN', 'Too Many Requests', 'Unauthorized', 'VectorScan Lead API', 'authorization', 'captures_api', 'http', 'ok', 'stored', 'true', 'unknown', 'utf-8', 'x-api-key', 'yes']

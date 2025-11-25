@@ -7,7 +7,7 @@ from click.testing import CliRunner
 from vectorscan.cli import cli  # pyright: ignore[reportMissingImports]
 
 
-def test_cli_text_output_includes_fixpack(tmp_path):
+def test_cli_text_output_shows_placeholder(tmp_path):
     runner = CliRunner()
     plan = {
         "resources": [
@@ -31,6 +31,5 @@ def test_cli_text_output_includes_fixpack(tmp_path):
     stdout = result.output
 
     assert "[P-VEC-001]" in stdout
-    assert "fixpack:P-VEC-001" in stdout
-    assert "Disable public access" in stdout
-    assert "public_access = false" in stdout
+    assert "Remediation: N/A" in stdout
+    assert "Fix summary: Vector index allows public queries." in stdout

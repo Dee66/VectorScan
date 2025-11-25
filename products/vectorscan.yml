@@ -1,0 +1,4 @@
+product: vectorscan
+version: "2026.04"
+spec_reference: "../product/spec.yml"
+description: "Bootstrap pointer to the canonical VectorScan product spec."

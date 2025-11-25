@@ -13,8 +13,6 @@ from .renderer import render_human_readable, render_severity_summary
 
 # TODO Phase 2: wire real evaluator
 # TODO Phase 3: integrate rule registry
-# TODO Phase 4: attach fixpack lookup
-
 
 @click.group()
 def cli() -> None:

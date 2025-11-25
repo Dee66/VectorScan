@@ -38,7 +38,6 @@ class UnrestrictedNetworkRule(Rule):
                     description="Vector index allows traffic from 0.0.0.0/0.",
                     resource_address=resource.get("address", ""),
                     attributes={"allowed_cidrs": allowed_cidrs},
-                    remediation_hint="fixpack:P-VEC-003",
                     remediation_difficulty="medium",
                 )
             )

@@ -57,7 +57,7 @@
     "terraform_test_results": {
       "status": "not_run"
     },
-    "timestamp": "2025-11-26T06:38:22Z",
+    "timestamp": "2025-11-26T06:43:04Z",
     "violation_severity_summary": {
       "critical": 0,
       "high": 2,
@@ -109,8 +109,34 @@
     },
     {
       "attributes": {
+        "encryption_enabled": false
+      },
+      "description": "Vector index has encryption set to false.",
+      "id": "P-VEC-002",
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_address": "vector_index.monitor",
+      "severity": "high",
+      "title": "Encryption disabled"
+    },
+    {
+      "attributes": {
         "logging_enabled": false,
         "rule_id": "P-VEC-007"
+      },
+      "description": "Vector service/index has logging disabled; enable audit logging/metrics.",
+      "id": "P-VEC-007",
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_address": "vector_index.monitor",
+      "severity": "high",
+      "title": "Logging disabled for vector service"
+    },
+    {
+      "attributes": {
+        "logging_enabled": false
       },
       "description": "Vector service/index has logging disabled; enable audit logging/metrics.",
       "id": "P-VEC-007",
@@ -135,32 +161,6 @@
       "resource_address": "vector_index.monitor",
       "severity": "medium",
       "title": "Missing monitoring/alerts for vector index"
-    },
-    {
-      "attributes": {
-        "encryption_enabled": false
-      },
-      "description": "Vector index has encryption set to false.",
-      "id": "P-VEC-002",
-      "remediation_difficulty": "medium",
-      "remediation_hint": "",
-      "remediation_metadata": {},
-      "resource_address": "vector_index.monitor",
-      "severity": "high",
-      "title": "Encryption disabled"
-    },
-    {
-      "attributes": {
-        "logging_enabled": false
-      },
-      "description": "Vector service/index has logging disabled; enable audit logging/metrics.",
-      "id": "P-VEC-007",
-      "remediation_difficulty": "medium",
-      "remediation_hint": "",
-      "remediation_metadata": {},
-      "resource_address": "vector_index.monitor",
-      "severity": "high",
-      "title": "Logging disabled for vector service"
     },
     {
       "attributes": {

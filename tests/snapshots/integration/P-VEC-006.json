@@ -1,0 +1,705 @@
+{
+  "_control_flags": {
+    "allow_network": false,
+    "allow_network_capture": false,
+    "auto_download": false,
+    "offline_mode": false,
+    "terraform_outcome": "SKIP"
+  },
+  "audit_ledger": {
+    "audit_status": "NON_COMPLIANT",
+    "environment": "vectorscan",
+    "environment_metadata": {},
+    "evidence": {
+      "iam_drift": []
+    },
+    "input_file": "-",
+    "overall_score": null,
+    "plan_metadata": {
+      "change_summary": {
+        "adds": 0,
+        "changes": 0,
+        "destroys": 0
+      },
+      "exceeds_threshold": false,
+      "file_size_mb": null,
+      "module_count": 1,
+      "modules": {
+        "child_module_count": 0,
+        "has_child_modules": false,
+        "root": "root",
+        "with_resources": 0
+      },
+      "parser_mode": "legacy",
+      "providers": [],
+      "resource_count": 0,
+      "resource_types": {},
+      "resources_by_type": {}
+    },
+    "policy_errors": [],
+    "remediation_metadata_aggregate": {
+      "P-VEC-006": {}
+    },
+    "remediation_rule_index": [
+      "P-VEC-006"
+    ],
+    "remediation_summary": {
+      "critical": 0,
+      "high": 1,
+      "low": 0,
+      "medium": 0
+    },
+    "smell_report": {},
+    "terraform_test_results": {
+      "status": "not_run"
+    },
+    "timestamp": "2025-11-26T06:38:22Z",
+    "violation_severity_summary": {
+      "critical": 0,
+      "high": 1,
+      "low": 0,
+      "medium": 0
+    },
+    "violations": [
+      "P-VEC-006"
+    ]
+  },
+  "badge_eligible": true,
+  "canonical_schema_version": "",
+  "exit_code": 2,
+  "flags": {
+    "allow_network": false,
+    "allow_network_capture": false,
+    "auto_download": false,
+    "offline_mode": false,
+    "terraform_outcome": "SKIP"
+  },
+  "guardscore_rules_version": "2025.1",
+  "issue_required_fields": [
+    "id",
+    "severity",
+    "title",
+    "description",
+    "resource_address",
+    "attributes",
+    "remediation_hint",
+    "remediation_difficulty",
+    "remediation_metadata"
+  ],
+  "issues": [
+    {
+      "attributes": {
+        "mfa_enabled": false,
+        "rule_id": "P-VEC-006"
+      },
+      "description": "Interactive identity lacks MFA configuration; enforce MFA for console/API access.",
+      "id": "P-VEC-006",
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_address": "aws_iam_user.test_user",
+      "severity": "high",
+      "title": "Identity without MFA"
+    },
+    {
+      "attributes": {
+        "mfa_enabled": false
+      },
+      "description": "Interactive identity lacks MFA configuration; enforce MFA for console/API access.",
+      "id": "P-VEC-006",
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_address": "aws_iam_user.test_user",
+      "severity": "high",
+      "title": "Identity without MFA"
+    }
+  ],
+  "latency_ms": 0,
+  "metadata": {
+    "_control_flags": {
+      "allow_network": false,
+      "allow_network_capture": false,
+      "auto_download": false,
+      "offline_mode": false,
+      "terraform_outcome": "SKIP"
+    },
+    "control": {
+      "allow_network": false,
+      "allow_network_capture": false,
+      "auto_download": false,
+      "offline_mode": false,
+      "terraform_outcome": "SKIP"
+    }
+  },
+  "pillar": "VectorScan",
+  "quick_score_mode": false,
+  "rule_catalog": [
+    {
+      "attributes": {
+        "category": "database",
+        "resource_selector": "aws_rds_cluster.*",
+        "service": "rds"
+      },
+      "description": "Tier-1 data stores require storage_encrypted=true with a customer-managed KMS key.",
+      "id": "PILLAR-AWS-001",
+      "match": {
+        "attributes": {
+          "storage_encrypted": false
+        },
+        "flags": {},
+        "required_attribute": "storage_encrypted",
+        "resource_type": "aws_rds_cluster"
+      },
+      "remediation_difficulty": "high",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_rds_cluster",
+      "severity": "critical",
+      "title": "RDS clusters must enable storage encryption"
+    },
+    {
+      "attributes": {
+        "category": "finops",
+        "resource_selector": "aws_rds_cluster.*",
+        "service": "rds"
+      },
+      "description": "FinOps policy mandates CostCenter and Project tags on production Aurora clusters.",
+      "id": "PILLAR-AWS-002",
+      "match": {
+        "attributes": {},
+        "flags": {
+          "has_missing_tags": true
+        },
+        "required_attribute": "tags",
+        "resource_type": "aws_rds_cluster"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_rds_cluster",
+      "severity": "high",
+      "title": "RDS clusters require CostCenter + Project tags"
+    },
+    {
+      "attributes": {
+        "category": "network",
+        "resource_selector": "aws_security_group.*",
+        "service": "ec2"
+      },
+      "description": "Open ingress creates unmanaged exposure; restrict to CIDRs owned by the workload.",
+      "id": "PILLAR-AWS-003",
+      "match": {
+        "attributes": {},
+        "flags": {
+          "allows_0_0_0_0": true
+        },
+        "required_attribute": "ingress",
+        "resource_type": "aws_security_group"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_security_group",
+      "severity": "high",
+      "title": "Security groups must block 0.0.0.0/0 ingress"
+    },
+    {
+      "attributes": {
+        "category": "identity",
+        "resource_selector": "aws_iam_*",
+        "service": "iam"
+      },
+      "description": "Production roles must avoid Action='*' grants across all resources.",
+      "id": "PILLAR-AWS-004",
+      "match": {
+        "attributes": {},
+        "flags": {
+          "iam_policy_wildcard": true
+        },
+        "required_attribute": "policy",
+        "resource_type": "aws_iam_policy"
+      },
+      "remediation_difficulty": "high",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_iam_policy",
+      "severity": "critical",
+      "title": "IAM policies may not grant wildcard admin"
+    },
+    {
+      "attributes": {
+        "category": "storage",
+        "resource_selector": "aws_s3_bucket.*",
+        "service": "s3"
+      },
+      "description": "Buckets containing build outputs or models must define SSE or KMS defaults.",
+      "id": "PILLAR-AWS-005",
+      "match": {
+        "attributes": {},
+        "flags": {
+          "s3_encryption_disabled": true
+        },
+        "required_attribute": null,
+        "resource_type": "aws_s3_bucket"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_s3_bucket",
+      "severity": "high",
+      "title": "S3 buckets must enforce encryption at rest"
+    },
+    {
+      "attributes": {
+        "category": "resilience",
+        "resource_selector": "aws_s3_bucket.*",
+        "service": "s3"
+      },
+      "description": "Versioning preserves recovery points for drifted objects and vector manifests.",
+      "id": "PILLAR-AWS-006",
+      "match": {
+        "attributes": {},
+        "flags": {
+          "s3_versioning_disabled": true
+        },
+        "required_attribute": null,
+        "resource_type": "aws_s3_bucket"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_s3_bucket",
+      "severity": "medium",
+      "title": "S3 buckets must enable versioning"
+    },
+    {
+      "attributes": {
+        "category": "storage",
+        "resource_selector": "aws_ebs_volume.*",
+        "service": "ebs"
+      },
+      "description": "Store embeddings and checkpoints on encrypted block devices.",
+      "id": "PILLAR-AWS-007",
+      "match": {
+        "attributes": {
+          "encrypted": false
+        },
+        "flags": {},
+        "required_attribute": "encrypted",
+        "resource_type": "aws_ebs_volume"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_ebs_volume",
+      "severity": "high",
+      "title": "EBS volumes require encryption"
+    },
+    {
+      "attributes": {
+        "category": "audit",
+        "resource_selector": "aws_cloudtrail.*",
+        "service": "cloudtrail"
+      },
+      "description": "Audit trails must capture events from every region that VectorScan resources use.",
+      "id": "PILLAR-AWS-008",
+      "match": {
+        "attributes": {
+          "is_multi_region_trail": false
+        },
+        "flags": {},
+        "required_attribute": "is_multi_region_trail",
+        "resource_type": "aws_cloudtrail"
+      },
+      "remediation_difficulty": "low",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_cloudtrail",
+      "severity": "medium",
+      "title": "CloudTrail must be multi-region"
+    },
+    {
+      "attributes": {
+        "category": "audit",
+        "resource_selector": "aws_cloudtrail.*",
+        "service": "cloudtrail"
+      },
+      "description": "Log file validation prevents tampering across compliance reviews.",
+      "id": "PILLAR-AWS-009",
+      "match": {
+        "attributes": {
+          "enable_log_file_validation": false
+        },
+        "flags": {},
+        "required_attribute": "enable_log_file_validation",
+        "resource_type": "aws_cloudtrail"
+      },
+      "remediation_difficulty": "low",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_cloudtrail",
+      "severity": "medium",
+      "title": "CloudTrail log file validation required"
+    },
+    {
+      "attributes": {
+        "category": "resilience",
+        "resource_selector": "aws_dynamodb_table.*",
+        "service": "dynamodb"
+      },
+      "description": "Point-in-time recovery keeps catalog state restorable for guardrails metadata.",
+      "id": "PILLAR-AWS-010",
+      "match": {
+        "attributes": {
+          "point_in_time_recovery": false
+        },
+        "flags": {},
+        "required_attribute": "point_in_time_recovery",
+        "resource_type": "aws_dynamodb_table"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_dynamodb_table",
+      "severity": "medium",
+      "title": "DynamoDB tables must enable PITR"
+    },
+    {
+      "attributes": {
+        "category": "serverless",
+        "resource_selector": "aws_lambda_function.*",
+        "service": "lambda"
+      },
+      "description": "Secrets injected via environment variables must be encrypted with KMS.",
+      "id": "PILLAR-AWS-011",
+      "match": {
+        "attributes": {
+          "kms_key_arn": null
+        },
+        "flags": {},
+        "required_attribute": "kms_key_arn",
+        "resource_type": "aws_lambda_function"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_lambda_function",
+      "severity": "medium",
+      "title": "Lambda functions need KMS-backed environment vars"
+    },
+    {
+      "attributes": {
+        "category": "kubernetes",
+        "resource_selector": "aws_eks_cluster.*",
+        "service": "eks"
+      },
+      "description": "Enable api, audit, authenticator, controllerManager, and scheduler logs for GuardDuty feeds.",
+      "id": "PILLAR-AWS-012",
+      "match": {
+        "attributes": {
+          "enabled_cluster_log_types": []
+        },
+        "flags": {},
+        "required_attribute": "enabled_cluster_log_types",
+        "resource_type": "aws_eks_cluster"
+      },
+      "remediation_difficulty": "high",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_eks_cluster",
+      "severity": "high",
+      "title": "EKS control plane logging required"
+    },
+    {
+      "attributes": {
+        "category": "threat-detection",
+        "resource_selector": "aws_guardduty_detector.*",
+        "service": "guardduty"
+      },
+      "description": "Managed accounts must enable GuardDuty detectors across every region.",
+      "id": "PILLAR-AWS-013",
+      "match": {
+        "attributes": {
+          "enable": false
+        },
+        "flags": {},
+        "required_attribute": "enable",
+        "resource_type": "aws_guardduty_detector"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_guardduty_detector",
+      "severity": "critical",
+      "title": "GuardDuty must stay enabled"
+    },
+    {
+      "attributes": {
+        "category": "audit",
+        "resource_selector": "aws_config_configuration_recorder.*",
+        "service": "config"
+      },
+      "description": "Configuration history is mandatory before running VectorScan remediation packs.",
+      "id": "PILLAR-AWS-014",
+      "match": {
+        "attributes": {
+          "recording_group": {}
+        },
+        "flags": {},
+        "required_attribute": "recording_group",
+        "resource_type": "aws_config_configuration_recorder"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_config_configuration_recorder",
+      "severity": "high",
+      "title": "AWS Config recorder must be active"
+    },
+    {
+      "attributes": {
+        "category": "network",
+        "resource_selector": "aws_flow_log.*",
+        "service": "vpc"
+      },
+      "description": "Flow logs feed the anomaly detectors that back GuardSuite recommendations.",
+      "id": "PILLAR-AWS-015",
+      "match": {
+        "attributes": {
+          "log_destination": null
+        },
+        "flags": {},
+        "required_attribute": "log_destination",
+        "resource_type": "aws_flow_log"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_flow_log",
+      "severity": "medium",
+      "title": "VPCs should emit flow logs"
+    },
+    {
+      "attributes": {
+        "category": "database",
+        "resource_selector": "aws_redshift_cluster.*",
+        "service": "redshift"
+      },
+      "description": "Analytics warehouses contain PII and require encryption + KMS wiring.",
+      "id": "PILLAR-AWS-016",
+      "match": {
+        "attributes": {
+          "encrypted": false
+        },
+        "flags": {},
+        "required_attribute": "encrypted",
+        "resource_type": "aws_redshift_cluster"
+      },
+      "remediation_difficulty": "high",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_redshift_cluster",
+      "severity": "high",
+      "title": "Redshift clusters must encrypt data"
+    },
+    {
+      "attributes": {
+        "category": "cache",
+        "resource_selector": "aws_elasticache_replication_group.*",
+        "service": "elasticache"
+      },
+      "description": "Cache tiers store tokens that must remain encrypted in transit and at rest.",
+      "id": "PILLAR-AWS-017",
+      "match": {
+        "attributes": {
+          "at_rest_encryption_enabled": false
+        },
+        "flags": {},
+        "required_attribute": "at_rest_encryption_enabled",
+        "resource_type": "aws_elasticache_replication_group"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_elasticache_replication_group",
+      "severity": "high",
+      "title": "ElastiCache clusters must enable encryption"
+    },
+    {
+      "attributes": {
+        "category": "identity",
+        "resource_selector": "aws_iam_account_password_policy",
+        "service": "iam"
+      },
+      "description": "Delete root access keys to reduce blast radius.",
+      "id": "PILLAR-AWS-018",
+      "match": {
+        "attributes": {
+          "require_uppercase_characters": false
+        },
+        "flags": {},
+        "required_attribute": "require_uppercase_characters",
+        "resource_type": "aws_iam_account_password_policy"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_iam_account_password_policy",
+      "severity": "critical",
+      "title": "Root accounts must not retain access keys"
+    },
+    {
+      "attributes": {
+        "category": "resilience",
+        "resource_selector": "aws_backup_vault.*",
+        "service": "backup"
+      },
+      "description": "Use customer-managed KMS keys for cross-account restore workflows.",
+      "id": "PILLAR-AWS-019",
+      "match": {
+        "attributes": {
+          "kms_key_arn": null
+        },
+        "flags": {},
+        "required_attribute": "kms_key_arn",
+        "resource_type": "aws_backup_vault"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_backup_vault",
+      "severity": "medium",
+      "title": "Backup vaults must specify KMS keys"
+    },
+    {
+      "attributes": {
+        "category": "messaging",
+        "resource_selector": "aws_sns_topic.*",
+        "service": "sns"
+      },
+      "description": "Notifications often forward secrets; require KMS-backed encryption.",
+      "id": "PILLAR-AWS-020",
+      "match": {
+        "attributes": {
+          "kms_master_key_id": null
+        },
+        "flags": {},
+        "required_attribute": "kms_master_key_id",
+        "resource_type": "aws_sns_topic"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_sns_topic",
+      "severity": "medium",
+      "title": "SNS topics must enforce encryption"
+    },
+    {
+      "attributes": {
+        "category": "messaging",
+        "resource_selector": "aws_sqs_queue.*",
+        "service": "sqs"
+      },
+      "description": "Message queues contain request context and must reference a CMK.",
+      "id": "PILLAR-AWS-021",
+      "match": {
+        "attributes": {
+          "kms_master_key_id": null
+        },
+        "flags": {},
+        "required_attribute": "kms_master_key_id",
+        "resource_type": "aws_sqs_queue"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_sqs_queue",
+      "severity": "medium",
+      "title": "SQS queues must encrypt payloads"
+    },
+    {
+      "attributes": {
+        "category": "security",
+        "resource_selector": "aws_kms_key.*",
+        "service": "kms"
+      },
+      "description": "Managed cryptographic material requires automatic rotation.",
+      "id": "PILLAR-AWS-022",
+      "match": {
+        "attributes": {
+          "enable_key_rotation": false
+        },
+        "flags": {},
+        "required_attribute": "enable_key_rotation",
+        "resource_type": "aws_kms_key"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_kms_key",
+      "severity": "medium",
+      "title": "KMS keys must rotate annually"
+    },
+    {
+      "attributes": {
+        "category": "network",
+        "resource_selector": "aws_rds_cluster.*",
+        "service": "rds"
+      },
+      "description": "Private data stores must launch inside isolated subnets.",
+      "id": "PILLAR-AWS-023",
+      "match": {
+        "attributes": {
+          "publicly_accessible": true
+        },
+        "flags": {},
+        "required_attribute": "publicly_accessible",
+        "resource_type": "aws_rds_cluster"
+      },
+      "remediation_difficulty": "high",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_rds_cluster",
+      "severity": "medium",
+      "title": "RDS clusters should not be publicly accessible"
+    },
+    {
+      "attributes": {
+        "category": "containers",
+        "resource_selector": "aws_ecs_service.*",
+        "service": "ecs"
+      },
+      "description": "Service tasks behind ALBs must use private subnets and NAT egress.",
+      "id": "PILLAR-AWS-024",
+      "match": {
+        "attributes": {
+          "assign_public_ip": true
+        },
+        "flags": {},
+        "required_attribute": "assign_public_ip",
+        "resource_type": "aws_ecs_service"
+      },
+      "remediation_difficulty": "medium",
+      "remediation_hint": "",
+      "remediation_metadata": {},
+      "resource_type": "aws_ecs_service",
+      "severity": "medium",
+      "title": "ECS services should avoid public IP assignment"
+    }
+  ],
+  "scan_version": "v2.0.0",
+  "schema_validation_error": null,
+  "severity_summary": {
+    "critical": 0,
+    "high": 2,
+    "low": 0,
+    "medium": 0
+  },
+  "severity_totals": {
+    "critical": 0,
+    "high": 2,
+    "low": 0,
+    "medium": 0
+  }
+}

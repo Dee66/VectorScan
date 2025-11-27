@@ -6,10 +6,45 @@ REPO_ROOT="$SCRIPT_DIR"
 AUDIT_ROOT="$REPO_ROOT/audit_logs"
 mkdir -p "$AUDIT_ROOT"
 
+# Small helper: usage/help
+usage() {
+  cat <<USAGE
+Usage: $0 -i <tfplan.json> [-e <environment>] [-o <output-path>]
+
+By default the audit ledger is written under \
+  audit_logs/\n+
+To allow writing the ledger to an arbitrary absolute path, set:
+  VSCAN_ALLOW_EXTERNAL_OUTPUT=1
+
+Examples:
+  $0 -i examples/aws-pgvector-rag/tfplan-pass.json
+  VSCAN_ALLOW_EXTERNAL_OUTPUT=1 $0 -i examples/aws-pgvector-rag/tfplan-pass.json -o /tmp/ledger.yaml
+USAGE
+}
+
+# Quick help flag
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+  usage
+  exit 0
+fi
+
 if [ -z "${PYTHONPATH:-}" ]; then
   export PYTHONPATH="$REPO_ROOT"
 else
   export PYTHONPATH="$REPO_ROOT:$PYTHONPATH"
+fi
+
+# Prefer the project's virtualenv python when available to avoid host Python
+# compatibility issues (e.g. system Python 3.13). Falls back to system
+# `python3` if not present.
+if [ -x "$REPO_ROOT/.venv/bin/python3" ]; then
+  PYTHON_CMD="$REPO_ROOT/.venv/bin/python3"
+else
+  PYTHON_CMD="$(command -v python3 || true)"
+  if [ -z "$PYTHON_CMD" ]; then
+    echo "Error: python3 not found on PATH and no .venv present" >&2
+    exit 1
+  fi
 fi
 
 OFFLINE_MODE=1
@@ -38,6 +73,15 @@ if [ -n "${VSCAN_OFFLINE:-}" ]; then
   esac
 fi
 
+# Export an explicit VSCAN_OFFLINE override so subprocesses see the script's
+# offline decision deterministically (avoids inheriting unrelated test-suite
+# environment variables that could change behavior).
+if [ "$OFFLINE_MODE" -eq 1 ]; then
+  export VSCAN_OFFLINE=1
+else
+  export VSCAN_OFFLINE=0
+fi
+
 # run_scan.sh: Run VectorScan on a tfplan.json and generate an Audit Ledger YAML.
 # Usage:
 #   ./run_scan.sh -i examples/aws-pgvector-rag/tfplan-pass.json -e dev-eu-west-1 -o audit_logs/vectorscan_ledger.yaml
@@ -60,7 +104,7 @@ if [ ! -f "$PLAN" ]; then
   exit 2
 fi
 
-if ! INPUT_FILE=$(python3 - "$PLAN" "$REPO_ROOT" <<'PY'
+if ! INPUT_FILE=$($PYTHON_CMD - "$PLAN" "$REPO_ROOT" <<'PY'
 import os, sys
 plan = os.path.realpath(sys.argv[1])
 root = os.path.realpath(sys.argv[2])
@@ -74,9 +118,35 @@ PY
   echo "Error: failed to normalize input file path" >&2
   exit 2
 fi
+ 
+
+# If the user requested an absolute output path (outside repo), require an
+# explicit opt-in via VSCAN_ALLOW_EXTERNAL_OUTPUT=1. This keeps accidental
+# leakage of artifacts out of the repository by default while allowing power
+# users to opt out with an explicit warning.
+if [[ "$OUT" = /* ]]; then
+  if [ -z "${VSCAN_ALLOW_EXTERNAL_OUTPUT:-}" ]; then
+    cat 1>&2 <<MSG
+Error: requested output path is outside the repository audit area.
+  Requested: $OUT
+  By design VectorScan keeps audit ledgers under: $AUDIT_ROOT
+
+Remediation:
+  - Use a path under the repository audit folder (example):
+      -o audit_logs/vectorscan_ledger.yaml
+  - Or explicitly opt-in to external outputs (understand the risks):
+      VSCAN_ALLOW_EXTERNAL_OUTPUT=1 $0 -i <plan> -o $OUT
+
+Exiting.
+MSG
+    exit 2
+  else
+    echo "Warning: VSCAN_ALLOW_EXTERNAL_OUTPUT is set; permitting external output path: $OUT" >&2
+  fi
+fi
 
 # Resolve and validate audit ledger output path
-if ! SAFE_OUT=$(python3 - "$REPO_ROOT" "$AUDIT_ROOT" "$OUT" <<'PY'
+if ! SAFE_OUT=$($PYTHON_CMD - "$REPO_ROOT" "$AUDIT_ROOT" "$OUT" <<'PY'
 import os, sys
 repo_root = os.path.realpath(sys.argv[1])
 audit_root = os.path.realpath(sys.argv[2])
@@ -85,9 +155,13 @@ if not os.path.isabs(candidate):
     candidate = os.path.join(repo_root, candidate)
 resolved = os.path.realpath(candidate)
 prefix = audit_root + os.sep
+if os.getenv('VSCAN_ALLOW_EXTERNAL_OUTPUT'):
+  # Caller explicitly opted in to external output paths; allow it.
+  print(resolved)
+  sys.exit(0)
 if not (resolved == audit_root or resolved.startswith(prefix)):
-    sys.stderr.write(f"Error: audit ledger output must stay under {audit_root}. Requested: {resolved}\n")
-    sys.exit(2)
+  sys.stderr.write(f"Error: audit ledger output must stay under {audit_root}. Requested: {resolved}\n")
+  sys.exit(2)
 print(resolved)
 PY
 ); then
@@ -97,9 +171,8 @@ OUT="$SAFE_OUT"
 
 # Ensure output directory inside audit_logs
 mkdir -p "$(dirname "$OUT")"
-
 # Capture VectorScan JSON once to avoid multiple executions (tolerate non-zero exit)
-JSON_FILE=$(python3 - <<'PY'
+JSON_FILE=$($PYTHON_CMD - <<'PY'
 import os
 import tempfile
 
@@ -109,19 +182,27 @@ print(path)
 PY
 )
 trap 'rm -f "$JSON_FILE"' EXIT
-VS_JSON=$(python3 tools/vectorscan/vectorscan.py "$PLAN" --json || true)
+# Run VectorScan once and capture both output and exit status. If no JSON is
+# produced we fail early with a helpful hint to use the project's venv.
+VS_EXIT=0
+VS_JSON=$($PYTHON_CMD tools/vectorscan/vectorscan.py "$PLAN" --json 2>&1) || VS_EXIT=$?
+if [ -z "${VS_JSON:-}" ]; then
+  echo "Error: VectorScan produced no JSON output (exit=${VS_EXIT:-0})." >&2
+  echo "Hint: ensure you're using a compatible Python. Try: 'source .venv/bin/activate' or run with the repo Python: $REPO_ROOT/.venv/bin/python3" >&2
+  exit 2
+fi
 printf "%s" "$VS_JSON" > "$JSON_FILE"
 
 if [ "$OFFLINE_MODE" -eq 0 ]; then
   # Record telemetry for downstream monitoring (non-fatal)
-  python3 scripts/collect_metrics.py "$JSON_FILE" || true
-  python3 scripts/metrics_summary.py \
+  $PYTHON_CMD scripts/collect_metrics.py "$JSON_FILE" || true
+  $PYTHON_CMD scripts/metrics_summary.py \
     --log-file metrics/vector_scan_metrics.log \
     --summary-file metrics/vector_scan_metrics_summary.json || true
 fi
 
 # Use embedded Python to parse JSON (avoid jq dependency)
-PY_PARSE=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+PY_PARSE=$(JSON_FILE="$JSON_FILE" $PYTHON_CMD - <<'PY'
 import sys, json, os, shlex
 with open(os.environ['JSON_FILE']) as fh:
   data = json.load(fh)
@@ -194,13 +275,13 @@ PY
 # Read parsed values
 eval "$PY_PARSE"
 
-STAMP=$(python3 - <<'PY'
+STAMP=$($PYTHON_CMD - <<'PY'
 from tools.vectorscan.time_utils import deterministic_isoformat
 print(deterministic_isoformat(), end='')
 PY
 )
 
-EVIDENCE_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+EVIDENCE_BLOCK=$(JSON_FILE="$JSON_FILE" $PYTHON_CMD - <<'PY'
 import json, os
 
 with open(os.environ['JSON_FILE']) as fh:
@@ -227,7 +308,7 @@ else:
 PY
 )
 
-POLICY_ERRORS_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+POLICY_ERRORS_BLOCK=$(JSON_FILE="$JSON_FILE" $PYTHON_CMD - <<'PY'
 import json, os
 
 with open(os.environ['JSON_FILE']) as fh:
@@ -246,7 +327,7 @@ else:
 PY
 )
 
-SEVERITY_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+SEVERITY_BLOCK=$(JSON_FILE="$JSON_FILE" $PYTHON_CMD - <<'PY'
 import json, os
 
 LEVELS = ["critical", "high", "medium", "low"]
@@ -262,7 +343,7 @@ for level in LEVELS:
 PY
 )
 
-PLAN_RISK_FACTORS_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+PLAN_RISK_FACTORS_BLOCK=$(JSON_FILE="$JSON_FILE" $PYTHON_CMD - <<'PY'
 import json, os
 
 with open(os.environ['JSON_FILE']) as fh:
@@ -278,7 +359,7 @@ else:
 PY
 )
 
-SMELL_DETAILS_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+SMELL_DETAILS_BLOCK=$(JSON_FILE="$JSON_FILE" $PYTHON_CMD - <<'PY'
 import json, os
 
 with open(os.environ['JSON_FILE']) as fh:
@@ -302,7 +383,7 @@ else:
 PY
 )
 
-PLAN_METADATA_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+PLAN_METADATA_BLOCK=$(JSON_FILE="$JSON_FILE" $PYTHON_CMD - <<'PY'
 import json, os
 
 with open(os.environ['JSON_FILE']) as fh:
@@ -395,7 +476,7 @@ else:
 PY
 )
 
-VIOLATIONS_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+VIOLATIONS_BLOCK=$(JSON_FILE="$JSON_FILE" $PYTHON_CMD - <<'PY'
 import json, os
 
 with open(os.environ['JSON_FILE']) as fh:
@@ -411,7 +492,7 @@ else:
 PY
 )
 
-TERRAFORM_TEST_BLOCK=$(JSON_FILE="$JSON_FILE" python3 - <<'PY'
+TERRAFORM_TEST_BLOCK=$(JSON_FILE="$JSON_FILE" $PYTHON_CMD - <<'PY'
 import json, os
 
 def _print_multiline(label: str, value: str):

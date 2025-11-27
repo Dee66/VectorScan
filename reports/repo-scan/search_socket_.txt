@@ -1,0 +1,2 @@
+scripts/telemetry_consumer.py:332:    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+tests/e2e/test_cli_api_lead_e2e.py:14:    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

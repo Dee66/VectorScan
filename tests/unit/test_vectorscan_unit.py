@@ -688,7 +688,8 @@ def test__write_local_capture_creates_dir(tmp_path, monkeypatch):
 
     payload = {"foo": "bar"}
     # Patch __file__ to use tmp_path
-    monkeypatch.setattr("vectorscan.__file__", str(tmp_path / "vectorscan.py"))
+    import vectorscan as _vectorscan
+    monkeypatch.setattr(_vectorscan, "__file__", str(tmp_path / "vectorscan.py"))
     path = vs._write_local_capture(payload)
     assert path.exists()
     with open(path) as f:

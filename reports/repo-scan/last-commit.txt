@@ -1,0 +1,1 @@
+c46dc85 2025-11-26 08:44:24 +0200 tests(integration): regenerate canonical snapshots (remove timestamps, sort issues)

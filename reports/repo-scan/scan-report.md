@@ -1,0 +1,573 @@
+# Repo Scan Report — main — c46dc85 — 2025-11-27T09:20:05.840717+02:00
+
+## Summary
+
+- Repo root: `/home/dee/workspace/AI/GuardSuite/VectorScan`
+- Branch: `main`
+- Commit: `c46dc85 2025-11-26 08:44:24 +0200 tests(integration): regenerate canonical snapshots (remove timestamps, sort issues)`
+
+## Repo Topology
+
+```
+aggregate_metrics.py
+audit_logs/fail_ledger.yaml
+audit_logs/golden/audit_ledger.yaml
+audit_logs/golden/audit_refresh.yaml
+audit_logs/pass_ledger.yaml
+build_vectorscan_package.py
+checklist/checklist.yml
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+DISCLAIMER.md
+docs/assets/vectorscan-ci.svg
+docs/checklist.md
+docs/extensive-checklist.md
+docs/gumroad_delivery_email.md
+docs/lead_capture_endpoint_example.md
+docs/observability.md
+docs/operational/offline_contract.md
+docs/output_schema.md
+docs/output_schema_reference.md
+docs/python-compatibility.md
+docs/reconciliation/VS-016-plan.md
+docs/reconciliation/VS-017-diff-report.md
+docs/reconciliation/VS-018-remediation-plan.md
+docs/release-distribution.md
+docs/rule_manifest.json
+docs/run_scan.md
+docs/signing_key_revocations.json
+docs/signing_key_rotation_log.json
+docs/signing.md
+docs/spec/GUARDSUITE MASTER SPEC (SOURCE OF TRUTH).txt
+docs/spec.yml
+docs/terraform-tests.md
+docs/test-checklist.md
+docs/TestSpec.txt
+docs/vectorscan_landing.html
+docs/vectorscan_landing.md
+docs/VectorScan.md
+docs/vectorscan_spec.md
+docs/VectorScan.txt
+examples/aws-pgvector-rag/tfplan-fail.json
+examples/aws-pgvector-rag/tfplan-pass.json
+.github/copilot-instructions.md
+.github/workflows/copilot-regression.yml
+.github/workflows/lint.yml
+.github/workflows/validate-release.yml
+.github/workflows/vectorscan-badge.yml
+.github/workflows/vectorscan-distribution.yml
+.github/workflows/vectorscan.yml
+.github/workflows/weekly-release-verification.yml
+.gitignore
+.guard_logs/ai-dev-latest.md
+.hypothesis/constants/02736b2da155e4d6
+.hypothesis/constants/07212ccb662ec633
+.hypothesis/constants/076a8e149982f986
+.hypothesis/constants/0794619213ac0ccb
+.hypothesis/constants/0c4fe803cd819376
+.hypothesis/constants/1408429236121ef2
+.hypothesis/constants/14cc740ee7dedd0b
+.hypothesis/constants/166c7e24ea033009
+.hypothesis/constants/19f88e708723d5eb
+.hypothesis/constants/1b0206b47f8c5786
+.hypothesis/constants/1c045d5a711962a1
+.hypothesis/constants/1d16620768c851fb
+.hypothesis/constants/1e1665e9c0e86213
+.hypothesis/constants/1f404ce84626c100
+.hypothesis/constants/212e3051db9619db
+.hypothesis/constants/2c620129471818cf
+.hypothesis/constants/2d28453103a328f3
+.hypothesis/constants/307a84f4c37335b2
+.hypothesis/constants/3218251fa370ba63
+.hypothesis/constants/37ae8cebe1d6c29d
+.hypothesis/constants/3e8401aa1f1ab41e
+.hypothesis/constants/45872231d9b5eac4
+.hypothesis/constants/492e121f0b4b4738
+.hypothesis/constants/4a1da340bcf7b219
+.hypothesis/constants/4f0d1a070bf89ab7
+.hypothesis/constants/51a6a815d93b8400
+.hypothesis/constants/52c0b4d13ee0ba00
+.hypothesis/constants/5398a0095d87ab1d
+.hypothesis/constants/5665949e5217c9e3
+.hypothesis/constants/570ccab9ac45714a
+.hypothesis/constants/589fb136c5a8d95a
+.hypothesis/constants/5eea999a18772e68
+.hypothesis/constants/5f2e23f7dfe6dc30
+.hypothesis/constants/610428ca63b0bc1f
+.hypothesis/constants/64c6e6d2667d5228
+.hypothesis/constants/6a9ac372ce586914
+.hypothesis/constants/756d3f98de48953a
+.hypothesis/constants/7f69729d3a384433
+.hypothesis/constants/83bfcdcb7af80abd
+.hypothesis/constants/83dc94c42ce23afd
+.hypothesis/constants/87011b84782fc73c
+.hypothesis/constants/8d6da37f22f25bd4
+.hypothesis/constants/8f5948c5b4b7af8a
+.hypothesis/constants/9277cc339be25eb3
+.hypothesis/constants/93ba79e0264282e9
+.hypothesis/constants/96c7439ed9f6336c
+.hypothesis/constants/983d67d60800dd7d
+.hypothesis/constants/9d6fbafc7b2482c1
+.hypothesis/constants/a3ce27b7ccbcb1bc
+.hypothesis/constants/a61261a25973c47a
+.hypothesis/constants/aad645475c895130
+.hypothesis/constants/ab101e51fd42e2f3
+.hypothesis/constants/ac0118363a66d491
+.hypothesis/constants/b38550021384ac69
+.hypothesis/constants/b411b4c13e115a42
+.hypothesis/constants/b86eed8151ac6295
+.hypothesis/constants/ba62f2cfd3e26bdc
+.hypothesis/constants/ba8b3bf108498b5c
+.hypothesis/constants/bdf5a1290da5acfb
+.hypothesis/constants/be89c3363c4d0726
+.hypothesis/constants/bef19d33cd6f447d
+.hypothesis/constants/c871874060d3276a
+.hypothesis/constants/c90242ddf01b041d
+.hypothesis/constants/ca7349d1ab17bbb6
+.hypothesis/constants/cba6dd9673480d73
+.hypothesis/constants/cc3bad3bf5e8894f
+.hypothesis/constants/cce9c0ce6fcf6d83
+.hypothesis/constants/cd92479c7c206f18
+.hypothesis/constants/d3932d97d77f782f
+.hypothesis/constants/d89c61daff0ee946
+.hypothesis/constants/da39a3ee5e6b4b0d
+.hypothesis/constants/db9e81d74bd0f97c
+.hypothesis/constants/dcce4803f3bf8fd0
+.hypothesis/constants/dcefb5a6fe827e98
+.hypothesis/constants/de0c73c200615baa
+.hypothesis/constants/de1ef2cf98843f8d
+.hypothesis/constants/df3085fbed32ba4f
+.hypothesis/constants/e39e7596c62cada6
+.hypothesis/constants/e4b7ffcb919404d7
+.hypothesis/constants/e733b56109ac4cc0
+.hypothesis/constants/ec2846e81ea9cc1e
+.hypothesis/constants/f34d33bcb5c13eae
+.hypothesis/constants/f3d0caf99422f122
+.hypothesis/constants/f5580a959bc9a354
+.hypothesis/constants/f6a2ffa287ee10cb
+.hypothesis/constants/fa4eb43493717850
+.hypothesis/constants/fb759fc12942a45b
+.hypothesis/constants/fdddff54e1f03879
+.hypothesis/examples/04e6b3400353b141
+.hypothesis/examples/bc0b3bdbaa9876ec
+.hypothesis/unicode_data/14.0.0
+internal/quarantine/fixpack_artifacts
+lead_api.py
+LICENSE
+list_tree.sh
+.logs/ai-dev-latest.md
+.logs/ai-dev-report-latest.md
+Makefile
+MIGRATION_PROGRESS.md
+modules/iam-agent-role/main.tf
+modules/iam-agent-role/outputs.tf
+modules/iam-agent-role/variables.tf
+modules/vector-db-aws/outputs.tf
+modules/vector-db-aws/variables.tf
+mypy.ini
+noxfile.py
+product/spec.yml
+products/vectorscan.yml
+pyproject.toml
+pytest.ini
+README.md
+requirements-dev.txt
+requirements.txt
+run_scan.sh
+schemas/guardsuite_pillar_schema.json
+scripts/automate_release.py
+scripts/bundle_integrity_checker.py
+scripts/check_github_release.py
+scripts/check_gumroad_email.py
+scripts/collect_metrics.py
+scripts/collect_test_metrics.py
+scripts/compliance_drift_monitor.py
+scripts/create_release_bundle.py
+scripts/dependency_vulnerability_scan.py
+scripts/generate_schema_docs.py
+scripts/gumroad_download_guard.py
+scripts/gumroad_upload_validator.py
+scripts/__init__.py
+scripts/metrics_summary.py
+scripts/mutation_test.py
+scripts/release_artifact_verifier.py
+scripts/run_static_checks.sh
+scripts/signing_key_revocation.py
+scripts/signing_key_rotation.py
+scripts/telemetry_consumer.py
+scripts/update_checklist_progress.py
+scripts/update_test_checklist_progress.py
+scripts/verify.sh
+SECURITY.md
+src/pillar/cli.py
+src/pillar/compat
+src/pillar/constants.py
+src/pillar/entrypoint_shim.py
+src/pillar/evaluator.py
+src/pillar/fixpack
+src/pillar/__init__.py
+src/pillar/metadata.py
+src/pillar/roi
+src/pillar/rules
+src/pillar/terraform_shim.py
+src/vectorscan/adapters
+src/vectorscan/canonical_utils.py
+src/vectorscan/cli.py
+src/vectorscan/constants.py
+src/vectorscan/engine
+src/vectorscan/evaluator.py
+src/vectorscan/fixpack
+src/vectorscan/__init__.py
+src/vectorscan/metadata
+src/vectorscan/policies
+src/vectorscan/preview
+src/vectorscan/renderer.py
+src/vectorscan/rules
+src/vectorscan/schema.py
+src/vectorscan/telemetry
+src/vectorscan/tools
+src/vectorscan/upgrade
+src/vectorscan/utils
+stubs/yaml/__init__.pyi
+templates/guard_pillar/fixpack
+templates/guard_pillar/.github
+templates/guard_pillar/.pre-commit-config.yaml
+templates/guard_pillar/pyproject.toml
+templates/guard_pillar/README.template.md
+templates/guard_pillar/scripts
+templates/guard_pillar/src
+templates/guard_pillar/tests
+tests/config/test_ci_configs.py
+tests/conftest.py
+tests/copilot_generated/test_cli_smoke.py
+tests/e2e/test_cli_api_lead_e2e.py
+tests/e2e/test_full_user_journey.py
+tests/e2e/test_large_plan_stress.py
+tests/e2e/test_stress_determinism.py
+tests/fixtures/minimal_plan.json
+tests/fixtures/terraform_mocks.py
+tests/fixtures/tfplan_compare_new.json
+tests/fixtures/tfplan_compare_old.json
+tests/fixtures/tfplan_fail.json
+tests/fixtures/tfplan_iam_drift.json
+tests/fixtures/tfplan_invalid.json
+tests/fixtures/tfplan_missing_tags.json
+tests/fixtures/tfplan_module_fail.json
+tests/fixtures/tfplan_no_encryption.json
+tests/fixtures/tfplan_pass.json
+tests/golden/audit_ledger.yaml
+tests/golden/fail_diff_output.json
+tests/golden/fail_explain_output.json
+tests/golden/fail_output.json
+tests/golden/fail_preview_output.json
+tests/golden/fail_resource_output.json
+tests/golden/iam_drift_diff_output.json
+tests/golden/iam_drift_explain_output.json
+tests/golden/iam_drift_output.json
+tests/golden/module_resource_output.json
+tests/golden/pass_diff_output.json
+tests/golden/pass_explain_output.json
+tests/golden/pass_output.json
+tests/golden/plan_compare_output.json
+tests/helpers/__init__.py
+tests/helpers/plan_helpers.py
+tests/__init__.py
+tests/integration/test_api_cli_integration.py
+tests/integration/test_bundle_integrity_checker.py
+tests/integration/test_gumroad_download_guard.py
+tests/integration/test_gumroad_email_checker.py
+tests/integration/test_gumroad_validator.py
+tests/integration/test_lead_api_integration.py
+tests/integration/test_packaging_verification.py
+tests/integration/test_policy_cli_integration.py
+tests/integration/test_release_artifact_verifier.py
+tests/integration/test_remediation_ledger_integration.py
+tests/integration/test_signing_key_revocation.py
+tests/integration/test_signing_key_rotation.py
+tests/integration/test_terraform_cli_integration.py
+tests/integration/test_terraform_gating_integration.py
+tests/integration/test_verify_script.py
+tests/performance/test_performance_sanity.py
+tests/performance/test_streaming_slo.py
+tests/pillar/test_cli_contract.py
+tests/pillar/test_roi_integration.py
+tests/pillar/test_roi_placeholder.py
+tests/rego-tests/free_policies_test.rego
+tests/snapshots/fail_diff_output.json
+tests/snapshots/fail_explain_output.json
+tests/snapshots/fail_output.json
+tests/snapshots/fail_preview_output.json
+tests/snapshots/fail_resource_output.json
+tests/snapshots/iam_drift_diff_output.json
+tests/snapshots/iam_drift_explain_output.json
+tests/snapshots/iam_drift_output.json
+tests/snapshots/__init__.py
+tests/snapshots/integration
+tests/snapshots/module_resource_output.json
+tests/snapshots/pass_diff_output.json
+tests/snapshots/pass_explain_output.json
+tests/snapshots/pass_output.json
+tests/snapshots/plan_compare_output.json
+tests/snapshots/test_snapshots.py
+tests/test_audit_ledger.py
+tests/test_cli.py
+tests/test_end_to_end_scenarios.py
+tests/test_error_handling.py
+tests/test_iam_drift.py
+tests/test_json_output.py
+tests/test_lead_capture_cli.py
+tests/test_strict_mode_cli.py
+tests/test_terraform_cli.py
+tests/test_tfplan_structure.py
+tests/tf-tests/iam_agent_role.tftest.hcl
+tests/tf-tests/.terraform.lock.hcl
+tests/tf-tests/vector_db_aws.tftest.hcl
+tests/tmp_audit.yaml
+tests/unit/test_aggregate_metrics_unit.py
+tests/unit/test_build_vectorscan_package_unit.py
+tests/unit/test_cli_fuzz_unit.py
+tests/unit/test_compliance_drift_monitor_unit.py
+tests/unit/test_copilot_api_stubber_unit.py
+tests/unit/test_copilot_determinism_guard_unit.py
+tests/unit/test_copilot_scaffolder_unit.py
+tests/unit/test_copilot_suite_generator_unit.py
+tests/unit/test_copilot_workflow_generator_unit.py
+tests/unit/test_dependency_scan_unit.py
+tests/unit/test_generate_schema_docs_unit.py
+tests/unit/test_iam_drift_unit.py
+tests/unit/test_lead_api_unit.py
+tests/unit/test_lead_capture.py
+tests/unit/test_lead_capture_unit.py
+tests/unit/test_metadata_builder.py
+tests/unit/test_offline_mode_unit.py
+tests/unit/test_plan_evolution_unit.py
+tests/unit/test_plan_risk_unit.py
+tests/unit/test_plan_smell_unit.py
+tests/unit/test_plan_streaming_toggle.py
+tests/unit/test_plan_stream.py
+tests/unit/test_policy_pack_unit.py
+tests/unit/test_policy_plugins_unit.py
+tests/unit/test_preview_manifest_unit.py
+tests/unit/test_python_compat_unit.py
+tests/unit/test_python_version_guard.py
+tests/unit/test_release_env_unit.py
+tests/unit/test_secrets_unit.py
+tests/unit/test_subprocess_sanitization.py
+tests/unit/test_suspicious_defaults_unit.py
+tests/unit/test_telemetry_consumer_unit.py
+tests/unit/test_telemetry_pipeline_unit.py
+tests/unit/test_telemetry_statsd_unit.py
+tests/unit/test_tempfiles_unit.py
+tests/unit/test_terraform_chaos_unit.py
+tests/unit/test_terraform_manager_unit.py
+tests/unit/test_time_utils.py
+tests/unit/test_vectorscan.py
+tests/unit/test_vectorscan_unit.py
+tests/vector/integration
+tests/vector/shared
+tests/vector/snapshots
+tests/vector/unit
+tmp_sys_path.py
+tools/__init__.py
+tools/vectorscan/aggregate_metrics.py
+tools/vectorscan/api_stubs
+tools/vectorscan/build_vectorscan_package.py
+tools/vectorscan/constants.py
+tools/vectorscan/copilot_api_stubber.py
+tools/vectorscan/copilot_determinism_guard.py
+tools/vectorscan/copilot_scaffolder.py
+tools/vectorscan/copilot_suite_generator.py
+tools/vectorscan/copilot_workflow_generator.py
+tools/vectorscan/entrypoint_shim.py
+tools/vectorscan/env_flags.py
+tools/vectorscan/environment.py
+tools/vectorscan/free_policies.rego
+tools/vectorscan/iam_drift.py
+tools/vectorscan/__init__.py
+tools/vectorscan/lead_api.py
+tools/vectorscan/lead_capture.py
+tools/vectorscan/metrics.py
+tools/vectorscan/plan_evolution.py
+tools/vectorscan/plan_risk.py
+tools/vectorscan/plan_smell.py
+tools/vectorscan/plan_stream.py
+tools/vectorscan/plan_utils.py
+tools/vectorscan/policies
+tools/vectorscan/policy_manifest.py
+tools/vectorscan/policy_pack.py
+tools/vectorscan/preview_manifest.json
+tools/vectorscan/preview.py
+tools/vectorscan/python_compat.py
+tools/vectorscan/README.md
+tools/vectorscan/reports.py
+tools/vectorscan/secret_scrubber.py
+tools/vectorscan/suspicious_defaults.py
+tools/vectorscan/telemetry_schema.py
+tools/vectorscan/tempfiles.py
+tools/vectorscan/terraform.py
+tools/vectorscan/time_utils.py
+tools/vectorscan/tmp_path_check.py
+tools/vectorscan/vectorscan.py
+tools/vectorscan/versioning.py
+tree.txt
+VECTORSCAN_STRUCTURE_ANALYSIS.md
+vendor/guardsuite_core/pyproject.toml
+vendor/guardsuite_core/src
+
+```
+
+## Key Files & Presence
+
+```
+product.yml: MISSING
+checklist.yml: MISSING
+docs/spec.yml: PRESENT docs/spec.yml
+GUARDSUITE MASTER SPEC (SOURCE OF TRUTH).txt: MISSING
+
+```
+
+- src/: PRESENT
+- tests/: PRESENT
+- snapshots/: PRESENT
+
+## Tests
+
+Pytest exitcode: NOT-RUN
+
+
+```
+NOT-RUN
+
+```
+
+## Static & Safety Checks
+
+### py_compile output
+
+```
+OK
+```
+
+### search_PYTHONPATH.txt
+```
+.github/copilot-instructions.md:15:No PYTHONPATH.
+.github/workflows/validate-release.yml:12:      PYTHONPATH: src
+.github/workflows/vectorscan.yml:17:      PYTHONPATH: src
+.github/workflows/vectorscan
+```
+
+### search_requests_get_.txt
+```
+NONE
+
+```
+
+### search_requests_post_.txt
+```
+NONE
+
+```
+
+### search_urllib.txt
+```
+scripts/check_github_release.py:8:import urllib.error
+scripts/check_github_release.py:9:import urllib.request
+scripts/check_github_release.py:33:    request = urllib.request.Request(url, headers=heade
+```
+
+### search_boto3.txt
+```
+NONE
+
+```
+
+### search_botocore.txt
+```
+NONE
+
+```
+
+### search_socket_.txt
+```
+scripts/telemetry_consumer.py:332:    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+tests/e2e/test_cli_api_lead_e2e.py:14:    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+
+```
+
+### search_subprocess.txt
+```
+.hypothesis/constants/b38550021384ac69:4:[b'\n', 100, ',', ', ', '-', '--allow-network', '--compare', '--diff', '--email', '--endpoint', '--explain', '--gha', '--iam-drift-penalty', '--json', '--lead-
+```
+
+### search_ctypes.txt
+```
+NONE
+
+```
+
+### search_random_.txt
+```
+tests/unit/test_aggregate_metrics_unit.py:26:    f = tmp_path / f"rand_{random.randint(0, 100000)}.json"
+tests/unit/test_cli_fuzz_unit.py:20:    return random.choice([PASS_PLAN, FAIL_PLAN])
+tests/unit
+```
+
+### search_uuid_uuid4.txt
+```
+tests/integration/test_packaging_verification.py:337:    extra_dir = ROOT / f"tmp_crlf_{uuid.uuid4().hex}"
+tests/integration/test_packaging_verification.py:364:    unicode_dir = ROOT / f"tmp_unicode_{
+```
+
+### search_shuffle_.txt
+```
+NONE
+
+```
+
+### search_os_environ.txt
+```
+.github/workflows/vectorscan-distribution.yml:72:          python -c "import zipfile, os; from pathlib import Path; platform=os.environ['PLATFORM']; bundle=Path('dist')/f'vectorscan-free-{platform}.zi
+```
+
+## CLI & Validator
+
+Searched for CLI entrypoints under `tools/vectorscan` and `src/vectorscan`.
+
+## CI & Workflow
+
+```
+.github/workflows/copilot-regression.yml
+.github/workflows/lint.yml
+.github/workflows/validate-release.yml
+.github/workflows/vectorscan-badge.yml
+.github/workflows/vectorscan-distribution.yml
+.github/workflows/vectorscan.yml
+.github/workflows/weekly-release-verification.yml
+
+```
+
+## Blockers (must-fix before Architect can proceed)
+
+- CONCERN: Uses of subprocess across tracked files; ensure sanitized use and no network calls at import-time. See reports/repo-scan/search_subprocess.txt
+
+## Recommended Next Small ATUs
+
+1) action:update, file: tools/vectorscan/terraform.py, reason: Make cached-binary usage explicitly CLI-only to avoid unit test interference, tests: run unit and integration tests.
+
+2) action:update, file: tools/vectorscan/plan_utils.py, reason: Document VSCAN_USE_CJSON fast-path and add README note, tests: performance tests.
+
+3) action:create, file: reports/repo-scan/ci-usage.txt, reason: Collate CI workflow references to downloads/caches, tests: none.
+
+4) action:update, file: run_scan.sh, reason: Ensure it documents offline env var handling, tests: integration test_audit_ledger.py.
+
+5) action:update, file: tests/conftest.py, reason: Ensure tests unset VSCAN_USE_LOCAL_TERRAFORM_CACHE by default, tests: full pytest.
+
+6) action:update, file: tools/vectorscan/terraform.py, reason: add explicit opt-out env guard for cached binary lookup, tests: unit tests.
+
+## Artifacts
+
+Files produced under reports/repo-scan/ are listed in that directory.
+
+## Commit
+
+No changes committed.

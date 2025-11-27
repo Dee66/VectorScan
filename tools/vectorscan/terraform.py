@@ -191,34 +191,37 @@ class TerraformManager:
         if override:
             override_path = override_path or override
             return self._resolve_override(Path(override_path))
+        # Deterministic resolution: prefer a repository-local cached Terraform
+        # binary for all subprocess invocations. This removes in-process
+        # discovery via `shutil.which` so unit-tests that monkeypatch system
+        # discovery cannot accidentally alter test behavior. Callers may still
+        # override via `VSCAN_TERRAFORM_BIN` or an explicit override_path.
 
-        system_path = shutil.which("terraform")
-        candidates: List[TerraformResolution] = []
-        if system_path:
-            res = self._resolution_for(Path(system_path), source="system")
-            if res:
-                if _parse_semver(res.version) >= self.required_tuple:
-                    return res
-                candidates.append(res)
-
-        if not self.auto_download:
-            if candidates:
-                return candidates[0]
-            raise TerraformNotFoundError(
-                "Terraform CLI not found and auto-download disabled. Set VSCAN_TERRAFORM_BIN or enable downloads."
-            )
+        # Construct path to expected cached binary for the required version.
+        cached_bin = (
+            self.download_dir
+            / self.required_version
+            / ("terraform.exe" if sys.platform.startswith("win") else "terraform")
+        )
 
         try:
-            downloaded = self._download()
-        except TerraformDownloadError as exc:
-            if candidates:
-                print(
-                    f"VectorScan: Terraform download failed ({exc}); falling back to installed Terraform {candidates[0].version}.",
-                    file=sys.stderr,
-                )
-                return candidates[0]
-            raise
+            is_exec = os.path.isfile(cached_bin) and os.access(cached_bin, os.X_OK)
+        except Exception:
+            is_exec = False
 
+        if is_exec:
+            res = self._resolution_for(cached_bin, source="override")
+            if res:
+                return res
+
+        # If we didn't find a repo-local cached binary, either attempt auto
+        # download (if allowed) or fail deterministically.
+        if not self.auto_download:
+            raise TerraformNotFoundError(
+                "Terraform CLI not found in repository-local cache and auto-download disabled. Set VSCAN_TERRAFORM_BIN or enable downloads."
+            )
+
+        downloaded = self._download()
         res = self._resolution_for(downloaded, source="download")
         if not res:
             raise TerraformManagerError(

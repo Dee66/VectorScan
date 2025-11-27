@@ -1,0 +1,17 @@
+tests/unit/test_aggregate_metrics_unit.py:26:    f = tmp_path / f"rand_{random.randint(0, 100000)}.json"
+tests/unit/test_cli_fuzz_unit.py:20:    return random.choice([PASS_PLAN, FAIL_PLAN])
+tests/unit/test_cli_fuzz_unit.py:25:    if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:27:    if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:29:    if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:31:    if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:33:    if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:35:    if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:37:    if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:38:        flags.extend(["--iam-drift-penalty", str(random.randint(0, 100))])
+tests/unit/test_cli_fuzz_unit.py:39:    if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:41:    if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:43:        if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:45:    if random.choice([True, False]):
+tests/unit/test_cli_fuzz_unit.py:54:    random.seed(seed)
+tests/unit/test_lead_capture.py:88:    plan_path = tmp_path / f"plan_{random.randint(0, 100000)}.json"
+tests/unit/test_lead_capture_unit.py:94:    plan_path = tmp_path / f"plan_{random.randint(0, 100000)}.json"

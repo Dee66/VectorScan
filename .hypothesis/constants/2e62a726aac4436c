@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/VectorScan/src/vectorscan/evaluator.py
+# hypothesis_version: 6.147.0
+
+[1000, 1024, 'P-VEC-EVAL-ERR', 'Rule execution error', 'attributes', 'badge_eligible', 'critical', 'description', 'dev', 'eligible', 'environment', 'guardscore_badge', 'high', 'id', 'inferred_stage', 'issues', 'latency_ms', 'low', 'medium', 'metadata', 'pillar', 'pillar_score_inputs', 'plan', 'playground_summary', 'provider_schemas', 'providers', 'quick_score_mode', 'remediation_hint', 'required', 'resource_address', 'resource_changes', 'resource_count', 'scan_version', 'score_placeholder', 'severity', 'severity_keys', 'severity_totals', 'title', 'upgrade_hint']

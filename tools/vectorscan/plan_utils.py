@@ -9,7 +9,30 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, cast
 
-from src.pillar.compat import error_text
+try:
+    from src.pillar.compat import error_text
+except Exception:  # pragma: no cover - resilient fallback for bundled layouts
+    try:
+        from pillar.compat import error_text
+    except Exception:
+        class _FallbackErrorText:
+            @staticmethod
+            def schema_error() -> str:
+                return "Plan schema error"
+
+            @staticmethod
+            def file_not_found(path: Path) -> str:  # type: ignore[name-defined]
+                return f"File not found: {path}"
+
+            @staticmethod
+            def permission_denied(path: Path) -> str:  # type: ignore[name-defined]
+                return f"Permission denied: {path}"
+
+            @staticmethod
+            def invalid_json(path: Path) -> str:  # type: ignore[name-defined]
+                return f"Invalid JSON: {path}"
+
+        error_text = _FallbackErrorText()
 from tools.vectorscan.env_flags import env_falsey
 from tools.vectorscan.plan_stream import (
     ModuleStats,
@@ -92,6 +115,22 @@ def load_plan_context(
     path: Path,
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any], Optional[ModuleStats]]:
     """Load a tfplan with streaming parser when enabled."""
+
+    # Opt-in fast-path: when `VSCAN_USE_CJSON=1` is set we prefer the eager
+    # C-backed `json` loader (the legacy eager path) to avoid the Python-level
+    # streaming string scanner for large string-heavy plans. This is reversible
+    # and disabled by default to preserve existing behavior.
+    use_cjson = os.getenv("VSCAN_USE_CJSON")
+    if use_cjson and not env_falsey(use_cjson):
+        try:
+            return _load_plan_eager_context(path)
+        except PlanLoadError:
+            raise
+        except Exception as exc:  # pragma: no cover - fallback path
+            print(
+                f"[VectorScan] Eager C-JSON fast-path failed ({exc}); falling back to streaming.",
+                file=sys.stderr,
+            )
 
     disable_flag = os.getenv("VSCAN_STREAMING_DISABLE")
     streaming_enabled = not (disable_flag and not env_falsey(disable_flag))

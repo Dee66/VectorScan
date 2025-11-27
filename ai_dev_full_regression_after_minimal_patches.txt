@@ -1,0 +1,58 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.9, pytest-9.0.1, pluggy-1.6.0
+rootdir: /home/dee/workspace/AI/GuardSuite/VectorScan
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.0.0, hypothesis-6.147.0, typeguard-2.13.3, anyio-4.11.0
+collected 529 items
+
+tests/config/test_ci_configs.py ...                                      [  0%]
+tests/copilot_generated/test_cli_smoke.py ..                             [  0%]
+tests/e2e/test_cli_api_lead_e2e.py ..                                    [  1%]
+tests/e2e/test_full_user_journey.py .....                                [  2%]
+tests/e2e/test_large_plan_stress.py .                                    [  2%]
+tests/e2e/test_stress_determinism.py .                                   [  2%]
+tests/integration/test_api_cli_integration.py ..s                        [  3%]
+tests/integration/test_bundle_integrity_checker.py ..........            [  5%]
+tests/integration/test_gumroad_download_guard.py ...                     [  5%]
+tests/integration/test_gumroad_email_checker.py ..                       [  6%]
+tests/integration/test_gumroad_validator.py ....                         [  6%]
+tests/integration/test_lead_api_integration.py ....                      [  7%]
+tests/integration/test_packaging_verification.py ...........             [  9%]
+tests/integration/test_policy_cli_integration.py ....                    [ 10%]
+tests/integration/test_release_artifact_verifier.py ...                  [ 10%]
+tests/integration/test_remediation_ledger_integration.py .               [ 11%]
+tests/integration/test_signing_key_revocation.py ..                      [ 11%]
+tests/integration/test_signing_key_rotation.py ..                        [ 11%]
+tests/integration/test_terraform_cli_integration.py ....                 [ 12%]
+tests/integration/test_terraform_gating_integration.py ..                [ 13%]
+tests/integration/test_verify_script.py ...                              [ 13%]
+tests/performance/test_performance_sanity.py ...F
+
+=================================== FAILURES ===================================
+_____________________ test_vectorscan_large_plan_over_5mb ______________________
+
+tmp_path = PosixPath('/tmp/pytest-of-dee/pytest-3/test_vectorscan_large_plan_ove0')
+
+>   ???
+E   AssertionError: >5MB plan runtime too slow: 11.133s
+E   assert 11.133110834000036 < 6.0
+E    +  where 11.133110834000036 = max(11.133110834000036, 5.937343822999992)
+
+/home/dee/workspace/AI/VectorScan/tests/performance/test_performance_sanity.py:163: AssertionError
+============================= slowest 10 durations =============================
+92.13s call     tests/e2e/test_stress_determinism.py::test_vectorscan_stress_runs_are_deterministic
+17.40s call     tests/performance/test_performance_sanity.py::test_vectorscan_large_plan_over_5mb
+16.19s call     tests/integration/test_terraform_gating_integration.py::test_terraform_tests_gating_runs[tfplan-fail.json]
+14.54s call     tests/e2e/test_large_plan_stress.py::test_large_plan_over_five_mb
+13.72s call     tests/integration/test_terraform_gating_integration.py::test_terraform_tests_gating_runs[tfplan-pass.json]
+2.97s call     tests/performance/test_performance_sanity.py::test_vectorscan_scaling_large_plan
+1.34s call     tests/e2e/test_full_user_journey.py::test_release_bundle_reproducibility
+1.29s call     tests/performance/test_performance_sanity.py::test_vectorscan_runtime_pass_fixture
+1.23s call     tests/e2e/test_cli_api_lead_e2e.py::test_cli_lead_capture_success
+1.14s call     tests/integration/test_gumroad_download_guard.py::test_download_guard_reports_failure
+=========================== short test summary info ============================
+SKIPPED [1] tests/integration/test_api_cli_integration.py:88: CORS headers require running the real HTTP server; skipped in integration test
+FAILED tests/performance/test_performance_sanity.py::test_vectorscan_large_plan_over_5mb
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+======= 1 failed, 74 passed, 1 skipped, 43 warnings in 180.95s (0:03:00) =======

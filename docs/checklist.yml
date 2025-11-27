@@ -1,0 +1,283 @@
+metadata:
+  product_id: vectorscan
+  checklist_version: '2026.04'
+  last_updated: '2025-11-25T00:00:00Z'
+  owner: GuardSuite Platform Team
+  stability: ga
+states: {}
+phases:
+- phase: initialization
+  items:
+  - INIT-001: verify_repo_contains(spec="products/vectorscan.yml", path_exists=true)
+  - INIT-002: validate_spec_yaml_syntax_and_schema(spec="products/vectorscan.yml")
+  - INIT-003: validate_spec_version_matches("2026.04") || warn_if_older
+  - INIT-004:
+      verify_required_dirs_exist:
+      - schemas/vectorscan
+      - rules/vectorscan
+      - adapters
+      - tests
+      - ci
+      - docs
+  - INIT-005: validate_core_dependency_pin("guardsuite-core@>=2.3.0,<3.0.0")
+  - INIT-006: enforce_product_type_is_free_scanner(no_paid_artifacts=true)
+  - INIT-007: ensure_no_guardsuite_core_binaries_in_repo
+  - INIT-008: ensure_no_fixpack_or_remediation_snippets_present
+  - INIT-009: checklist_schema_validation(validate_self=true)
+- phase: schema_validation
+  items:
+  - SCHEMA-001: ensure canonical_output_schema exists at "schemas/vectorscan/canonical_output.json"
+  - SCHEMA-002: validate_schema_against_core_fragments("guardsuite-core/canonical_schema.json")
+  - SCHEMA-003:
+      assert_required_fields_present:
+      - metadata
+      - issues[]
+      - provenance (optional)
+  - SCHEMA-004: detect_duplicate_field_definitions_in_schema
+  - SCHEMA-005: validate_schema_documents_sorting_semantics(lists_documented=true)
+  - SCHEMA-006: compute_and_record_schema_bundle_hash(output="artifacts/schema_bundle_hash.txt")
+  - SCHEMA-007: validate_wasm_safe_schema_constraints (no dynamic types, no host-only
+      refs)
+  - SCHEMA-008: ensure_export_bundle_contract_matches_template
+- phase: evaluator_pipeline
+  items:
+  - PIPE-001: load_authoritative_pipeline_from_template(source="guardsuite-template:evaluator_pipeline")
+  - PIPE-002: validate_stage_order_matches_core(authoritative="guardsuite-core:evaluator_pipeline_stages")
+  - PIPE-003: enforce_stages_are_idempotent_and_pure (no side-effects)
+  - PIPE-004: ensure_no_remediation_execution_paths_exist
+  - PIPE-005: ensure_no_binary_core_modules_are_loaded
+  - PIPE-006: evaluator_must_call_normalize_payload_before_hashing(DET-001)
+  - PIPE-007: evaluator_must_inject_metadata.canonical_timestamp_before_hashing
+  - PIPE-008: evaluator_must_preserve_diagnostics_for_human_output_but_strip_for_hash
+  - PIPE-009: evaluator_parity_smoke(python_vs_wasm_sample_fixture)
+- phase: determinism_hashing
+  items:
+  - DET-001: adopt_normalization_layer("DET-001")
+  - DET-002: enforce_recursive_key_ordering_for_all_outputs
+  - DET-003: enforce_fixed64_numeric_contract(scale=1e6, rounding=round_half_away_from_zero)
+  - DET-004: normalize_paths(os_independent=true)
+  - DET-005: normalize_timestamps(utc_iso8601_z)
+  - DET-006: strip_diagnostics_only_for_hashing
+  - DET-007: ensure_hash_input_is_normalized_payload(strip_diagnostics=true)
+  - DET-008: hashing_algorithm_sha256_hex_lowercase
+  - DET-009: canonical_json_utf8_serialization(byte_for_byte=true)
+  - DET-010: snapshot_test_3_runs_identical_hash_under_supported_images
+  - DET-011: python_vs_wasm_vs_native_hash_parity_test
+- phase: rule_system
+  items:
+  - RULE-001: validate_rule_files_exist(rules_dir="rules/vectorscan")
+  - RULE-002:
+      ensure_each_rule_has_required_metadata:
+      - rule_id (snake_case, namespace="vectorscan")
+      - title
+      - description
+      - severity ∈ [critical, high, medium, low, info]
+      - rationale
+  - RULE-003: ensure_rule_ids_are_unique_across_repo
+  - RULE-004: enforce_rules_do_not_invoke_remediation_or_execute_patches
+  - RULE-005: validate_rule_explain_strings_match_schema
+  - RULE-006: ensure_minimum_rule_count_meets_feature_claims(eg >= X for advertised
+      features)
+- phase: adapters
+  items:
+  - ADAPT-001: validate_adapter_manifests_exist(adapters_dir="adapters")
+  - ADAPT-002: verify_adapter_manifest_fields(name, provider, capabilities[], capability_version)
+  - ADAPT-003: ensure_adapters_collect_only_read_only_metadata(no_credentials_writing)
+  - ADAPT-004: canonicalize_adapter_resource_ids(using=DET-001.normalize_path)
+  - ADAPT-005: ensure_no_secrets_collected_or_persisted
+  - ADAPT-006: enforce_adapter_deterministic_metadata_contract
+- phase: provenance
+  items:
+  - PROV-001: if provenance_present -> validate_provenance_schema_and_signature_if_provided
+  - PROV-002: if provenance_missing -> set_provenance_source="scanner_unverified"
+      (deterministic)
+  - PROV-003: canonicalize_provenance_fields(created_at_utc -> UTC_ISO8601_Z)
+  - PROV-004: ensure_provenance_not_included_in_hash_unless_canonical_flag_true
+  - PROV-005: prohibit_external_signature_resolution_at_runtime
+- phase: fixpack_guardrails
+  items:
+  - FIX-001: assert_fixpack_included_false_in_spec
+  - FIX-002: fail_if_fixpack_dir_or_remediation_snippets_present
+  - FIX-003: allow_only_opaque_fixpack_reference_ids_in_outputs
+  - FIX-004: ensure_no_remediation_execution_code_paths_or_cli_flags_to_run_fixpacks
+  - FIX-005: detect_and_block_any_embedded_patch_content_in_rules_or_docs
+- phase: wasm_safety
+  items:
+  - WASM-001:
+      enforce_wasm_forbidden_operations_list:
+      - randomness
+      - system_time
+      - locale
+      - filesystem_write
+      - environment_variable_access
+      - network_access
+      - dynamic_imports
+  - WASM-002: wasm_conformance_test(prescribed_runtime="wasi_snapshot_preview1")
+  - WASM-003: ensure_normalization_utils_are_wasm_safe
+  - WASM-004: ensure_playground_safety_when_running_sample_plans
+  - WASM-005: memory_and_stack_safety_smoke
+- phase: cli_contract
+  items:
+  - CLI-001: validate_cli_entrypoint_exists("vectorscan")
+  - CLI-002: validate_supported_flags_present(["--json","--stdin","--quiet","--explain","--output
+      json"])
+  - CLI-003: ensure_reserved_flags_do_not_expose_paid_features
+  - CLI-004: machine_parseable_help_when_flag_json_supplied
+  - CLI-005: canonical_error_output_matches_schema(schemas/cli_error.json)
+  - CLI-006: exit_code_mapping_valid({VALIDATION_ERROR:2, RUNTIME_ERROR:3, SCHEMA_ERROR:4,
+      PARTIAL_INPUT_ERROR:5})
+- phase: observability
+  items:
+  - OBS-001:
+      validate_metrics_exist:
+      - vectorscan_runs_total
+      - vectorscan_issues_total
+      - vectorscan_partial_inputs_total
+  - OBS-002: structured_json_logs_required_and_schema_valid
+  - OBS-003:
+      enforce_telemetry_redaction_patterns:
+      - .*secret.*
+      - .*token.*
+  - OBS-004: enforce_max_event_payload_bytes(<=16000)
+  - OBS-005: ensure_no_user_paste_content_leaks_in_telemetry
+- phase: security_ip
+  items:
+  - SEC-001: assert_no_core_binary_artifacts_packaged_or_referenced
+  - SEC-002: assert_no_remediation_or_fixpack_snippets_present
+  - SEC-003: static_scan_for_embedded_secrets_or_tokens
+  - SEC-004: sanitize_all_inputs_and_docs
+  - SEC-005: confirm_readonly_scanner_behavior_in_tests
+  - SEC-006: enforce_forbidden_override_detection(forbidden_list_in_spec)
+- phase: testing_ci
+  items:
+  - TEST-001: run_unit_tests(all)
+  - TEST-002: run_integration_tests(all)
+  - TEST-003: run_snapshot_tests(3_runs_identical_hash)
+  - TEST-004: run_parity_tests(python_vs_wasm)
+  - TEST-005: run_wasm_conformance
+  - TEST-006: ensure_test_coverage_at_least(>=80)
+  - TEST-007: validate_ci_jobs_match_spec(ci/pipelinescan-ci.yml exists)
+  - TEST-008: validate_checklist_schema_valid(self)
+  - TEST-009: detect_checklist_drift_against_spec
+- phase: performance
+  items:
+  - PERF-001: enforce_expected_runtime_ms(<=500)
+  - PERF-002: enforce_memory_cap_mb(<=150)
+  - PERF-003:
+      validate_stage_budgets:
+        discover_ci_resources_ms: 150
+        gather_metadata_ms: 200
+        evaluate_rules_ms: 250
+        canonicalize_ms: 100
+  - PERF-004: performance_regression_test(synthetic_fixture)
+- phase: deliverables
+  items:
+  - DELIV-001:
+      ensure_artifacts_present:
+      - schemas/vectorscan/canonical_output.json
+      - rules/vectorscan/*.yml
+      - adapters/*/manifest.yml
+      - tests/snapshots/*
+      - ci/vectorscan-ci.yml
+  - DELIV-002: ensure_docs_and_runbooks_present(docs/runbooks/vectorscan/*.md)
+  - DELIV-003: compute_release_bundle_and_record_hash(artifacts/release_bundle_hash.txt)
+  - DELIV-004: ensure_no_sensitive_data_in_release_bundle
+- phase: acceptance
+  items:
+  - ACPT-001: canonical_output_schema_validates_all_example_outputs
+  - ACPT-002: 3-run_snapshot_determinism_valid_under_supported_images
+  - ACPT-003: python_vs_wasm_hash_and_output_parity
+  - ACPT-004: no_fixpack_or_remediation_content_present
+  - ACPT-005: wasm_forbidden_operations_not_used
+  - ACPT-006: CLI_contract_and_exit_codes_valid
+  - ACPT-007: telemetry_and_metrics_present_and_correct
+  - ACPT-008: security_ip_safeguards_confirmed
+  - ACPT-009: release_bundle_hash_recorded_and_matches_checksum
+items: []
+x_legacy:
+  acceptance_criteria:
+  - id: ACPT-VEC-001
+    description: Deterministic hashing validated across python, wasm, and native runtimes.
+    required: true
+  - id: ACPT-VEC-002
+    description: No remediation or fixpack content present in free scanner deliverables.
+    required: true
+  artifacts:
+    required_files:
+    - schemas/vectorscan/canonical_output.json
+    - artifacts/schema_bundle_hash.txt
+    - artifacts/release_bundle_hash.txt
+    required_directories:
+    - rules/vectorscan
+    - adapters
+    - tests
+    - docs
+    - ci
+    build_outputs:
+    - release_bundle.zip
+  cross_product_dependencies:
+    depends_on_products:
+    - guardsuite-core
+    - guardscore
+    - guardboard
+    depends_on_schemas:
+    - guardsuite-core/canonical_schema.json
+    depends_on_pipeline: true
+  documentation_requirements:
+    readme_required: true
+    product_docs_required: true
+    api_reference_required: false
+    examples_required: true
+    changelog_required: true
+    release_notes_required: true
+  evaluator_requirements:
+    pipeline_must_match_template: true
+    canonicalization_required: true
+    wasm_safety_required: true
+    deterministic_output_required: true
+    timestamp_normalization_required: true
+    prohibited_overrides:
+    - canonical.output_contract
+    - evaluator.runtime_override
+  fixpack_requirements:
+    fixpack_catalog_required: false
+    fixpack_metadata_required: false
+    difficulty_taxonomy_required: false
+    patch_hashing_required: false
+    remediation_examples_required: false
+  id: vectorscan-checklist
+  notes:
+  - VectorScan is intentionally detection-only. If any remediation code or fixpacks
+    are found, fail the release.
+  - 'All deterministic/hashing tests must pass on CI images: ubuntu-x86_64, ubuntu-arm64,
+    macos-x86_64.'
+  - Any change that affects hashing/normalization MUST follow RFC process and update
+    DET-001 references.
+  pillar: vector
+  product: vectorscan
+  provenance:
+  - Checklist format derived from Strategy-D canonical model.
+  - Aligned with GuardSuite Master Spec.
+  schema_requirements:
+    canonical_schema_required: true
+    metadata_schema_required: true
+    provenance_schema_required: false
+    fragment_schemas_required: true
+    additional_schemas:
+    - schemas/vectorscan/canonical_output.json
+  spec_source: products/vectorscan.yml
+  structure_requirements:
+  - id: STRUCT-VEC-001
+    description: Phases 1-16 must remain in canonical order and aligned with the Strategy-D
+      master checklist.
+    required: true
+  testing_requirements:
+    unit_tests_required: true
+    integration_tests_required: true
+    snapshot_tests_required: true
+    parity_tests_required: true
+    wasm_tests_required: true
+    schema_validation_tests_required: true
+    performance_tests_required: true
+    minimum_coverage_percent: 80
+  version: '2026.04'

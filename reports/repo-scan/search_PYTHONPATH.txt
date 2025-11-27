@@ -1,0 +1,39 @@
+.github/copilot-instructions.md:15:No PYTHONPATH.
+.github/workflows/validate-release.yml:12:      PYTHONPATH: src
+.github/workflows/vectorscan.yml:17:      PYTHONPATH: src
+.github/workflows/vectorscan.yml:72:      PYTHONPATH: src
+.github/workflows/vectorscan.yml:107:      PYTHONPATH: src
+.github/workflows/vectorscan.yml:146:      PYTHONPATH: src
+.github/workflows/vectorscan.yml:184:      PYTHONPATH: src
+.github/workflows/vectorscan.yml:222:      PYTHONPATH: src
+.github/workflows/vectorscan.yml:281:      PYTHONPATH: src
+.github/workflows/vectorscan.yml:320:      PYTHONPATH: src
+.hypothesis/constants/e4b7ffcb919404d7:4:[280, '\n</details>', '## Sample Coverage', '%Y-%m-%d %H:%M:%S %Z', '--cli', '--compare', '--diff', '--explain', '--json', '--output', '--plan', '1', '1730000000', '2024-11-16T00:00:00Z', '250', 'Compare samples:', 'Counts', 'Environment Metadata', 'IAM Drift Items', 'IAM Drift Report', 'Metric Notes', 'Metrics', 'NEW_PLAN', 'OLD_PLAN', 'PYTHONPATH', 'Plan Diff (--diff)', 'Plan Diff Attributes', 'Plan Diff Resources', 'Plan Evolution Delta', 'Plan Metadata', 'Plan Smell Entries', 'Plan Smell Report', 'Policy Errors', 'Policy Manifest', 'Terraform Tests', 'Top-Level Fields', 'VSCAN_CLOCK_EPOCH', 'VSCAN_CLOCK_ISO', 'VSCAN_OFFLINE', 'VectorGuard Preview', '[]', '__main__', '```', '```json', 'actions', 'active_window', 'address', 'adds', 'after', 'append', 'array', 'array<string>', 'aws-pgvector-rag', 'before', 'binary', 'boolean', 'breach_reason', 'category', 'change_summary', 'change_total', 'change_type', 'changed_attributes', 'changes', 'checks', 'child_module_count', 'compliance_score', 'count', 'counts', 'counts.violations', 'critical', 'current', 'data_taint', 'delta', 'description', 'destroys', 'docs', 'eligible_checks', 'environment', 'environment.platform', 'error', 'evidence', 'examples', 'exceeds_threshold', 'explanation', 'explanation.summary', 'file', 'file_size_bytes', 'file_size_mb', 'fixtures', 'for_each_instances', 'generated_at', 'has_child_modules', 'hcl_completeness', 'hcl_examples', 'high', 'iam_drift', 'iam_drift_report', 'iam_policy_actions', 'iam_policy_length', 'iam_risky_actions', 'iam_risky_details', 'id', 'input', 'integer', 'items', 'kms_missing', 'level', 'lines', 'low', 'match', 'max_module_depth', 'medium', 'message', 'metrics', 'metrics.notes', 'metrics.parser_mode', 'module_count', 'module_path', 'modules', 'name', 'narrative', 'new_plan', 'notes', 'null', 'number', 'object', 'observed', 'offline_mode', 'old_plan', 'open_security_groups', 'open_sg_count', 'output_schema.md', 'parse_duration_ms', 'parser_mode', 'passed_checks', 'path', 'plan_diff', 'plan_evolution', 'plan_metadata', 'plan_overview', 'plan_slo', 'platform', 'platform_release', 'policies', 'policy', 'policy_context', 'policy_count', 'policy_errors', 'policy_id', 'policy_manifest', 'policy_manifest.path', 'policy_name', 'policy_pack_hash', 'policy_source_url', 'policy_version', 'preview_generated', 'preview_manifest', 'preview_policies', 'previous', 'providers', 'python_version', 'reasons', 'recommendations', 'remediation', 'remediation.docs', 'remediation.summary', 'resource', 'resource_count', 'resource_details', 'resource_filter', 'resource_filter.name', 'resource_filter.type', 'resource_name', 'resource_type', 'resource_types', 'resources', 'resources_by_type', 'returncode', 'risk_highlights', 'risky_additions', 'risky_change_count', 'risky_changes', 'root', 'scan_duration_ms', 'schema_version', 'scores', 'security_grade', 'severity', 'severity_by_action', 'signature', 'signed', 'smell_report', 'smell_report.level', 'smell_report.smells', 'smell_report.summary', 'smells', 'source', 'stats', 'status', 'stderr', 'stdout', 'strategy', 'strict_mode', 'string', 'summary', 'taint_explanation', 'terraform_source', 'terraform_tests', 'terraform_version', 'tests', 'tfplan-fail.json', 'tfplan-pass.json', 'thresholds', 'tools', 'type', 'unknown', 'utf-8', 'vectorscan', 'vectorscan.py', 'vectorscan_version', 'verified', 'version', 'violations', 'violations_struct', 'with_resources', '| --- | --- | --- |', '…']
+Makefile:4:	PYTHONPATH=src python src/vectorscan/tools/generate_docs.py
+run_scan.sh:9:if [ -z "${PYTHONPATH:-}" ]; then
+run_scan.sh:10:  export PYTHONPATH="$REPO_ROOT"
+run_scan.sh:12:  export PYTHONPATH="$REPO_ROOT:$PYTHONPATH"
+scripts/generate_schema_docs.py:1359:    env.setdefault("PYTHONPATH", str(ROOT))
+tests/e2e/test_full_user_journey.py:36:    existing = env.get("PYTHONPATH")
+tests/e2e/test_full_user_journey.py:37:    env["PYTHONPATH"] = f"{bundle_root}{os.pathsep}{existing}" if existing else str(bundle_root)
+tests/e2e/test_stress_determinism.py:21:    existing = env.get("PYTHONPATH")
+tests/e2e/test_stress_determinism.py:23:    env["PYTHONPATH"] = f"{inject}{os.pathsep}{existing}" if existing else inject
+tests/integration/test_packaging_verification.py:217:    existing = env.get("PYTHONPATH")
+tests/integration/test_packaging_verification.py:218:    env["PYTHONPATH"] = f"{extract_dir}{os.pathsep}{existing}" if existing else str(extract_dir)
+tests/performance/test_performance_sanity.py:19:    existing = env.get("PYTHONPATH", "")
+tests/performance/test_performance_sanity.py:20:    env["PYTHONPATH"] = os.pathsep.join(filter(None, [existing, str(ROOT)]))
+tests/performance/test_streaming_slo.py:14:    pythonpath = env.get("PYTHONPATH")
+tests/performance/test_streaming_slo.py:18:    env["PYTHONPATH"] = os.pathsep.join(segments)
+tests/test_cli.py:29:    existing = base_env.get("PYTHONPATH")
+tests/test_cli.py:33:    base_env["PYTHONPATH"] = os.pathsep.join(parts)
+tests/test_error_handling.py:36:    existing_path = env.get("PYTHONPATH", "")
+tests/test_error_handling.py:37:    env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(REPO_ROOT), existing_path]))
+tests/test_json_output.py:16:env_pythonpath = ENV.get("PYTHONPATH")
+tests/test_json_output.py:20:ENV["PYTHONPATH"] = os.pathsep.join(env_segments)
+tests/test_tfplan_structure.py:14:    existing_path = env.get("PYTHONPATH", "")
+tests/test_tfplan_structure.py:15:    env["PYTHONPATH"] = os.pathsep.join(filter(None, [existing_path, str(REPO_ROOT)]))
+tests/unit/test_cli_fuzz_unit.py:56:    env.setdefault("PYTHONPATH", str(ROOT))
+tests/unit/test_lead_capture_unit.py:47:    existing = env.get("PYTHONPATH", "")
+tests/unit/test_lead_capture_unit.py:48:    env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(ROOT), existing]))
+tests/unit/test_vectorscan.py:152:env_pythonpath = ENV.get("PYTHONPATH")
+tests/unit/test_vectorscan.py:156:ENV["PYTHONPATH"] = os.pathsep.join(segments)

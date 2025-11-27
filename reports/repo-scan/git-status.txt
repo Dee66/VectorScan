@@ -1,0 +1,28 @@
+ M .github/copilot-instructions.md
+ M .hypothesis/unicode_data/14.0.0/codec-utf-8.json.gz
+ M run_scan.sh
+ M src/vectorscan/evaluator.py
+ M tests/conftest.py
+ M tools/vectorscan/plan_utils.py
+ M tools/vectorscan/terraform.py
+ M tools/vectorscan/vectorscan.py
+?? .hypothesis/constants/0e36a815d0dde368
+?? .hypothesis/constants/1acfde2c0bcc82d4
+?? .hypothesis/constants/2e62a726aac4436c
+?? .hypothesis/constants/4421c83627b9a283
+?? .hypothesis/constants/4b63095a74e42d7b
+?? .hypothesis/constants/95d3bc81bfb47c84
+?? .hypothesis/constants/ac34f81f4fe90253
+?? .hypothesis/constants/c3d8ed6f83f45d51
+?? .hypothesis/constants/d9e83802b21f4465
+?? ai_dev_full_regression_after_minimal_patches.txt
+?? ai_dev_profile_summary.txt
+?? ai_dev_vscode_profile.out
+?? audit_logs/debug_ledger.yaml
+?? audit_logs/investigate/97cb720bdd4b4ba6a4f99f0644f4ab9a.yaml
+?? audit_logs/investigate/fac293159a1f4f87ab81b0eb288d4b81.yaml
+?? reports/repo-scan/git-root.txt
+?? reports/repo-scan/git-status.txt
+?? src/__init__.py
+?? tmp_large_plan.json
+?? tmp_large_plan_5mb.json

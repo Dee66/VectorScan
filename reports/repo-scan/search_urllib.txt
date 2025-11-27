@@ -1,0 +1,47 @@
+scripts/check_github_release.py:8:import urllib.error
+scripts/check_github_release.py:9:import urllib.request
+scripts/check_github_release.py:33:    request = urllib.request.Request(url, headers=headers)
+scripts/check_github_release.py:35:        with urllib.request.urlopen(request) as response:
+scripts/check_github_release.py:38:    except urllib.error.HTTPError as exc:
+scripts/check_github_release.py:42:    except urllib.error.URLError as exc:
+scripts/dependency_vulnerability_scan.py:11:import urllib.error
+scripts/dependency_vulnerability_scan.py:12:import urllib.request
+scripts/dependency_vulnerability_scan.py:105:    request = urllib.request.Request(
+scripts/dependency_vulnerability_scan.py:109:        with urllib.request.urlopen(request, timeout=30) as response:
+scripts/dependency_vulnerability_scan.py:111:    except urllib.error.URLError as exc:
+scripts/gumroad_download_guard.py:13:from urllib import error, request
+scripts/release_artifact_verifier.py:12:from urllib import request
+tests/e2e/test_full_user_journey.py:87:    import urllib.request as ur
+tests/e2e/test_full_user_journey.py:88:    from urllib import error
+tests/integration/test_api_cli_integration.py:55:    import urllib.request as ur
+tests/unit/test_lead_capture.py:86:    import urllib.request as ur
+tests/unit/test_lead_capture.py:114:    import urllib.request as ur
+tests/unit/test_lead_capture.py:137:    import urllib.request as ur
+tests/unit/test_lead_capture.py:174:    import urllib.request as ur
+tests/unit/test_lead_capture.py:207:    import urllib.request as ur
+tests/unit/test_lead_capture.py:244:    import urllib.request as ur
+tests/unit/test_lead_capture.py:264:    import urllib.request as ur
+tests/unit/test_lead_capture.py:311:    import urllib.request as ur
+tests/unit/test_lead_capture.py:331:    import urllib.request as ur
+tests/unit/test_lead_capture.py:349:    import urllib.request as ur
+tests/unit/test_lead_capture.py:398:    import urllib.request as ur
+tests/unit/test_lead_capture.py:426:    import urllib.request as ur
+tests/unit/test_lead_capture.py:511:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:92:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:134:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:173:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:196:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:217:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:253:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:275:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:297:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:319:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:341:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:381:    import urllib.request as ur
+tests/unit/test_lead_capture_unit.py:552:    import urllib.request as ur
+tools/vectorscan/entrypoint_shim.py:9:from urllib import request as _urllib_request
+tools/vectorscan/entrypoint_shim.py:63:request = _urllib_request
+tools/vectorscan/lead_capture.py:8:from urllib import error, request
+tools/vectorscan/terraform.py:19:from urllib import request
+tools/vectorscan/vectorscan.py:22:from urllib import request as _urllib_request
+tools/vectorscan/vectorscan.py:224:request = _urllib_request

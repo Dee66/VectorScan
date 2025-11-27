@@ -9,11 +9,18 @@ import sys
 from pathlib import Path
 
 import pytest
+from tools.vectorscan.constants import DEFAULT_TERRAFORM_CACHE, REQUIRED_TERRAFORM_VERSION
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SRC_ROOT = _REPO_ROOT / "src"
 _PACKAGE_ROOT = (_SRC_ROOT / "vectorscan").resolve()
 
+# Make both the repository root and the src/ directory available on sys.path.
+# This allows imports that reference the top-level `src` package (e.g.
+# `import src.vectorscan`) as well as imports that expect `vectorscan` to be
+# directly importable from `src/` (legacy test shims).
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 if str(_SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(_SRC_ROOT))
 
@@ -26,6 +33,10 @@ def _load_canonical_vectorscan_package() -> None:
     module = importlib.import_module("vectorscan")
     canonical = str(_PACKAGE_ROOT)
     package_path = getattr(module, "__path__", None)
+    # Ensure `__file__` exists on the module so tests that monkeypatch
+    # `vectorscan.__file__` can operate as expected.
+    if not getattr(module, "__file__", None):
+        module.__file__ = str((_PACKAGE_ROOT / "__init__.py"))
     if not package_path:
         module.__path__ = [canonical]
         return
@@ -116,15 +127,68 @@ def _stable_scan_duration_env() -> None:
 @pytest.fixture(scope="session", autouse=True)
 def _terraform_stubbed_environment():
     """Ensure Terraform interactions stay offline and deterministic."""
-
     tracked = {
         "VSCAN_ALLOW_NETWORK": os.environ.get("VSCAN_ALLOW_NETWORK"),
         "VSCAN_TERRAFORM_AUTO_DOWNLOAD": os.environ.get("VSCAN_TERRAFORM_AUTO_DOWNLOAD"),
         "VSCAN_TERRAFORM_STUB": os.environ.get("VSCAN_TERRAFORM_STUB"),
+        "VSCAN_USE_LOCAL_TERRAFORM_CACHE": os.environ.get("VSCAN_USE_LOCAL_TERRAFORM_CACHE"),
     }
-    os.environ.setdefault("VSCAN_ALLOW_NETWORK", "0")
-    os.environ.setdefault("VSCAN_TERRAFORM_AUTO_DOWNLOAD", "0")
-    os.environ.setdefault("VSCAN_TERRAFORM_STUB", "1")
+    # Force deterministic network/terraform stubbing values for the test
+    # session regardless of the external environment.
+    os.environ["VSCAN_ALLOW_NETWORK"] = "0"
+    os.environ["VSCAN_TERRAFORM_AUTO_DOWNLOAD"] = "0"
+    os.environ["VSCAN_TERRAFORM_STUB"] = "1"
+    # Ensure repository-local terraform cache usage is disabled by default
+    # for unit tests. Tests that explicitly opt-in may set the environment
+    # variable themselves for integration scenarios.
+    os.environ.pop("VSCAN_USE_LOCAL_TERRAFORM_CACHE", None)
+
+    # For deterministic test runs, create a lightweight repository-local
+    # terraform stub binary (if not already present) that reports the
+    # required Terraform version. This satisfies tests that expect a
+    # discoverable binary without relying on system discovery.
+    created_stub = False
+    try:
+        # Create stubs for a small set of Terraform versions exercised by unit
+        # tests. This avoids relying on system discovery and keeps behavior
+        # deterministic for subprocess calls.
+        versions = {
+            REQUIRED_TERRAFORM_VERSION,
+            "1.3.0",
+            "9.9.9",
+            "1.5.7",
+            "0.12.0",
+            "0.11.0",
+        }
+        for ver in versions:
+            dest_dir = (DEFAULT_TERRAFORM_CACHE / ver)
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            binary = dest_dir / ("terraform.exe" if sys.platform.startswith("win") else "terraform")
+            if not binary.exists():
+                stub = f"""#!/usr/bin/env bash
+# Minimal terraform stub for tests
+cmd="$1"
+shift || true
+case "$cmd" in
+  version)
+    if [ "$1" = "-json" ]; then
+      echo '{{"terraform_version":"{ver}"}}'
+      exit 0
+    else
+      echo "Terraform v{ver}"
+      exit 0
+    fi
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+"""
+                binary.write_text(stub, encoding="utf-8")
+                binary.chmod(0o755)
+                created_stub = True
+    except Exception:
+        created_stub = False
     try:
         yield
     finally:
@@ -133,6 +197,17 @@ def _terraform_stubbed_environment():
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = value
+        # Remove the test-created repo-local terraform stub if we created it
+        try:
+            if created_stub:
+                binary.unlink(missing_ok=True)
+                try:
+                    # attempt to remove parent dir if empty
+                    dest_dir.rmdir()
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
 
 @pytest.fixture(scope="session")

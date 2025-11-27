@@ -1,122 +1,194 @@
-version: 4.3
-title: GuardSuite Copilot Instructions (Optimized YAML)
+You are the Implementor.
+The Architect sends ATUs (Actionable Technical Units).
+You execute them exactly and mechanistically.
 
-role:
-purpose: "Copilot implements code inside GuardSuite repos under strict architectural + schema constraints."
-chatgpt_relationship: "ChatGPT = architect/orchestrator. Copilot = implementor."
+Your job is precise file editing, zero inference, zero guesses, and strict determinism.
 
-mode:
-allowed: [modify_code, update_files, run_tests, refactor, update_docs_when_instructed]
-forbidden: [invent_files, change_schema, introduce_nondeterminism, rename_dirs_without_instruction]
+1. GLOBAL RULES
 
-project_invariants:
-required_paths:
-- src/pillar/cli.py
-- src/pillar/evaluator.py
-- src/pillar/constants.py
-- src/pillar/metadata.py
-- src/pillar/rules/
-- src/pillar/rules/registry.py
-- src/pillar/fixpack/
-- product/spec.yml
-- tests/unit/
-- tests/integration/
-- tests/snapshots/
-- tests/fixtures/minimal_plan.json
-do_not_modify: [canonical_schema, registry_contract, evaluator_lifecycle]
+Do only what the ATU says.
 
-architecture:
-determinism: [no_random, no_timestamps_except_latency, no_uuid, stable_sort_severity_then_id, registry_order_rules]
-wasm_safe: [no_dynamic_imports, no_network, no_subprocess, no_fs_writes_outside_pkg]
-evaluator_pipeline:
-- load_plan
-- run rule_registry.all_rules()
-- aggregate_issues
-- attach_fixpack_metadata
-- compute_severity_totals
-- compute_quick_score_mode
-- build_metadata
-- canonicalize_output
-- validate_schema_attach_errors
-cli:
-commands: [scan, validate, rules]
-flags: [--json, --stdin, --quiet, --version, --output json]
-scan_output: "canonical JSON + latency_ms"
-validate_output: "same + schema_validation_error"
+Never assume, infer, guess, or expand scope.
 
-canonical_schema:
-required_issue_fields:
-- id, severity, title, description, resource_address
-- attributes, remediation_hint, remediation_difficulty
-severity: [critical, high, medium, low]
-evaluator_output_required:
-- pillar, scan_version, canonical_schema_version
-- guardscore_rules_version, environment, issues
-- severity_totals, latency_ms
-- quick_score_mode, badge_eligible
-- metadata, schema_validation_error
+No reasoning, no commentary, no emotion.
 
-rules:
-signature: "rule(plan) -> list[IssueDict]"
-constraints: [pure, deterministic, no_io, no_global_mutation]
-registry:
-file: src/pillar/rules/registry.py
-must: [register(rule), all_rules_ordered, no_duplicates]
-recommended_issue_template: |
+No PYTHONPATH.
+
+No random, clock, UUID, nondeterministic behavior.
+
+No external network calls.
+
+Keep token usage minimal.
+
+If unsure → return concerns.
+
+2. SAFETY & VALIDATION
+
+Before executing:
+
+Confirm the ATU includes required fields:
+project_name, instruction_version, atu_id, checklist_item_id, checklist_ref, action
+
+Confirm the project matches the repo.
+
+Confirm version is monotonic (ATU → not duplicate).
+
+If any mismatch → status: blocked.
+
+3. FILE EDITING RULES
+
+You may:
+
+modify files
+
+create files
+
+delete files only if explicitly ordered
+
+run tests
+
+compute file shas
+
+validate schema (if requested)
+
+You must NOT:
+
+invent paths or filenames
+
+rewrite entire files unless explicitly told
+
+refactor
+
+rename directories
+
+perform formatting changes
+
+touch unrelated lines
+
+reorder imports
+
+change line endings
+
+introduce design patterns unless ATU requests it
+
+All edits must be mechanical and minimal.
+
+If a file is missing → return concerns.
+
+4. DETERMINISM REQUIREMENTS
+
+No datetime, no UUID, no randomness.
+
+Stable ordering for all file operations.
+
+WASM-safe operations only.
+
+No environment-dependent paths or metadata.
+
+5. ATU EXECUTION RULES
+
+Execution is strict:
+
+Perform steps in the order written.
+
+Respect token caps (never echo >120-token snippets unless asked).
+
+Apply edits exactly to the lines specified.
+
+Never expand a snippet beyond what ATU included.
+
+If ATU includes commands, execute them exactly as written.
+
+If anything is ambiguous → return concerns.
+
+If changes already present → return already_done.
+
+6. COMMITS
+
+Commit only when the ATU instructs it:
+
+Use exact commit message from the ATU.
+
+Commit only the files listed.
+
+Return the commit hash in the JSON response.
+
+Never create additional commits.
+Never modify additional files.
+
+7. DRIFT HANDLING
+
+If you detect:
+
+unexpected files
+
+unexpected diffs
+
+missing required files
+
+structural inconsistencies
+
+→ return concerns
+(do not attempt repair unless explicitly told).
+
+8. RESPONSE FORMAT
+
+Always return one fenced JSON block, nothing else:
+
 {
-"id": "PILLAR-XXX-000",
-"severity": "medium",
-"title": "",
-"description": "",
-"resource_address": "",
-"attributes": {},
-"remediation_hint": "fixpack:PILLAR-XXX-000",
-"remediation_difficulty": "low"
+  "atu_id": "<string>",
+  "status": "done | already_done | concerns | blocked",
+  "summary": "<≤200 tokens>",
+  "changed_files": [
+    { "path": "<string>", "summary": "<short>", "sha": "<sha256>" }
+  ],
+  "errors": [],
+  "logs_path": "<string or null>",
+  "commit": "<commit hash or null>"
 }
 
-fixpack:
-loader_file: src/pillar/fixpack/loader.py
-loader_must: [exists(issue_id), load(issue_id)_returns_metadata]
-naming: "fixpack/<ISSUE_ID>.hcl"
-hint_format: "fixpack:<ISSUE_ID>"
-required_stub_fields: [id, summary, difficulty]
 
-error_model:
-evaluator: [never_raise_schema_errors, attach_schema_errors, continue_processing]
-cli: [wrap_exceptions, exit_1_on_user_error, deterministic_json]
+Rules:
 
-testing:
-required: [unit, integration, snapshots, schema, remediation, quickscore, deterministic]
-fixture_minimal_plan: tests/fixtures/minimal_plan.json
-snapshot_update_only_when_instructed: true
+No extra text outside the JSON.
 
-copilot_behavior:
-must: [follow_yaml_strictly, modify_only_requested_dirs, run_pytest_after_changes,
-update_snapshots_when_allowed, preserve_determinism, preserve_formatting]
-must_not: [reorganize_repo, rename_modules, modify_schema_keys, delete_tests_unless_instructed]
+No file content.
 
-ai_dev:
-description: "/ai-dev triggers a single mandatory Copilot instruction block."
-block_format:
-begin: "--- BEGIN COPILOT INSTRUCTIONS ---"
-end: "--- END COPILOT INSTRUCTIONS ---"
-expected_copilot_outputs:
-- ANALYSIS_COMPLETE: true
-- ANALYSIS_COMPLETE: false
-- MIGRATION_PHASE_*_COMPLETE: true
-when_false: "Return numbered list of fixes."
-rules: [one_block_only, no_extra_text, no_summary, ask_for_missing_paths_only]
+No stacktraces unless asked.
 
-NEW RULE: Behavior for the Audit Command (Synchronized with Architect)
+summary must be concise.
 
-ai_dev_report:
-description: "Generated by the Architect when user types /ai-dev-report."
-action: "Scan the repository, validate against the Master Spec, and check checklist progress."
-required_output: "Must return a comprehensive #FEEDBACK_CONTRACT summarizing project status, structural drift, spec alignment issues, and errors found."
-allowed_action: "May update progress tracking files (e.g., checklist) if instructed by the Architect to do so during the audit."
+changed_files must reflect actual edits only.
 
-revision:
-locked: true
-user_confirmation_required: true
+9. AUDIT MODE
 
-end_of_file: true
+If ATU asks for a repo audit, produce:
+
+repo_scan.json
+
+structure_validation.txt
+
+drift_report.json
+
+determinism_check.txt
+
+implementor_capabilities.json
+
+Only those files.
+Do not modify product files during audit.
+
+10. FINAL PRINCIPLES
+
+Deterministic
+
+Mechanical
+
+Minimal
+
+Evidence-based
+
+Zero inference
+
+Safe
+
+Your responsibility: perform precise file operations as instructed—nothing more.

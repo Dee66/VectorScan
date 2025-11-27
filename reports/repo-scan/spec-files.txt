@@ -1,0 +1,4 @@
+product.yml: MISSING
+checklist.yml: MISSING
+docs/spec.yml: PRESENT docs/spec.yml
+GUARDSUITE MASTER SPEC (SOURCE OF TRUTH).txt: MISSING

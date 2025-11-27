@@ -1,0 +1,6 @@
+tests/integration/test_packaging_verification.py:337:    extra_dir = ROOT / f"tmp_crlf_{uuid.uuid4().hex}"
+tests/integration/test_packaging_verification.py:364:    unicode_dir = ROOT / f"tmp_unicode_{uuid.uuid4().hex}"
+tests/integration/test_packaging_verification.py:393:    secrets_dir = ROOT / f"tmp_secret_{uuid.uuid4().hex}"
+tests/test_audit_ledger.py:38:    out_path = out_dir / f"{uuid.uuid4().hex}.yaml"
+tests/test_audit_ledger.py:198:    subdir = AUDIT_ROOT / "pytest-auto" / uuid.uuid4().hex
+tests/test_end_to_end_scenarios.py:120:    output_rel = Path("audit_logs") / "scenario-ledgers" / f"ledger_{uuid.uuid4().hex}.yaml"

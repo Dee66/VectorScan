@@ -1,0 +1,86 @@
+VectorScan_Audit_Ledger:
+  timestamp: 2025-11-27T08:28:29Z
+  environment: dev
+  input_file: examples/aws-pgvector-rag/tfplan-pass.json
+  environment_metadata:
+    platform: linux
+    platform_release: 6.8.0-88-generic
+    python_version: 3.11.9
+    python_implementation: CPython
+    terraform_version: not-run
+    terraform_source: not-run
+    strict_mode: false
+    offline_mode: true
+  plan_metadata:
+    resource_count: 1
+    module_count: 1
+    resource_types:
+      aws_rds_cluster: 1
+    providers:
+      - aws
+    modules:
+      root: root
+      with_resources: 1
+      child_module_count: 0
+      has_child_modules: false
+    change_summary:
+      adds: 0
+      changes: 0
+      destroys: 0
+    resources_by_type:
+      aws_rds_cluster:
+        planned: 1
+        adds: 0
+        changes: 0
+        destroys: 0
+    file_size_mb: 0.000549
+    file_size_bytes: 549
+    parse_duration_ms: 0
+    exceeds_threshold: false
+    plan_slo:
+      observed:
+        resource_count: 1
+        parse_duration_ms: 0
+        file_size_bytes: 549
+      thresholds:
+        fast_path:
+          max_resources: 1000
+          max_parse_ms: 200
+        large_plan:
+          max_resources: 10000
+          max_parse_ms: 2000
+        file_size_limit_bytes: 1500000000
+      active_window: fast_path
+      breach_reason: null
+  vectorscan_version: 0.1.0
+  policy_version: 1.0.0
+  schema_version: 1.2.0
+  policy_pack_hash: 126aca2e973a5b2d4e18b3d4e078d645893409a809ebc1940bdb356c8b6ce87c
+  policy_errors: []
+  violations: []
+  violation_severity_summary:
+    critical: 0
+    high: 0
+    medium: 0
+    low: 0
+  plan_risk_profile: low
+  plan_risk_factors: []
+  smell_report:
+    level: low
+    summary: No structural smells detected.
+    finding_count: 0
+    details: []
+  encryption: PASS
+  iam: PASS
+  iam_drift: PASS
+  network: PASS
+  tagging: PASS
+  audit_status: COMPLIANT
+  overall_score: 100/100
+  scan_duration_ms: 1
+  parser_mode: streaming
+  resource_count: 1
+  evidence:
+    iam_drift: []
+  terraform_test_results:
+    status: not_run

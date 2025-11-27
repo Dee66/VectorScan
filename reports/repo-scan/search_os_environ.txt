@@ -1,0 +1,176 @@
+.github/workflows/vectorscan-distribution.yml:72:          python -c "import zipfile, os; from pathlib import Path; platform=os.environ['PLATFORM']; bundle=Path('dist')/f'vectorscan-free-{platform}.zip'; dest=Path('dist')/f'vectorscan-free-{platform}_extract'; zipfile.ZipFile(bundle).extractall(dest)"
+run_scan.sh:135:with open(os.environ['JSON_FILE']) as fh:
+run_scan.sh:215:with open(os.environ['JSON_FILE']) as fh:
+run_scan.sh:242:with open(os.environ['JSON_FILE']) as fh:
+run_scan.sh:263:with open(os.environ['JSON_FILE']) as fh:
+run_scan.sh:277:with open(os.environ['JSON_FILE']) as fh:
+run_scan.sh:293:with open(os.environ['JSON_FILE']) as fh:
+run_scan.sh:317:with open(os.environ['JSON_FILE']) as fh:
+run_scan.sh:410:with open(os.environ['JSON_FILE']) as fh:
+run_scan.sh:432:with open(os.environ['JSON_FILE']) as fh:
+scripts/automate_release.py:48:    override = os.environ.get("VSCAN_USER_BIN")
+scripts/automate_release.py:51:    home_env = os.environ.get("HOME")
+scripts/automate_release.py:106:        os.environ["PATH"] = f"{target}:{os.environ.get('PATH','')}"
+scripts/automate_release.py:239:        os.environ["PATH"] = f"{target}:{os.environ.get('PATH','')}"
+scripts/generate_schema_docs.py:1358:    env = os.environ.copy()
+src/pillar/terraform_shim.py:27:    os.environ["VSCAN_TERRAFORM_BIN"] = str(_DEFAULT_TERRAFORM_BIN)
+tests/conftest.py:61:        os.environ["VSCAN_UPDATE_SNAPSHOTS"] = "1"
+tests/conftest.py:119:    os.environ["VSCAN_FORCE_DURATION_MS"] = _STABLE_DURATION_MS
+tests/conftest.py:127:        "VSCAN_ALLOW_NETWORK": os.environ.get("VSCAN_ALLOW_NETWORK"),
+tests/conftest.py:128:        "VSCAN_TERRAFORM_AUTO_DOWNLOAD": os.environ.get("VSCAN_TERRAFORM_AUTO_DOWNLOAD"),
+tests/conftest.py:129:        "VSCAN_TERRAFORM_STUB": os.environ.get("VSCAN_TERRAFORM_STUB"),
+tests/conftest.py:131:    os.environ.setdefault("VSCAN_ALLOW_NETWORK", "0")
+tests/conftest.py:132:    os.environ.setdefault("VSCAN_TERRAFORM_AUTO_DOWNLOAD", "0")
+tests/conftest.py:133:    os.environ.setdefault("VSCAN_TERRAFORM_STUB", "1")
+tests/conftest.py:139:                os.environ.pop(key, None)
+tests/conftest.py:141:                os.environ[key] = value
+tests/copilot_generated/test_cli_smoke.py:26:    env = os.environ.copy()
+tests/e2e/test_cli_api_lead_e2e.py:43:    os.environ["LEAD_API_OUTPUT_DIR"] = str(api_output_dir)
+tests/e2e/test_cli_api_lead_e2e.py:60:    env = os.environ.copy()
+tests/e2e/test_cli_api_lead_e2e.py:108:    env = os.environ.copy()
+tests/e2e/test_full_user_journey.py:20:os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
+tests/e2e/test_full_user_journey.py:102:        os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/e2e/test_full_user_journey.py:105:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/e2e/test_full_user_journey.py:222:    env = os.environ.copy()
+tests/e2e/test_stress_determinism.py:91:    env = os.environ.copy()
+tests/integration/test_api_cli_integration.py:14:os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
+tests/integration/test_api_cli_integration.py:50:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/integration/test_api_cli_integration.py:51:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/integration/test_api_cli_integration.py:65:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/integration/test_api_cli_integration.py:66:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/integration/test_gumroad_validator.py:145:    env = os.environ.copy()
+tests/integration/test_gumroad_validator.py:181:    env = os.environ.copy()
+tests/integration/test_packaging_verification.py:216:    env = os.environ.copy()
+tests/integration/test_policy_cli_integration.py:7:os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
+tests/integration/test_release_artifact_verifier.py:124:    env = os.environ.copy()
+tests/integration/test_release_artifact_verifier.py:181:    env = os.environ.copy()
+tests/integration/test_signing_key_revocation.py:102:    env = os.environ.copy()
+tests/integration/test_signing_key_revocation.py:156:    env = os.environ.copy()
+tests/integration/test_signing_key_rotation.py:105:    env = os.environ.copy()
+tests/integration/test_signing_key_rotation.py:158:    env = os.environ.copy()
+tests/integration/test_terraform_gating_integration.py:58:    env = os.environ.copy()
+tests/integration/test_verify_script.py:116:    env = os.environ.copy()
+tests/integration/test_verify_script.py:139:    env = os.environ.copy()
+tests/performance/test_performance_sanity.py:18:    env = os.environ.copy()
+tests/performance/test_streaming_slo.py:13:    env = os.environ.copy()
+tests/test_audit_ledger.py:30:    env = os.environ.copy()
+tests/test_cli.py:28:    base_env = os.environ.copy()
+tests/test_error_handling.py:33:    env = os.environ.copy()
+tests/test_json_output.py:15:ENV = os.environ.copy()
+tests/test_lead_capture_cli.py:10:os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
+tests/test_strict_mode_cli.py:10:os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
+tests/test_tfplan_structure.py:13:    env = os.environ.copy()
+tests/unit/test_cli_fuzz_unit.py:55:    env = os.environ.copy()
+tests/unit/test_lead_capture.py:20:os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
+tests/unit/test_lead_capture.py:93:        os.environ["LEAD_CAPTURE_ENABLED"] = enabled
+tests/unit/test_lead_capture.py:95:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:97:        os.environ["VSCAN_LEAD_ENDPOINT"] = endpoint
+tests/unit/test_lead_capture.py:99:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:107:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:108:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:144:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture.py:145:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture.py:150:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:151:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:172:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture.py:173:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture.py:182:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:183:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:212:        os.environ["LEAD_CAPTURE_ENABLED"] = enabled
+tests/unit/test_lead_capture.py:214:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:216:        os.environ["VSCAN_LEAD_ENDPOINT"] = endpoint
+tests/unit/test_lead_capture.py:218:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:226:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:227:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:242:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture.py:243:    os.environ["VSCAN_LEAD_ENDPOINT"] = "http://localhost:9999/doesnotexist"
+tests/unit/test_lead_capture.py:254:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:255:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:262:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture.py:263:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture.py:272:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:273:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:309:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture.py:310:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture.py:319:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:320:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:329:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture.py:330:    os.environ["VSCAN_LEAD_ENDPOINT"] = "http://localhost:9999/doesnotexist"
+tests/unit/test_lead_capture.py:341:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:342:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:363:            os.environ["LEAD_CAPTURE_ENABLED"] = enabled
+tests/unit/test_lead_capture.py:365:            os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:367:            os.environ["VSCAN_LEAD_ENDPOINT"] = endpoint
+tests/unit/test_lead_capture.py:369:            os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:374:                os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:376:                os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:395:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture.py:397:        os.environ["VSCAN_LEAD_ENDPOINT"] = endpoint
+tests/unit/test_lead_capture.py:409:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:411:            os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture.py:509:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture.py:510:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture.py:519:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture.py:520:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:19:os.environ.setdefault("VSCAN_ALLOW_NETWORK", "1")
+tests/unit/test_lead_capture_unit.py:46:    env = os.environ.copy()
+tests/unit/test_lead_capture_unit.py:100:        os.environ["LEAD_CAPTURE_ENABLED"] = enabled
+tests/unit/test_lead_capture_unit.py:102:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:105:        os.environ["VSCAN_LEAD_ENDPOINT"] = endpoint
+tests/unit/test_lead_capture_unit.py:107:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:116:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:117:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:141:        os.environ["LEAD_CAPTURE_ENABLED"] = enabled
+tests/unit/test_lead_capture_unit.py:143:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:146:        os.environ["VSCAN_LEAD_ENDPOINT"] = endpoint
+tests/unit/test_lead_capture_unit.py:148:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:157:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:158:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:203:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture_unit.py:204:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture_unit.py:210:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:211:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:234:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture_unit.py:235:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture_unit.py:244:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:245:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:259:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture_unit.py:260:    os.environ["VSCAN_LEAD_ENDPOINT"] = "http://localhost:9999/doesnotexist"
+tests/unit/test_lead_capture_unit.py:268:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:269:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:278:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture_unit.py:279:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture_unit.py:288:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:289:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:300:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture_unit.py:301:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture_unit.py:310:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:311:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:325:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture_unit.py:326:    os.environ["VSCAN_LEAD_ENDPOINT"] = "http://localhost:9999/doesnotexist"
+tests/unit/test_lead_capture_unit.py:334:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:335:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:358:                os.environ["LEAD_CAPTURE_ENABLED"] = enabled
+tests/unit/test_lead_capture_unit.py:360:                os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:363:                os.environ["VSCAN_LEAD_ENDPOINT"] = endpoint
+tests/unit/test_lead_capture_unit.py:365:                os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:371:                    os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:373:                    os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:454:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture_unit.py:455:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture_unit.py:476:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:477:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:488:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture_unit.py:489:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture_unit.py:508:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:509:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_lead_capture_unit.py:555:    os.environ["LEAD_CAPTURE_ENABLED"] = "1"
+tests/unit/test_lead_capture_unit.py:556:    os.environ["VSCAN_LEAD_ENDPOINT"] = "https://example.com/capture"
+tests/unit/test_lead_capture_unit.py:565:        os.environ.pop("LEAD_CAPTURE_ENABLED", None)
+tests/unit/test_lead_capture_unit.py:566:        os.environ.pop("VSCAN_LEAD_ENDPOINT", None)
+tests/unit/test_vectorscan.py:151:ENV = os.environ.copy()
+tools/vectorscan/build_vectorscan_package.py:147:if "SOURCE_DATE_EPOCH" not in os.environ:
+tools/vectorscan/build_vectorscan_package.py:148:    os.environ["SOURCE_DATE_EPOCH"] = "0"
+tools/vectorscan/copilot_determinism_guard.py:26:    env = os.environ.copy()
+tools/vectorscan/copilot_suite_generator.py:52:    env = os.environ.copy()
+tools/vectorscan/secret_scrubber.py:22:    env_map = env or os.environ

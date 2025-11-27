@@ -13,8 +13,8 @@ from .constants import (
     GUARDSCORE_RULES_VERSION,
     CANONICAL_SCHEMA_VERSION,
 )
-from src.vectorscan.metadata import build_environment
-from src.vectorscan.rules import get_all_rules
+from .metadata import build_environment
+from .rules import get_all_rules
 
 REQUIRED_OUTPUT_KEYS = [
     "pillar",

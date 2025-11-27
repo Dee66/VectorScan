@@ -1,0 +1,7 @@
+.github/workflows/copilot-regression.yml
+.github/workflows/lint.yml
+.github/workflows/validate-release.yml
+.github/workflows/vectorscan-badge.yml
+.github/workflows/vectorscan-distribution.yml
+.github/workflows/vectorscan.yml
+.github/workflows/weekly-release-verification.yml

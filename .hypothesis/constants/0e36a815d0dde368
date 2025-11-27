@@ -1,0 +1,4 @@
+# file: /home/dee/workspace/AI/GuardSuite/GuardTemplate/src/sitecustomize.py
+# hypothesis_version: 6.147.0
+
+['_scaffold_test', 'scaffold_test', 'src']

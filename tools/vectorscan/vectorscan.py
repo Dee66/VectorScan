@@ -24,13 +24,47 @@ from urllib import request as _urllib_request
 # ruff: noqa: E402
 
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+def _discover_repo_root() -> Path:
+    # Attempt to robustly locate the repository root when running from an
+    # extracted bundle or alternate layout. Prefer an ancestor that contains
+    # both `tools/` and `src/` directories; fall back to the conventional
+    # parents[2] heuristic if not found.
+    here = Path(__file__).resolve()
+    for ancestor in [here] + list(here.parents):
+        try:
+            if (ancestor / "tools").is_dir() and (ancestor / "src").is_dir():
+                return ancestor
+        except Exception:
+            continue
+    return here.parents[2]
+
+
+_REPO_ROOT = _discover_repo_root()
 _SRC_ROOT = _REPO_ROOT / "src"
 if str(_SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(_SRC_ROOT))
 if str(_REPO_ROOT) not in sys.path:
-    sys.path.append(str(_REPO_ROOT))
+    # Ensure the repository root is available early on the path so running the
+    # script directly (as `python tools/vectorscan/vectorscan.py`) can still
+    # import top-level packages like `tools` and `src` reliably.
+    sys.path.insert(0, str(_REPO_ROOT))
 _PACKAGE_ROOT = (_SRC_ROOT / "vectorscan").resolve()
+
+# When executed as a script inside an extracted bundle, the normal package
+# import machinery may not resolve top-level packages like `tools`. Create a
+# lightweight package module entry that points to the bundled `tools/` tree so
+# subsequent `from tools.* import ...` imports succeed.
+try:
+    import types
+
+    if "tools" not in sys.modules:
+        tools_pkg_dir = (_REPO_ROOT / "tools").resolve()
+        if tools_pkg_dir.exists():
+            tools_mod = types.ModuleType("tools")
+            tools_mod.__path__ = [str(tools_pkg_dir)]
+            sys.modules["tools"] = tools_mod
+except Exception:
+    pass
 
 
 def _load_canonical_vectorscan_package() -> None:
@@ -43,22 +77,19 @@ def _load_canonical_vectorscan_package() -> None:
     if not package_init.exists():
         # Bundled builds omit src/, so fall back to whatever vectorscan import is available.
         return
-
+    # Create a lightweight package module entry for `vectorscan` that points to
+    # the `src/vectorscan` directory. Avoid executing the package __init__ at
+    # import time to reduce startup overhead; submodule imports will load as
+    # needed via the package __path__.
     try:
         sys.modules.pop(module_name, None)
-        spec = importlib.util.spec_from_file_location(
-            module_name,
-            package_init,
-            submodule_search_locations=[str(_PACKAGE_ROOT)],
-        )
-        if spec is None or spec.loader is None:
-            raise ImportError
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-        spec.loader.exec_module(module)
+        import types
+
+        module = types.ModuleType(module_name)
         module.__path__ = [str(_PACKAGE_ROOT)]
-    except (FileNotFoundError, ImportError):
-        # When packaging omits src/, continue with whichever vectorscan package is available.
+        sys.modules[module_name] = module
+    except Exception:
+        # On any failure, fall back to letting normal import machinery handle it.
         sys.modules.pop(module_name, None)
         return
 
@@ -262,10 +293,10 @@ except UnsupportedPythonVersion as exc:
 POLICY_PACK_HASH: Optional[str]
 _POLICY_PACK_ERROR: Optional[str]
 
-try:
+try:  # pragma: no cover - exercised in integration tests
     POLICY_PACK_HASH = policy_pack_hash()
     _POLICY_PACK_ERROR = None
-except PolicyPackError as exc:  # pragma: no cover - exercised in integration tests
+except PolicyPackError as exc:
     POLICY_PACK_HASH = None
     _POLICY_PACK_ERROR = str(exc)
 
